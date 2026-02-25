@@ -1,0 +1,9 @@
+{
+  "name": "clairvoyance",
+  "version": "1.0.0",
+  "description": "See through complexity. Agentic skills implementing \"A Philosophy of Software Design\" by John Ousterhout.",
+  "author": {
+    "name": "Cody Bromley"
+  },
+  "license": "MIT"
+}
