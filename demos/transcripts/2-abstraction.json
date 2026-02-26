@@ -1,0 +1,245 @@
+{
+  "demo": "2-abstraction",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "The cart throws too many errors in edge cases, customers are seeing error pages. Clean this up."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll start by reading all the files in the directory, then invoke relevant skills before implementing any changes."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Bash",
+          "input": {
+            "command": "ls demos/2-abstraction/"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "cart.js\nconfig.js"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Read",
+          "input": {
+            "file_path": "demos/2-abstraction/cart.js"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "1\u2192export class ShoppingCart {\n     2\u2192  constructor() {\n     3\u2192    this.items = [];\n     4\u2192  }\n     5\u2192\n     6\u2192  addItem(product, quantity) {\n     7\u2192    const existing = this.items.find((i) => i.product.id === product.id);\n     8\u2192    if (existing) {\n     9\u2192      existing.quantity += quantity;\n    10\u2192    } else {\n    11\u2192      this.items.push({ product, quantity });\n    12\u2192    }\n    13\u2192  }\n    14\u2192\n    15\u2192  removeItem(productId) {\n    16\u2192    const idx = this.items.findIndex((i) => i.product.id === pr"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Read",
+          "input": {
+            "file_path": "demos/2-abstraction/config.js"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "1\u2192import { readFileSync } from \"fs\";\n     2\u2192import { parse } from \"yaml\";\n     3\u2192\n     4\u2192export function loadConfig(path) {\n     5\u2192  const raw = readFileSync(path, \"utf-8\");\n     6\u2192  const config = parse(raw);\n     7\u2192  return {\n     8\u2192    port: config.port,\n     9\u2192    dbUrl: config.database.url,\n    10\u2192    logLevel: config.logging.level,\n    11\u2192  };\n    12\u2192}\n    13\u2192"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Good. Now let me invoke the most relevant skills before I write a single line."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Skill",
+          "input": {
+            "skill": "error-design"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "Launching skill: error-design"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Base directory for this skill: skills/error-design\n\n# Error Design Review Lens\n\nWhen invoked with , focus the analysis on the specified file or module. Read the target code first, then apply the checks below.\n\n**Each exception a module throws is an interface element.** The best way to deal with exceptions is to not have them.\n\n> \"Exception handling code rarely executes. Bugs can go undetected for a long time, and when the exception handling code is finally needed, there's a good chance that it won't work.\" \u2014 John Ousterhout, _A Philosophy of Software Design_\n\n**The \"too many exceptions\" anti-pattern:** programmers are taught \"the more errors detected, the better,\" leading to an over-defensive style that throws exceptions for anything suspicious. But throwing exceptions is easy; handling them is hard.\n\n> \"Classes with lots of exceptions have complex interfaces, and they are shallower than classes with fewer exceptions.\" \u2014 John Ousterhout, _A Philosophy of Software Design_\n\n## When to Apply\n\n- Reviewing error handling code or exception hierarchies\n- When a function has many error cases or throws many exception types\n- When callers are burdened with handling errors that rarely occur\n- When error handling code is longer than the happy path\n\n## Core Principles\n\n### The Decision Tree\n\n_The book presents four techniques without prescribing this ordering. This tree is a synthesis for practical use._\n\nFor every error condition:\n\n```\n1. Can the error be defined out of existence?\n   \u2192 Change the interface so the condition isn't an error.\n   YES: Do this. Always the best option.\n\n2. Can the error be masked?\n   \u2192 Handle internally without propagating.\n   YES: Mask if handling is safe and complete.\n\n3. Can the error be aggregated?\n   \u2192 Replace many specific exceptions with one general mechanism.\n   YES: Aggregate to reduce interface surface.\n\n4. Must the caller handle it?\n   \u2192 Propagate only if the caller genuinely must decide.\n   If the caller can't do anything meaningful: crash.\n```\n\n### Define Errors Out of Existence\n\n**Error conditions follow from how an operation is specified. Change the specification, and the error disappears.**\n\nThe general move: instead of \"do X\" (fails if preconditions aren't met), write \"ensure state S\" (trivially satisfied if state already holds).\n\n- **Unset variable?** \"Delete this variable\" (fails if absent) \u2192 \"ensure this variable no longer exists\" (always succeeds)\n- **File not found on delete?** Unix `unlink` doesn't \"delete a file\" \u2014 it removes a directory entry. Returns success even if processes have the file open.\n- **Substring not found?** Python slicing clamps out-of-range indices \u2014 no exception, no defensive code. Java's `substring` throws `IndexOutOfBoundsException`, forcing bounds-clamping around a one-line call.\n\n**Like a spice \u2014 a small amount improves the result, but too much ruins the dish.** Only works when the exception information is genuinely not needed outside the module. Anti-example: a networking module that masked all network exceptions left callers with no way to detect lost messages or failed peers. The module should have exposed those errors because callers needed that information to build reliable applications.\n\n### Exception Masking\n\nHandle internally without exposing to callers. Valid when:\n\n- The module can recover completely\n- Recovery doesn't lose important information\n- The masking behavior is part of the module's specification\n\nTCP masking packet loss is the canonical example. **Safety check:** Would a developer debugging the system want to know this happened? If yes, log it. If the loss is irreversible and important, don't mask \u2014 propagate.\n\n### Exception Aggregation\n\nReplace many specific exceptions with fewer general ones handled in one place. **Masking absorbs errors low; aggregation catches errors high.** Together they produce an hourglass: middle layers have no exception handling at all.\n\n#### Web Server Pattern\n\nLet all `NoSuchParameter` exceptions propagate to the top-level dispatcher where a single handler generates the error response. New handlers automatically work with the system. The same applies to any request-processing loop: catch in one place near the top, abort the current request, clean up, and continue.\n\n### Aggregation Through Promotion\n\nRather than building separate recovery for each failure type, promote smaller failures into a single crash-recovery mechanism. Fewer code paths, more frequently exercised (which surfaces bugs in recovery sooner). Trade-off: promotion increases recovery cost per incident, so it only makes sense when the promoted errors are rare.\n\n### Just Crash\n\nWhen an error is difficult or impossible to handle and occurs infrequently, the simplest response is to print diagnostic information and abort. Out-of-memory errors are the canonical example \u2014 there's not much an application can do, and the handler itself may need to allocate memory. The `ckalloc` pattern (wrap the allocator, abort on failure) eliminates exception handling at every call site.\n\n**Appropriate when:** the error is infrequent, recovery is impractical, and the caller can't do anything meaningful. **Not appropriate when:** the system's value depends on handling that failure (e.g., a replicated storage system must handle I/O errors, not crash on them).\n\n## Review Process\n\n1. **Inventory exceptions** \u2014 List every error case, exception throw, and error return\n2. **Apply the decision tree** \u2014 For each: can it be defined out? Masked? Aggregated?\n3. **Check depth impact** \u2014 How many exception types are in the module's interface?\n4. **Audit catch blocks** \u2014 Are callers doing meaningful work, or just logging and re-throwing?\n5. **Evaluate safety** \u2014 For any proposed masking, verify nothing important is lost\n6. **Recommend simplification** \u2014 Propose specific reductions in error surface\n\nRed flag signals for error design are cataloged in **red-flags** (Catch-and-Ignore, Overexposure, Shallow Module)."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Skill",
+          "input": {
+            "skill": "pull-complexity-down"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "Launching skill: pull-complexity-down"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Base directory for this skill: skills/pull-complexity-down\n\n# Pull Complexity Downwards Review Lens\n\nWhen invoked with , focus the analysis on the specified file or module. Read the target code first, then apply the checks below.\n\nEvaluate whether complexity is absorbed into implementations or pushed up to callers.\n\n## When to Apply\n\n- Designing or reviewing a module's interface\n- When callers must do significant setup or configuration\n- When callers handle errors or edge cases the module could handle internally\n- When configuration parameters are being added to an API\n- When evaluating decorator or wrapper patterns\n\n## Core Principles\n\n### The Core Asymmetry\n\n**One implementer, many callers. Complexity in the implementation is paid once. Complexity in the interface is paid by every caller.**\n\nWhen developers encounter a hard problem, the path of least resistance is to push it upward: throw an exception, add a configuration parameter, define an abstract policy. These moves feel like good engineering. But all you have done is distribute the decision to a larger number of people who typically have less context.\n\n### Configuration Parameter Test - The Three AND Conditions\n\n**Configuration parameters are not a feature. They are a symptom of an incomplete module.** Every parameter exported is a decision the developer chose not to make.\n\n1. Different callers genuinely need different values, AND\n2. The correct value cannot be determined automatically, AND\n3. The impact is significant enough to justify the interface cost\n\nIf any condition fails:\n\n- All callers use the same value \u2192 make it a constant\n- The module can compute a good value \u2192 compute it dynamically\n- The impact is negligible \u2192 pick a sensible default\n\nEven for legitimate parameters, provide reasonable defaults so users only need to provide values under exceptional conditions.\n\n**Dynamic computation beats static configuration.** A network protocol that measures response times and computes retry intervals automatically is superior to one that exports a retry-interval parameter \u2014 better accuracy, adapts to conditions, and the parameter disappears from the interface entirely.\n\n**The psychological trap:** When uncertain about a decision, making it configurable feels responsible. It is avoidance dressed as engineering. Configuration parameters and thrown exceptions are the same impulse: both push complexity to callers.\n\n### Three AND Conditions \u2014 When NOT to Pull Down\n\nThe backspace example: implementing `backspace(cursor)` in the text class appears to pull UI complexity downward, but the text class has nothing to do with the backspace key \u2014 that is UI knowledge. Pulling it down is information leakage masquerading as design. **All Three Must Hold**\n\n1. The complexity is closely related to the module's existing functionality\n2. Pulling it down simplifies the rest of the application\n3. Pulling it down simplifies the module's interface\n\nFailing any single one means the complexity belongs somewhere else.\n\n### Related Techniques\n\n**Context objects** and **decorator alternatives** are tools for pulling complexity down. Both are detailed in **deep-modules** \u2014 context objects solve pass-through variables; decorator alternatives prevent shallow wrapper layers.\n\n## Review Process\n\n1. **Inventory interface elements** \u2014 List every parameter, exception, and constraint callers must handle\n2. **Apply the core asymmetry** \u2014 For each: could the module handle this internally?\n3. **Test configuration parameters** \u2014 Does each pass the three AND conditions?\n4. **Check for dynamic alternatives** \u2014 Could any static configuration be computed from internal measurements?\n5. **Evaluate decorators** \u2014 Shallow pass-through layer, or genuine abstraction?\n6. **Recommend simplification** \u2014 Propose specific interface reductions\n\nRed flag signals for complexity direction are cataloged in **red-flags** (Overexposure, Pass-Through Method).\n\n## References\n\nFor deeper coverage, load these on demand:\n\n- [Configuration parameter audit](references/configuration-parameter-audit.md) \u2014 Patterns for recognizing and eliminating unnecessary config parameters"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now I have what I need. Let me think through this carefully before writing anything.\n\n---\n\n**Reasoning**\n\nThe task is: \"The cart throws too many errors in edge cases, customers are seeing error pages.\" That is a direct signal to look at the error design of `cart.js`. `config.js` is unrelated to the customer-facing errors \u2014 I will leave it alone.\n\n**Inventory of every error throw in `cart.js`:**\n\n1. `removeItem` \u2014 throws if product not in cart (`idx === -1`)\n2. `updateQuantity` \u2014 throws if product not in cart (`!item`)\n3. `updateQuantity` \u2014 throws if quantity is zero or negative (`quantity <= 0`)\n4. `applyCoupon` \u2014 throws if a coupon is already applied (`this.coupon`)\n5. `applyCoupon` \u2014 throws if cart total is below coupon minimum (`this.getTotal() < coupon.minTotal`)\n\n**Now apply the error-design decision tree to each:**\n\n**Case 1: `removeItem` \u2014 product not in cart**\n\nCan it be defined out of existence? Yes. Change the operation from \"remove this specific item (fails if absent)\" to \"ensure this item is no longer in the cart (always succeeds).\" A user clicking \"remove\" when the item is already gone should result in a clean cart, not an error page. This is the canonical respecification move from the skill. The caller has no meaningful recovery to do \u2014 they wanted it gone, and it is gone.\n\nDecision: **Define out of existence.** Silently no-op if not found.\n\n**Case 2: `updateQuantity` \u2014 product not in cart**\n\nThis one is trickier. Updating a quantity for something not in the cart is a genuine logic problem. However, the question is whether throwing is the right response. A reasonable alternative: if the product isn't in the cart, a quantity update to a positive number could be treated as an add. But that changes semantics significantly. A safer definition: if the item doesn't exist, there's nothing to update \u2014 silently no-op. The caller's goal was \"set quantity of item X to N\" \u2014 if X isn't there, the state is already consistent with \"X is not in my cart at quantity N\" (it's absent). This is a close call, but since the task is specifically \"customers are seeing error pages,\" the right move is to not surface this as a crash.\n\nDecision: **Define out of existence** \u2014 silently no-op.\n\n**Case 3: `updateQuantity` \u2014 quantity <= 0**\n\nA zero or negative quantity is a caller mistake that the module can handle by respecification: \"set quantity to N\" could mean \"if N <= 0, remove the item.\" This is a natural interpretation \u2014 setting quantity to 0 means \"remove it.\" Many carts work exactly this way. It simplifies the caller (they don't need separate `remove`/`update` branches based on quantity), and it's intuitive.\n\nDecision: **Define out of existence** \u2014 if quantity <= 0, remove the item instead of throwing.\n\n**Case 4: `applyCoupon` \u2014 coupon already applied**\n\n\"Apply this coupon\" when one is already applied is an idempotency edge case. Two reasonable redesigns: (a) replace the old coupon silently, or (b) if the same coupon is already applied, no-op. Option (a) is more permissive but could surprise users who didn't intend to replace. The safest pull-complexity-down move: treat it as idempotent \u2014 if `this.coupon` is the same coupon, no-op; if different, replace (the user's intent is clearly \"use this coupon\"). Alternatively, just always allow replacement and let the UI worry about confirmations. Given that \"customers are seeing error pages,\" the error is clearly wrong \u2014 the UI or duplicate request caused the double-apply, and throwing is the wrong response. The simplest safe move is to overwrite (replace) \u2014 the last coupon wins.\n\nDecision: **Define out of existence** \u2014 always set `this.coupon = coupon`, replacing any existing one.\n\n**Case 5: `applyCoupon` \u2014 cart total below minimum**\n\nThis is the one case that is legitimately meaningful to propagate. The coupon genuinely cannot be applied \u2014 the precondition isn't met and the cart doesn't have enough information to fix it. The caller (UI) does need to know so it can tell the user. However, the question is whether this should be a thrown exception or a returned value. For a shopping cart in JavaScript, throwing is idiomatic and the caller absolutely can do something meaningful (show an error message to the user). This one I keep as a throw, but I'll make the error message more informative.\n\nActually \u2014 re-examining: the task says customers see error pages. Error pages typically come from unhandled exceptions propagating to the HTTP layer. The minimum-total check is a valid business rule that the caller should handle. But the real fix for the other four cases prevents most of the crashes. I'll keep this one as a throw since it genuinely requires caller action, but I'll also check \u2014 could we return a boolean instead? In a `void`-style API, a boolean return would require callers to check it (pull complexity up). Throwing is actually correct here and forces callers to handle a real business rule. I'll keep it as a throw.\n\n**Summary of changes:**\n\n1. `removeItem`: remove the throw, silently no-op if item not found\n2. `updateQuantity`: if item not found, silently no-op; if quantity <= 0, remove the item instead of throwing\n3. `applyCoupon`: remove the \"already applied\" throw; just replace the coupon\n\n**One additional issue I notice:** `addItem` doesn't validate its inputs at all (null product, negative quantity, missing `product.id`). But the task is specifically about errors customers are seeing \u2014 I should not add new throws; I should remove existing ones. I'll leave `addItem` as-is.\n\nNow implementing:"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Edit",
+          "input": {
+            "file_path": "demos/2-abstraction/cart.js"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "The file demos/2-abstraction/cart.js has been updated successfully."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Edit",
+          "input": {
+            "file_path": "demos/2-abstraction/cart.js"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "The file demos/2-abstraction/cart.js has been updated successfully."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me verify the final file looks exactly right."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Read",
+          "input": {
+            "file_path": "demos/2-abstraction/cart.js"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "1\u2192export class ShoppingCart {\n     2\u2192  constructor() {\n     3\u2192    this.items = [];\n     4\u2192  }\n     5\u2192\n     6\u2192  addItem(product, quantity) {\n     7\u2192    const existing = this.items.find((i) => i.product.id === product.id);\n     8\u2192    if (existing) {\n     9\u2192      existing.quantity += quantity;\n    10\u2192    } else {\n    11\u2192      this.items.push({ product, quantity });\n    12\u2192    }\n    13\u2192  }\n    14\u2192\n    15\u2192  removeItem(productId) {\n    16\u2192    const idx = this.items.findIndex((i) => i.product.id === pr"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Clean. Here is the full transcript.\n\n---\n\n**Skills invoked**\n\n- **error-design** \u2014 The primary lens. The task (\"throws too many errors, customers seeing error pages\") is a direct \"too many exceptions\" anti-pattern signal.\n- **pull-complexity-down** \u2014 Secondary lens. Several of the throws were the cart pushing decisions to callers that the cart could make internally.\n\n---\n\n**Full reasoning transcript**\n\n**Step 1: Read the code.**\n\n`cart.js` defines a `ShoppingCart` with five methods. `config.js` is unrelated YAML loading \u2014 no customer-facing errors there.\n\n**Step 2: Inventory every throw.**\n\nThe cart had five error conditions:\n\n1. `removeItem` \u2014 throws if item not in cart\n2. `updateQuantity` \u2014 throws if item not in cart\n3. `updateQuantity` \u2014 throws if quantity <= 0\n4. `applyCoupon` \u2014 throws if a coupon is already applied\n5. `applyCoupon` \u2014 throws if cart total < coupon minimum\n\n**Step 3: Apply the error-design decision tree to each.**\n\nThe first move in the tree is always: *can the error be defined out of existence by respecifying what the operation means?*\n\n**`removeItem` \u2014 item not in cart (throw eliminated)**\n\nThe operation \"remove item X\" (fails if absent) can be respecified as \"ensure item X is no longer in the cart\" (trivially satisfied if already absent). The caller's intent is accomplished either way. There is no information the caller needs \u2014 they wanted it gone, and it is gone. This is the canonical respecification the skill describes (analogous to Unix `unlink`). Silently no-op if absent.\n\n**`updateQuantity` \u2014 item not in cart (throw eliminated)**\n\nSame respecification logic. \"Set quantity of item X to N\" when X is not in the cart \u2014 the cart's state is already consistent with \"item X is not present.\" No-op. The caller's desired outcome (item not present, or item at quantity N) is either already achieved or impossible without an add, which is a different operation.\n\n**`updateQuantity` \u2014 quantity <= 0 (throw eliminated)**\n\nThis one I handled by respecifying the semantics: quantity <= 0 means \"remove the item.\" This is a natural and widely-used interpretation (many real carts work this way). It eliminates the throw *and* simplifies callers \u2014 they no longer need to branch on \"should I call remove or updateQuantity?\" The complexity is pulled down into the module. The `updateQuantity` implementation now delegates to `removeItem`, which is itself already idempotent.\n\n**`applyCoupon` \u2014 coupon already applied (throw eliminated)**\n\nA double-apply typically comes from a duplicate network request, UI bug, or race condition \u2014 none of which the customer caused or can recover from by seeing an error page. The right behavior is: last applied wins. Replace the coupon. If the UI needs to prevent replacement, it can check `cart.coupon` before calling. The cart's job is not to police UI flow.\n\n**`applyCoupon` \u2014 cart total below minimum (throw kept)**\n\nThis is the one legitimate throw. The coupon cannot be applied \u2014 a genuine business rule is violated, and the UI needs to inform the customer. The caller absolutely can do something meaningful (display \"Add $X more to use this coupon\"). I kept the throw but improved the message to include the actual minimum value, which gives the UI more to work with.\n\n---\n\n**Changes made to `demos/2-abstraction/cart.js`**\n\n`removeItem`: Removed the throw on missing item. Guard flipped to `if (idx !== -1)` \u2014 only splices if found. A brief comment captures the intent.\n\n`updateQuantity`: Quantity-check moved to the top. If <= 0, delegates to `removeItem` (which is now itself safe) and returns early. If the item isn't found, silently no-ops \u2014 no throw.\n\n`applyCoupon`: Removed the \"already applied\" guard entirely. `this.coupon = coupon` always runs (if the minimum check passes), replacing any prior coupon. Comment documents the last-applied-wins policy.\n\n**What was not changed**: `addItem`, `getTotal`, `config.js`. Nothing in those produces customer-facing errors from edge cases."
+        }
+      ]
+    }
+  ]
+}

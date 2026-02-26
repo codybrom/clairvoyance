@@ -1,0 +1,87 @@
+---
+interface Props {
+  variant: "before" | "after";
+  tag: string;
+  label: string;
+  code: string;
+}
+
+const { variant, tag, label, code } = Astro.props;
+---
+
+<div class="code-panel reveal">
+  <div class="code-panel-header">
+    <span class:list={["code-panel-tag", `tag-${variant}`]}>{tag}</span>
+    <span class="code-panel-label">{label}</span>
+  </div>
+  <pre set:html={code} />
+</div>
+
+<style>
+  .code-panel {
+    background: var(--surface);
+    border: 1px solid oklch(1 0 0 / 0.05);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .code-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.3rem;
+    border-bottom: 1px solid oklch(1 0 0 / 0.04);
+  }
+
+  .code-panel-tag {
+    font-family: var(--font-code);
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.7rem;
+    border-radius: 4px;
+  }
+
+  .tag-before {
+    color: var(--red);
+    background: color-mix(in oklch, var(--red) 10%, transparent);
+  }
+
+  .tag-after {
+    color: var(--green);
+    background: color-mix(in oklch, var(--green) 10%, transparent);
+  }
+
+  .code-panel-label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-weight: 300;
+  }
+
+  pre {
+    padding: 1.3rem 1.5rem;
+    overflow-x: auto;
+    font-family: var(--font-code);
+    font-size: 0.78rem;
+    line-height: 1.8;
+    color: var(--text-mid);
+
+    :global(.kw) {
+      color: var(--lavender);
+    }
+    :global(.fn) {
+      color: var(--text);
+    }
+    :global(.cm) {
+      color: var(--text-dim);
+      font-style: italic;
+    }
+    :global(.st) {
+      color: var(--gold-dim);
+    }
+    :global(.hi) {
+      color: var(--green);
+    }
+  }
+</style>

@@ -1,0 +1,212 @@
+{
+  "demo": "5-diagnostic",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Add batch support to this \u2014 we need to process multiple orders at once"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll start by reading the file and invoking relevant skills as I assess the design."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Read",
+          "input": {
+            "file_path": "demos/5-diagnostic/orderProcessor.js"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "1\u2192export class OrderProcessor {\n     2\u2192  constructor(db, emailer, logger, config) {\n     3\u2192    this.db = db;\n     4\u2192    this.emailer = emailer;\n     5\u2192    this.logger = logger;\n     6\u2192    this.config = config;\n     7\u2192  }\n     8\u2192\n     9\u2192  async processOrder(order) {\n    10\u2192    // validate\n    11\u2192    if (!order.items || order.items.length === 0) {\n    12\u2192      throw new Error(\"Order must have items\");\n    13\u2192    }\n    14\u2192    if (!order.customer) {\n    15\u2192      throw new Error(\"Order must have cust"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Skill",
+          "input": {
+            "skill": "deep-modules"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "Launching skill: deep-modules"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Base directory for this skill: skills/deep-modules\n\n# Deep Modules Review Lens\n\nWhen invoked with , focus the analysis on the specified file or module. Read the target code first, then apply the checks below.\n\nEvaluate whether modules provide powerful functionality through simple interfaces.\n\n## When to Apply\n\n- Reviewing a new class, module, or API design\n- When a module feels like it \"doesn't do enough\" or has too many parameters\n- When you see many small classes collaborating to do one thing\n- When a method signature closely mirrors what it calls\n- During refactoring to decide what to merge or deepen\n\n## Core Principles\n\n### The Depth Principle\n\n> \"The benefit provided by a module is its functionality. The cost of a module (in terms of system complexity) is its interface.\" \u2014 John Ousterhout, _A Philosophy of Software Design_\n\nDeep modules maximize benefit relative to cost.\n\n> \"It is more important for a module to have a simple interface than a simple implementation.\" \u2014 John Ousterhout, _A Philosophy of Software Design_\n\nImplementation complexity is paid once. Interface complexity is paid by every caller, forever. The deepest possible module has no interface at all \u2014 garbage collection is the canonical example.\n\nRemember: the interface has two layers. The **formal interface** (signatures, types, exceptions) and the **informal interface** (ordering constraints, side effects, performance characteristics, thread safety). The informal interface is usually larger and more dangerous \u2014 if undocumented, it produces unknown unknowns.\n\n### The Depth Test\n\nFor each module under review:\n\n1. How many things must a caller know to use this correctly?\n2. How much work does the module do behind that interface?\n3. Could a caller skip this module and do the work directly with similar effort?\n\nIf #3 is \"yes,\" the module is shallow.\n\nA concrete signal: if the documentation for a method would be longer than its implementation, it is shallow.\n\n### Depth Applies at Every Scale\n\n**Methods should be deep too.** A method with hundreds of lines is fine if it has a simple signature and does one complete thing. Splitting into shallow pieces replaces one interface with many \u2014 net cost increase. _Depth first, length second._\n\n> \"Don't sacrifice depth for length.\" \u2014 John Ousterhout, _A Philosophy of Software Design_\n\nThis directly contradicts the _Clean Code_ position that functions should be broken up by length alone. Shorter is generally easier to read, but once a function is down to a few dozen lines, further reduction is unlikely to help. The real question is whether splitting reduces the complexity of the _system_, not the function in isolation. If the pieces lose their independence and must be read together, the split made things worse.\n\n#### When Long Methods Are Fine\n\nA method with several sequential blocks is fine as one method if the blocks are relatively independent.\n\n> \"If the blocks have complex interactions, it's even more important to keep them together so readers can see all of the code at once.\" \u2014 John Ousterhout, _A Philosophy of Software Design_\n\n### Classitis\n\n**The dominant modern error is over-decomposing** \u2014 splitting things into too many small pieces rather than too few large ones. You can often make something deeper by combining closely related things; once unified, they may simplify each other in ways that were invisible when apart.\n\nSigns:\n\n- Many classes each doing one small thing, requiring callers to compose them\n- Class names that are verbs or single operations (Reader, Writer, Parser, Validator as thin wrappers)\n- Deep dependency chains where each layer adds minimal abstraction\n- Needing 3+ objects to do one logical operation\n- Decorator chains where each layer adds one behavior and nineteen pass-throughs\n\n### The Defaults Principle\n\nIf nearly every user of a class needs a behavior, that behavior belongs inside the class by default, not in a separate wrapper. Merge related shallow classes into fewer, deeper ones. A class with 500 lines and 3 public methods is better than 5 classes with 100 lines and 15 total public methods. The question is never \"is this class too large?\" but \"does this split reduce the total cognitive load on callers?\"\n\nSome modules are unavoidably shallow, like how a linked list class hides very few details behind its interface. These are still useful, but they don't provide much leverage against complexity. Don't mistake \"shallow and acceptable\" for \"deep enough.\"\n\n### Decorator Alternatives\n\nBefore creating a decorator class, consider:\n\n1. Add the functionality directly to the underlying class (if general-purpose or used by most callers)\n2. Merge the functionality with the specific use case instead of wrapping\n3. Merge with an existing decorator to create one deeper decorator instead of multiple shallow ones\n4. Implement as a standalone class independent of the base class\n\n### Pass-Through Method Audit\n\nA pass-through method adds interface cost with zero benefit. The telltale sign is a wrapper class where most public methods just forward to an inner dependency (a membrane, not a layer). If removing the wrapper changes nothing about the caller's experience, the class has no reason to exist.\n\n#### Detection\n\n- Signature closely resembles the method it calls\n- Body is mostly a single delegation call\n- Removing the method wouldn't lose any logic\n\n#### Fixes (in Order of Preference)\n\n1. Expose the lower-level method directly\n2. Redistribute functionality so each layer has a distinct job\n3. Merge the classes\n\n#### When Legitimate\n\nDispatchers that route based on arguments, and multiple implementations of a shared interface (e.g., OS disk drivers), duplicate signatures with meaningfully different behavior.\n\n### Pass-Through Variables\n\nData threaded through a chain of signatures just to reach one deep method. Each intermediate method must be aware of the variable without using it, and adding a new pass-through variable forces changes to every signature in the chain.\n\n#### Fixes (in Order of Preference)\n\n1. **Shared object** \u2014 if an object is already accessible to both the top and bottom methods, store the data there\n2. **Context object** \u2014 a single object holding cross-cutting state (configuration, shared subsystems, performance counters), with references stored in instance variables via constructors so it doesn't itself become a pass-through argument\n3. **Global variable** \u2014 avoids pass-through but prevents multiple instances of the system in one process; generally avoid\n\nContext objects are the most common solution but not ideal \u2014 without discipline they become grab-bags of data that create non-obvious dependencies. Variables in a context should be immutable when possible.\n\n### Interface vs Implementation\n\n**A class's interface should normally be different from its implementation.** If callers see the same structure they'd see without the class, the class isn't hiding anything.\n\n**Shallow:** `config.getString(\"timeout\")` \u2014 callers must know the key name, parse the string to a number, and handle missing values themselves. The interface mirrors the internal key-value store.\n\n**Deep:** `config.getTimeout()` \u2014 callers get a typed value with defaults already applied. The class absorbs parsing, validation, and key naming so callers don't have to.\n\n### Interface Simplification Tactics\n\n- **Defaults** \u2014 Every parameter with a sensible default is one less thing callers must specify. The common case should require no special effort from callers\n- **Define errors out of existence** \u2014 Every eliminated exception is one less interface element\n- **General-purpose design** \u2014 Distill to the essential operation; special cases go in a layer above\n- **Pull complexity downwards** \u2014 Handle edge cases internally rather than exposing them\n\n## Review Process\n\n1. **List modules** \u2014 Identify the classes, functions, or APIs under review\n2. **Measure depth** \u2014 For each: count interface elements vs. implementation scope\n3. **Flag shallow modules** \u2014 Any module where interface ~= implementation in complexity\n4. **Check for classitis** \u2014 Are there clusters of thin classes that should be merged?\n5. **Audit pass-throughs** \u2014 Are any methods just forwarding calls?\n6. **Propose deepening** \u2014 For each issue, recommend: merge, absorb, or eliminate\n\n## Relationship to Other Lenses\n\nThis skill asks \"is the module deep enough?\" \u2014 does the interface justify what's behind it? **abstraction-quality** asks the prior question: \"is the abstraction genuine?\" \u2014 does each layer provide a different way of thinking? A module can be deep but sit in a layer that duplicates the abstraction of its neighbor. When adjacent layers look suspiciously similar, hand off to **abstraction-quality**.\n\nRed flag signals for module depth are cataloged in **red-flags** (Shallow Module, Pass-Through Method)."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me invoke a few more relevant skills before writing anything."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Skill",
+          "input": {
+            "skill": "pull-complexity-down"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "Launching skill: pull-complexity-down"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Base directory for this skill: skills/pull-complexity-down\n\n# Pull Complexity Downwards Review Lens\n\nWhen invoked with , focus the analysis on the specified file or module. Read the target code first, then apply the checks below.\n\nEvaluate whether complexity is absorbed into implementations or pushed up to callers.\n\n## When to Apply\n\n- Designing or reviewing a module's interface\n- When callers must do significant setup or configuration\n- When callers handle errors or edge cases the module could handle internally\n- When configuration parameters are being added to an API\n- When evaluating decorator or wrapper patterns\n\n## Core Principles\n\n### The Core Asymmetry\n\n**One implementer, many callers. Complexity in the implementation is paid once. Complexity in the interface is paid by every caller.**\n\nWhen developers encounter a hard problem, the path of least resistance is to push it upward: throw an exception, add a configuration parameter, define an abstract policy. These moves feel like good engineering. But all you have done is distribute the decision to a larger number of people who typically have less context.\n\n### Configuration Parameter Test - The Three AND Conditions\n\n**Configuration parameters are not a feature. They are a symptom of an incomplete module.** Every parameter exported is a decision the developer chose not to make.\n\n1. Different callers genuinely need different values, AND\n2. The correct value cannot be determined automatically, AND\n3. The impact is significant enough to justify the interface cost\n\nIf any condition fails:\n\n- All callers use the same value \u2192 make it a constant\n- The module can compute a good value \u2192 compute it dynamically\n- The impact is negligible \u2192 pick a sensible default\n\nEven for legitimate parameters, provide reasonable defaults so users only need to provide values under exceptional conditions.\n\n**Dynamic computation beats static configuration.** A network protocol that measures response times and computes retry intervals automatically is superior to one that exports a retry-interval parameter \u2014 better accuracy, adapts to conditions, and the parameter disappears from the interface entirely.\n\n**The psychological trap:** When uncertain about a decision, making it configurable feels responsible. It is avoidance dressed as engineering. Configuration parameters and thrown exceptions are the same impulse: both push complexity to callers.\n\n### Three AND Conditions \u2014 When NOT to Pull Down\n\nThe backspace example: implementing `backspace(cursor)` in the text class appears to pull UI complexity downward, but the text class has nothing to do with the backspace key \u2014 that is UI knowledge. Pulling it down is information leakage masquerading as design. **All Three Must Hold**\n\n1. The complexity is closely related to the module's existing functionality\n2. Pulling it down simplifies the rest of the application\n3. Pulling it down simplifies the module's interface\n\nFailing any single one means the complexity belongs somewhere else.\n\n### Related Techniques\n\n**Context objects** and **decorator alternatives** are tools for pulling complexity down. Both are detailed in **deep-modules** \u2014 context objects solve pass-through variables; decorator alternatives prevent shallow wrapper layers.\n\n## Review Process\n\n1. **Inventory interface elements** \u2014 List every parameter, exception, and constraint callers must handle\n2. **Apply the core asymmetry** \u2014 For each: could the module handle this internally?\n3. **Test configuration parameters** \u2014 Does each pass the three AND conditions?\n4. **Check for dynamic alternatives** \u2014 Could any static configuration be computed from internal measurements?\n5. **Evaluate decorators** \u2014 Shallow pass-through layer, or genuine abstraction?\n6. **Recommend simplification** \u2014 Propose specific interface reductions\n\nRed flag signals for complexity direction are cataloged in **red-flags** (Overexposure, Pass-Through Method).\n\n## References\n\nFor deeper coverage, load these on demand:\n\n- [Configuration parameter audit](references/configuration-parameter-audit.md) \u2014 Patterns for recognizing and eliminating unnecessary config parameters"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Skill",
+          "input": {
+            "skill": "error-design"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "Launching skill: error-design"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Base directory for this skill: skills/error-design\n\n# Error Design Review Lens\n\nWhen invoked with , focus the analysis on the specified file or module. Read the target code first, then apply the checks below.\n\n**Each exception a module throws is an interface element.** The best way to deal with exceptions is to not have them.\n\n> \"Exception handling code rarely executes. Bugs can go undetected for a long time, and when the exception handling code is finally needed, there's a good chance that it won't work.\" \u2014 John Ousterhout, _A Philosophy of Software Design_\n\n**The \"too many exceptions\" anti-pattern:** programmers are taught \"the more errors detected, the better,\" leading to an over-defensive style that throws exceptions for anything suspicious. But throwing exceptions is easy; handling them is hard.\n\n> \"Classes with lots of exceptions have complex interfaces, and they are shallower than classes with fewer exceptions.\" \u2014 John Ousterhout, _A Philosophy of Software Design_\n\n## When to Apply\n\n- Reviewing error handling code or exception hierarchies\n- When a function has many error cases or throws many exception types\n- When callers are burdened with handling errors that rarely occur\n- When error handling code is longer than the happy path\n\n## Core Principles\n\n### The Decision Tree\n\n_The book presents four techniques without prescribing this ordering. This tree is a synthesis for practical use._\n\nFor every error condition:\n\n```\n1. Can the error be defined out of existence?\n   \u2192 Change the interface so the condition isn't an error.\n   YES: Do this. Always the best option.\n\n2. Can the error be masked?\n   \u2192 Handle internally without propagating.\n   YES: Mask if handling is safe and complete.\n\n3. Can the error be aggregated?\n   \u2192 Replace many specific exceptions with one general mechanism.\n   YES: Aggregate to reduce interface surface.\n\n4. Must the caller handle it?\n   \u2192 Propagate only if the caller genuinely must decide.\n   If the caller can't do anything meaningful: crash.\n```\n\n### Define Errors Out of Existence\n\n**Error conditions follow from how an operation is specified. Change the specification, and the error disappears.**\n\nThe general move: instead of \"do X\" (fails if preconditions aren't met), write \"ensure state S\" (trivially satisfied if state already holds).\n\n- **Unset variable?** \"Delete this variable\" (fails if absent) \u2192 \"ensure this variable no longer exists\" (always succeeds)\n- **File not found on delete?** Unix `unlink` doesn't \"delete a file\" \u2014 it removes a directory entry. Returns success even if processes have the file open.\n- **Substring not found?** Python slicing clamps out-of-range indices \u2014 no exception, no defensive code. Java's `substring` throws `IndexOutOfBoundsException`, forcing bounds-clamping around a one-line call.\n\n**Like a spice \u2014 a small amount improves the result, but too much ruins the dish.** Only works when the exception information is genuinely not needed outside the module. Anti-example: a networking module that masked all network exceptions left callers with no way to detect lost messages or failed peers. The module should have exposed those errors because callers needed that information to build reliable applications.\n\n### Exception Masking\n\nHandle internally without exposing to callers. Valid when:\n\n- The module can recover completely\n- Recovery doesn't lose important information\n- The masking behavior is part of the module's specification\n\nTCP masking packet loss is the canonical example. **Safety check:** Would a developer debugging the system want to know this happened? If yes, log it. If the loss is irreversible and important, don't mask \u2014 propagate.\n\n### Exception Aggregation\n\nReplace many specific exceptions with fewer general ones handled in one place. **Masking absorbs errors low; aggregation catches errors high.** Together they produce an hourglass: middle layers have no exception handling at all.\n\n#### Web Server Pattern\n\nLet all `NoSuchParameter` exceptions propagate to the top-level dispatcher where a single handler generates the error response. New handlers automatically work with the system. The same applies to any request-processing loop: catch in one place near the top, abort the current request, clean up, and continue.\n\n### Aggregation Through Promotion\n\nRather than building separate recovery for each failure type, promote smaller failures into a single crash-recovery mechanism. Fewer code paths, more frequently exercised (which surfaces bugs in recovery sooner). Trade-off: promotion increases recovery cost per incident, so it only makes sense when the promoted errors are rare.\n\n### Just Crash\n\nWhen an error is difficult or impossible to handle and occurs infrequently, the simplest response is to print diagnostic information and abort. Out-of-memory errors are the canonical example \u2014 there's not much an application can do, and the handler itself may need to allocate memory. The `ckalloc` pattern (wrap the allocator, abort on failure) eliminates exception handling at every call site.\n\n**Appropriate when:** the error is infrequent, recovery is impractical, and the caller can't do anything meaningful. **Not appropriate when:** the system's value depends on handling that failure (e.g., a replicated storage system must handle I/O errors, not crash on them).\n\n## Review Process\n\n1. **Inventory exceptions** \u2014 List every error case, exception throw, and error return\n2. **Apply the decision tree** \u2014 For each: can it be defined out? Masked? Aggregated?\n3. **Check depth impact** \u2014 How many exception types are in the module's interface?\n4. **Audit catch blocks** \u2014 Are callers doing meaningful work, or just logging and re-throwing?\n5. **Evaluate safety** \u2014 For any proposed masking, verify nothing important is lost\n6. **Recommend simplification** \u2014 Propose specific reductions in error surface\n\nRed flag signals for error design are cataloged in **red-flags** (Catch-and-Ignore, Overexposure, Shallow Module)."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now I have everything I need. Let me think through this carefully before writing a single line.\n\n---\n\n## Reasoning Transcript\n\n### Step 1: Understand What Exists\n\n`OrderProcessor.processOrder` does six sequential things:\n\n1. Validate the order (items, customer, email)\n2. Calculate the total\n3. Apply coupon discount (one DB query)\n4. Check inventory per item (N DB queries)\n5. Save the order (one DB insert)\n6. Update inventory per item (N DB updates)\n7. Send confirmation email\n8. Log\n\nThe method is about 65 lines. It has no sub-methods. All six stages are inlined, separated only by comments.\n\n### Step 2: Design Quality Assessment\n\n**Deep-modules lens:** `processOrder` is actually reasonably deep for what it is. One method, one entry point, meaningful work behind it. The interface is `(order) => { orderId, total }` \u2014 that is a good ratio of interface simplicity to implementation complexity. The class itself takes four dependencies via constructor \u2014 acceptable for a processor class.\n\n**The real problem: the stages are tightly coupled inside a single method.** They share local variables (`total`, `orderId`) but they are otherwise logically independent steps. The coupling is implicit \u2014 `orderId` from step 5 flows into step 7, `total` from step 2 flows into steps 3 and 7. This is fine for a single order. The problem emerges the moment we add a loop.\n\n**pull-complexity-down lens:** The request is \"batch support.\" The naive implementation is:\n\n```js\nasync processBatch(orders) {\n  return Promise.all(orders.map(o => this.processOrder(o)));\n}\n```\n\nThis is seductive because it is four lines. But it pushes all the hard questions to the caller:\n\n- What happens if 3 of 10 orders fail? The caller gets a rejected promise and knows nothing about which orders succeeded.\n- Are orders processed in parallel or sequentially? Parallel means inventory checks race with inventory updates \u2014 order A and order B both see stock = 1, both pass the check, both decrement, stock goes to -1.\n- Does the caller want partial results (successes + failures separately) or all-or-nothing?\n\nThe core asymmetry from pull-complexity-down: **one implementer, many callers**. If `processBatch` just wraps `Promise.all`, every caller has to independently decide how to handle partial failure. That decision belongs inside the module.\n\n**error-design lens:** Currently `processOrder` throws on any failure. In a batch context, a throw-on-first-failure model is almost never what callers want. If order 3 has a bad coupon code, should orders 4-10 not run? The error design needs to change at the batch boundary.\n\nThe decision tree from error-design:\n- Can we define errors out of existence? No \u2014 inventory errors and validation errors are real and callers need to know which orders failed.\n- Can we mask? No \u2014 same reason.\n- Can we aggregate? Yes \u2014 aggregate per-order failures into a structured result rather than propagating individual throws. The batch method catches at the order level and collects results.\n\nThis is the web server pattern from error-design applied here: catch at the dispatch level (batch loop), aggregate into a result structure, return everything.\n\n### Step 3: The Concurrency Problem\n\nIf we run all orders in parallel with `Promise.all`, inventory checks and updates race:\n\n- Order A checks: stock for SKU-X = 5, passes\n- Order B checks: stock for SKU-X = 5, passes\n- Order A decrements: stock = 4\n- Order B decrements: stock = 3\n\nBoth orders ship even if total demand exceeded stock. The `processOrder` method's inventory check is not atomic \u2014 it reads then writes in two separate queries with no transaction or lock. This is an existing bug for single orders under concurrent callers, but it is invisible in practice because single-order callers are unlikely to race. Batch makes it visible.\n\nThe correct fix for true atomicity requires database transactions. But I should not redesign the DB layer \u2014 that is out of scope and the `db` interface doesn't expose transactions. What I can do: **process orders sequentially by default**. Sequential processing eliminates the race within a single batch call. This is a pull-complexity-down decision: absorb the sequencing decision into `processBatch` rather than leaving callers to wonder.\n\n### Step 4: What Should `processBatch` Return?\n\nOptions:\n1. Throw on first failure (Promise.all default) \u2014 wrong, as argued above\n2. Return only successes, silently drop failures \u2014 information loss, never right\n3. Return `{ succeeded: [...], failed: [...] }` \u2014 callers get full picture, can retry failures, log them, show them to users\n\nOption 3 is clearly correct. It is also the most useful interface: callers doing bulk imports, order queues, or retry logic all need to know which orders failed and why.\n\n### Step 5: Should I Refactor `processOrder` First?\n\n**No.** The request is to add batch support. `processOrder` works. Its internal structure (sequential steps, shared locals) is fine \u2014 deep-modules says \"a method with several sequential blocks is fine as one method if the blocks are relatively independent.\" The steps in `processOrder` are relatively independent modulo the `total` and `orderId` locals. There is no reason to decompose it.\n\nThe one thing I considered: extracting validation into a separate method so `processBatch` could validate-all then process-all. But this adds an interface element (the validate method) that callers would need to know about, and it complicates the processing logic. Better to keep `processOrder` atomic and let `processBatch` call it sequentially.\n\n### Step 6: Implementation Plan\n\n```js\nasync processBatch(orders) {\n  const succeeded = [];\n  const failed = [];\n\n  for (const order of orders) {\n    try {\n      const result = await this.processOrder(order);\n      succeeded.push({ order, result });\n    } catch (err) {\n      failed.push({ order, error: err.message });\n    }\n  }\n\n  this.logger.info(\n    `Batch complete: ${succeeded.length} succeeded, ${failed.length} failed`\n  );\n\n  return { succeeded, failed };\n}\n```\n\nKey decisions encoded in this implementation:\n- **Sequential, not parallel** \u2014 eliminates inventory race condition within a batch\n- **Catch per order** \u2014 partial failure is not a batch failure; callers get full results\n- **Structured return** \u2014 `{ succeeded, failed }` not a thrown exception; callers can act on each bucket\n- **Batch-level log** \u2014 summary log at the end so operators can see batch outcomes without correlating N individual logs\n- **No new parameters** \u2014 no `{ parallel: true, stopOnFirst: false }` config object; those would fail the three-AND test from pull-complexity-down\n\nThe interface cost of `processBatch` is minimal: takes an array, returns `{ succeeded, failed }`. The implementation absorbs sequencing, partial failure handling, and aggregated logging. That is a deep addition.\n\n---\n\nNow I'll implement it."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Edit",
+          "input": {
+            "file_path": "demos/5-diagnostic/orderProcessor.js"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "The file demos/5-diagnostic/orderProcessor.js has been updated successfully."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me verify the final file looks right."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Read",
+          "input": {
+            "file_path": "demos/5-diagnostic/orderProcessor.js"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "1\u2192export class OrderProcessor {\n     2\u2192  constructor(db, emailer, logger, config) {\n     3\u2192    this.db = db;\n     4\u2192    this.emailer = emailer;\n     5\u2192    this.logger = logger;\n     6\u2192    this.config = config;\n     7\u2192  }\n     8\u2192\n     9\u2192  async processOrder(order) {\n    10\u2192    // validate\n    11\u2192    if (!order.items || order.items.length === 0) {\n    12\u2192      throw new Error(\"Order must have items\");\n    13\u2192    }\n    14\u2192    if (!order.customer) {\n    15\u2192      throw new Error(\"Order must have cust"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Good. Here is the full transcript.\n\n---\n\n## Full Reasoning and Implementation Transcript\n\n### Skills Invoked\n\n- **deep-modules** \u2014 to assess the existing module's depth and decide whether to decompose `processOrder` before adding batch support\n- **pull-complexity-down** \u2014 to decide what decisions `processBatch` should absorb vs. push to callers\n- **error-design** \u2014 to decide what happens when individual orders fail inside a batch\n\n---\n\n### Assessment of the Existing Code\n\n`processOrder` is a single 65-line method doing six sequential stages: validate, calculate total, apply coupon, check inventory, save order, update inventory, email, log. The interface is clean: one order in, `{ orderId, total }` out.\n\n**Deep-modules verdict: acceptable.** The method is long but each stage is relatively independent \u2014 they share only `total` and `orderId` as local state. The deep-modules skill is explicit on this: \"a method with several sequential blocks is fine as one method if the blocks are relatively independent.\" Breaking it into `_validate`, `_calculateTotal`, `_applyDiscount`, etc. would add interface surface (six new methods) with no reduction in the complexity a caller faces. The depth stays where it is.\n\n**One latent bug worth noting:** The inventory check (read qty) and inventory update (decrement qty) are two separate queries with no transaction or lock between them. Under concurrent callers this is a race. It is invisible for single-order traffic but becomes observable under parallel batch processing. This influenced the implementation decision below.\n\n---\n\n### The Naive Implementation and Why It Is Wrong\n\n```js\n// Do not do this\nasync processBatch(orders) {\n  return Promise.all(orders.map(o => this.processOrder(o)));\n}\n```\n\nThis fails on two counts:\n\n**1. Error propagation.** `Promise.all` rejects on the first failure. If order 3 of 10 has an invalid coupon, the caller gets one rejected promise and no information about orders 1-2 (succeeded) or 4-10 (never ran). Every caller then has to independently implement partial-failure recovery. That is the core asymmetry from pull-complexity-down: one implementer vs. many callers. The decision of how to handle partial failure belongs in `processBatch`, not distributed to callers.\n\n**2. Inventory race.** Parallel execution means order A and order B can both read `stock.qty = 1`, both pass the inventory check, and both decrement \u2014 leaving stock at -1. Sequential processing eliminates this race within a single `processBatch` call without requiring the DB layer to expose transactions.\n\n---\n\n### Design Decisions Encoded in the Implementation\n\n**Sequential `for` loop, not `Promise.all`.** Absorbs the concurrency decision. Eliminates the inventory race. Callers do not need to think about ordering.\n\n**Per-order `try/catch`, structured result.** The error-design decision tree: can individual order failures be defined out of existence? No. Masked? No, callers need to know which orders failed. Aggregated? Yes \u2014 aggregate into `{ succeeded, failed }` at the batch boundary rather than propagating individual throws. This is the web-server pattern from error-design: catch at the dispatch level, collect results, return everything.\n\n**`{ succeeded, failed }` return shape.** Each bucket preserves the original `order` object alongside either the result or the error message. Callers doing retry logic, audit logging, or user-facing error reporting have everything they need without additional round-trips.\n\n**Batch-level log.** One summary log at the end. Operators can see batch outcomes without correlating N individual order logs.\n\n**No configuration parameters.** No `{ parallel, stopOnFirstError, retryCount }` options object. Evaluated each against the three-AND test from pull-complexity-down:\n- Do different callers genuinely need different values? Not established.\n- Can the module determine a good value automatically? Yes (sequential is always safe; stop-on-first-error is almost never right for batch).\n- Is the impact significant enough to justify the interface cost? No.\n\nAll three conditions fail. The parameters stay out.\n\n---\n\n### Final Implementation\n\n```js\nasync processBatch(orders) {\n  const succeeded = [];\n  const failed = [];\n\n  for (const order of orders) {\n    try {\n      const result = await this.processOrder(order);\n      succeeded.push({ order, result });\n    } catch (err) {\n      failed.push({ order, error: err.message });\n    }\n  }\n\n  this.logger.info(\n    `Batch complete: ${succeeded.length} succeeded, ${failed.length} failed`,\n  );\n\n  return { succeeded, failed };\n}\n```\n\nAdded to `demos/5-diagnostic/orderProcessor.js` at line 77. `processOrder` was not modified."
+        }
+      ]
+    }
+  ]
+}

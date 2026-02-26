@@ -1,0 +1,262 @@
+---
+import CrystalBall from "../assets/crystal-ball.svg";
+
+interface Props {
+  skillsShCommand: string;
+  claudeStep1: string;
+  claudeStep2: string;
+}
+
+const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
+---
+
+<header class="hero">
+  <div class="orb" role="img" aria-label="Crystal ball">
+    <CrystalBall width="80" height="80" />
+  </div>
+  <h1>Clairvoyance</h1>
+  <p class="tagline">ESP for AI Coding</p>
+  <p class="hero-sub">Good software isn't written. It's designed.</p>
+  <p class="hero-sub2">
+    Open your agent's third eye and see what it's been missing.
+  </p>
+  <div class="install-steps">
+    <p class="install-label">Claude Code</p>
+    <div class="install-box" data-command={claudeStep1}>
+      <span class="step-num">1</span>
+      <code>{claudeStep1}</code>
+      <button class="copy-btn">Copy</button>
+    </div>
+    <div class="install-box" data-command={claudeStep2}>
+      <span class="step-num">2</span>
+      <code>{claudeStep2}</code>
+      <button class="copy-btn">Copy</button>
+    </div>
+
+    <p class="install-or">or via skills.sh</p>
+
+    <div class="install-box" data-command={skillsShCommand}>
+      <code><span>$</span> {skillsShCommand}</code>
+      <button class="copy-btn">Copy</button>
+    </div>
+
+    <p class="install-other">
+      Using Codex or OpenCode? <a
+        href="https://github.com/codybrom/clairvoyance#installation"
+        >See install instructions</a
+      >
+    </p>
+  </div>
+</header>
+
+<script>
+  document.querySelectorAll<HTMLDivElement>(".install-box").forEach((box) => {
+    const btn = box.querySelector<HTMLButtonElement>(".copy-btn");
+    const command = box.dataset.command;
+    btn?.addEventListener("click", () => {
+      if (command) navigator.clipboard.writeText(command);
+      btn.textContent = "Copied";
+      setTimeout(() => (btn.textContent = "Copy"), 1800);
+    });
+  });
+</script>
+
+<style>
+  .hero {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+
+    &::before {
+      content: "";
+      position: absolute;
+      width: 700px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle,
+        oklch(0.75 0.12 75 / 0.18) 0%,
+        oklch(0.5 0.08 290 / 0.08) 40%,
+        transparent 70%
+      );
+      top: 50%;
+      left: 50%;
+      translate: -50% -55%;
+      pointer-events: none;
+    }
+  }
+
+  .orb {
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
+    animation: breathe 3.5s ease-in-out infinite;
+    filter: drop-shadow(0 0 60px oklch(0.75 0.12 75 / 0.45));
+  }
+
+  .orb :global(svg) {
+    width: 5rem;
+    height: 5rem;
+    display: block;
+  }
+
+  @keyframes breathe {
+    0%,
+    100% {
+      scale: 1;
+    }
+    50% {
+      scale: 1.12;
+    }
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(4rem, 10vw, 7rem);
+    letter-spacing: -0.03em;
+    line-height: 0.95;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tagline {
+    font-family: var(--font-code);
+    font-weight: 300;
+    font-size: clamp(0.9rem, 2vw, 1.15rem);
+    color: var(--gold);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 2.5rem;
+  }
+
+  .hero-sub,
+  .hero-sub2 {
+    font-weight: 200;
+    font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+    color: var(--text-mid);
+    max-width: 640px;
+    line-height: 1.65;
+  }
+
+  .hero-sub {
+    margin-bottom: 0;
+  }
+
+  .hero-sub2 {
+    margin-bottom: 3.5rem;
+  }
+
+  .install-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: relative;
+    z-index: 1;
+    align-items: center;
+  }
+
+  .install-label {
+    font-family: var(--font-code);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin: 0;
+  }
+
+  .install-or {
+    font-family: var(--font-code);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin: 0.5rem 0 0;
+    letter-spacing: 0.1em;
+  }
+
+  .install-other {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin: 0.75rem 0 0;
+
+    & a {
+      color: var(--gold-dim);
+      border-bottom: 1px solid oklch(0.75 0.12 75 / 0.2);
+
+      &:hover {
+        color: var(--gold);
+      }
+    }
+  }
+
+  .install-box {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--surface);
+    border: 1px solid oklch(0.75 0.12 75 / 0.15);
+    border-radius: 10px;
+    padding: 0.8rem 1.1rem 0.8rem 1.2rem;
+    cursor: pointer;
+    transition:
+      border-color 0.3s,
+      box-shadow 0.3s;
+
+    &:hover {
+      border-color: oklch(0.75 0.12 75 / 0.4);
+      box-shadow: 0 0 50px oklch(0.75 0.12 75 / 0.08);
+    }
+
+    & code {
+      font-family: var(--font-code);
+      font-size: 0.95rem;
+      font-weight: 400;
+      color: var(--lavender);
+
+      & span {
+        color: var(--text-dim);
+      }
+    }
+  }
+
+  .step-num {
+    font-family: var(--font-code);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--gold-dim);
+    background: oklch(0.75 0.12 75 / 0.1);
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .copy-btn {
+    background: oklch(0.75 0.12 75 / 0.1);
+    border: none;
+    color: var(--gold-dim);
+    font-family: var(--font-code);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.8rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition:
+      background 0.2s,
+      color 0.2s;
+
+    &:hover {
+      background: oklch(0.75 0.12 75 / 0.2);
+      color: var(--gold);
+    }
+  }
+</style>

@@ -1,0 +1,50 @@
+{
+  "demo": "4-process",
+  "title": "Process",
+  "symbol": "\u2606",
+  "steps": [
+    {
+      "type": "user",
+      "text": "We need to store user preferences for our app \u2014 things like theme, language, notification settings."
+    },
+    {
+      "type": "assistant",
+      "text": "This is a design problem with multiple valid approaches. Let me invoke a relevant skill before committing to one."
+    },
+    {
+      "type": "skill",
+      "name": "design-it-twice"
+    },
+    {
+      "type": "skill",
+      "name": "deep-modules"
+    },
+    {
+      "type": "skill",
+      "name": "information-hiding"
+    },
+    {
+      "type": "assistant",
+      "text": "Now let me think through this problem carefully before writing a single line of code. --- ## Reasoning Transcript ### Understanding the Problem The task: store user preferences for an app \u2014 theme, language, notification settings. This sounds simple but has genuine design complexity hiding inside it. ### Design It Twice **Approach A:** key-value store with string keys. `prefs.get(\"theme\")` returns `\"dark\"` or `None`. Callers must know exact key strings, cast return values, handle `None`. The storage schema leaks to every call site. Shallow module. **Approach B:** typed preference object. `prefs.theme` returns `Theme.DARK` — never `None`, always typed. The class owns the entire knowledge domain. Deep module. Approach B wins on every dimension."
+    },
+    {
+      "type": "tool",
+      "tool": "Write",
+      "label": "user_preferences.py"
+    },
+    {
+      "type": "tool",
+      "tool": "Bash",
+      "label": "python -m pytest tests/ -v"
+    },
+    {
+      "type": "assistant",
+      "text": "Done. `UserPreferences` is a deep module — callers get typed properties with automatic defaults, and never see key strings, serialization format, or storage details. All tests pass."
+    }
+  ],
+  "file": {
+    "name": "user_preferences.py",
+    "initial": "",
+    "final": "\"\"\"User preference storage — typed access, automatic defaults.\"\"\"\nfrom __future__ import annotations\nimport json\nfrom enum import Enum\nfrom pathlib import Path\nfrom typing import Protocol\n\nclass Theme(str, Enum):\n    LIGHT = \"light\"\n    DARK = \"dark\"\n    SYSTEM = \"system\"\n\nclass Language(str, Enum):\n    EN = \"en\"\n    ES = \"es\"\n    FR = \"fr\"\n    DE = \"de\"\n    JA = \"ja\"\n    ZH = \"zh\"\n\nclass PreferenceStorage(Protocol):\n    def load(self) -> dict: ...\n    def save(self, data: dict) -> None: ...\n\nclass JsonFileStorage:\n    def __init__(self, path: Path) -> None:\n        self._path = path\n    def load(self) -> dict:\n        if not self._path.exists(): return {}\n        with self._path.open() as f: return json.load(f)\n    def save(self, data: dict) -> None:\n        self._path.parent.mkdir(parents=True, exist_ok=True)\n        with self._path.open(\"w\") as f: json.dump(data, f, indent=2)\n\n_DEFAULTS = {\n    \"theme\": Theme.SYSTEM, \"language\": Language.EN,\n    \"notifications_email\": True, \"notifications_push\": True,\n    \"notifications_marketing\": False,\n}\n\nclass UserPreferences:\n    \"\"\"Deep module: callers get typed properties, never see keys or storage.\"\"\"\n\n    def __init__(self, storage: PreferenceStorage) -> None:\n        self._storage = storage\n        self._data = self._load_with_defaults()\n\n    @property\n    def theme(self) -> Theme: return self._data[\"theme\"]\n    def set_theme(self, v: Theme) -> None: self._data[\"theme\"] = v\n\n    @property\n    def language(self) -> Language: return self._data[\"language\"]\n    def set_language(self, v: Language) -> None: self._data[\"language\"] = v\n\n    @property\n    def notifications_email(self) -> bool: return self._data[\"notifications_email\"]\n    def set_notifications_email(self, on: bool) -> None: self._data[\"notifications_email\"] = on\n\n    @property\n    def notifications_push(self) -> bool: return self._data[\"notifications_push\"]\n    def set_notifications_push(self, on: bool) -> None: self._data[\"notifications_push\"] = on\n\n    @property\n    def notifications_marketing(self) -> bool: return self._data[\"notifications_marketing\"]\n    def set_notifications_marketing(self, on: bool) -> None: self._data[\"notifications_marketing\"] = on\n\n    def save(self) -> None: self._storage.save(self._serialize())\n    def reset_to_defaults(self) -> None: self._data = dict(_DEFAULTS)\n\n    def _load_with_defaults(self) -> dict:\n        raw = self._storage.load()\n        data = dict(_DEFAULTS)\n        for key, typ in {\"theme\": Theme, \"language\": Language}.items():\n            if key in raw: data[key] = typ(raw[key])\n        for key in (\"notifications_email\", \"notifications_push\", \"notifications_marketing\"):\n            if key in raw: data[key] = bool(raw[key])\n        return data\n\n    def _serialize(self) -> dict:\n        return {k: v.value if isinstance(v, Enum) else v for k, v in self._data.items()}\n"
+  }
+}

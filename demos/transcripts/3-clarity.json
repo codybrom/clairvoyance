@@ -1,0 +1,182 @@
+{
+  "demo": "3-clarity",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Add a step that deduplicates records"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll start by reading the pipeline file and invoking relevant skills to inform my analysis."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Read",
+          "input": {
+            "file_path": "demos/3-clarity/pipeline.js"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "1\u2192export function process(records) {\n     2\u2192  return records.filter((r) => r.active);\n     3\u2192}\n     4\u2192\n     5\u2192export function handle(records) {\n     6\u2192  return records.map((r) => ({\n     7\u2192    ...r,\n     8\u2192    name: r.name.trim().toLowerCase(),\n     9\u2192    email: r.email.trim().toLowerCase(),\n    10\u2192  }));\n    11\u2192}\n    12\u2192\n    13\u2192export function run(records) {\n    14\u2192  const step1 = process(records);\n    15\u2192  const step2 = handle(step1);\n    16\u2192  return step2;\n    17\u2192}\n    18\u2192"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Skill",
+          "input": {
+            "skill": "naming-obviousness"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "Launching skill: naming-obviousness"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Base directory for this skill: skills/naming-obviousness\n\n# Naming & Obviousness Review Lens\n\nWhen invoked with , focus the analysis on the specified file or module. Read the target code first, then apply the checks below.\n\n**Names are a form of abstraction \u2014 a name claims what matters most about an entity.** Because names are encountered at extreme frequency, mediocre names produce systemic complexity that individually unremarkable examples don't suggest.\n\n## When to Apply\n\n- Reviewing any code for readability and clarity\n- When a variable, method, or class name feels wrong\n- When code requires reading the implementation to understand the interface\n\n## Core Principles\n\n### The Isolation Test\n\nRead a name without surrounding context. Does it convey what the entity is?\n\n- **Pass:** `byteCount`, `retryDelayMs`, `userAuthToken`\n- **Fail:** `data`, `x`, `process`, `handle`, `item`\n- **Context-dependent:** `result` is acceptable for a method's return value but problematic at wider scope\n\n### Precision \u2014 The Most Common Failure\n\n**Generic names create false mental models.** The reader's first assumption is wrong, and the name protects that wrong assumption from being questioned.\n\nCommon failures:\n\n- `x` / `y` for pixel coordinates \u2192 `columnIndex` / `rowIndex` (what they index, not their axis)\n- `connectStatus` for a boolean \u2192 `isConnected` (booleans should be predicates)\n- `NULL_ACCOUNT_ID` \u2192 `ACCOUNT_NOT_CREATED` (says what it means, not what it is)\n\n**Too specific is also wrong.** `filename` as a parameter for a method that operates on any path encodes a false constraint.\n\n**Too similar is also wrong.** Related entities with near-identical names (`config` vs `configuration`, `authKey` vs `authToken`) force readers to memorize which is which. Names for related things should clarify the relationship, not obscure it.\n\n### Avoid Extra Words\n\nEvery word in a name should provide useful information. Don't add generic nouns that contribute nothing (`httpResponse` \u2192 `response` when the context is already HTTP). Don't include type information in names \u2014 modern IDEs make Hungarian notation unnecessary. Don't repeat the class name in instance variables (`User.userName` \u2192 `User.name` unless the class has multiple name types).\n\n### Hard-to-Name Diagnostic\n\n**When you struggle to find a precise name, the problem is design, not vocabulary.**\n\n- The entity is doing two things \u2192 split it\n- The abstraction isn't worked out \u2192 clarify before naming\n- Two concepts have been conflated \u2192 separate them\n\n### Scope-Length Principle\n\nName length should scale with scope distance. `i` in a 3-line loop is clear. `data` at module scope is a defect.\n\nA short name can be precise and still fail at long range because it carries no information when stripped of context. Verbosity doesn't compensate for vagueness \u2014 a name needs to be precise enough to create an accurate mental image that survives traveling to the use site.\n\n### Consistency Audit: Three Requirements\n\n1. Always use the common name for the given purpose\n2. Never use the common name for anything else\n3. Make the purpose narrow enough that all variables with the name have the same behavior\n\nThe third requirement is critical. One name, two behaviors \u2014 the name looks consistent while concealing a semantic split. Short names are especially prone to this: `pk` for a primary key, a public key, or a private key, `e` for error, event, or element. Ambiguous short names across a codebase compound into real confusion.\n\n### Obviousness Check\n\n> \"Software should be designed for ease of reading, not ease of writing.\" \u2014 John Ousterhout, _A Philosophy of Software Design_\n\nCode is obvious when a first-time reader's guesses about behavior are correct.\n\nThe writer is the worst judge. When a reviewer says something isn't obvious, that's data.\n\nFour recurring patterns that break obviousness:\n\n1. **Event-driven programming** \u2014 control flow looks sequential but handlers are invoked indirectly\n2. **Generic containers** \u2014 `Record<string, unknown>` forces callers to cast and guess what keys exist; a named type would be self-documenting\n3. **Mismatched declaration and allocation types** \u2014 `Readable` hiding a `Transform` stream with different backpressure behavior\n4. **Violated reader expectations** \u2014 a `connect()` method that silently starts a background health-check thread\n\n**Three strategies, in order:** reduce information needed (deep modules, information hiding), leverage what readers already know (good names, conventions), present information explicitly (comments).\n\n## Review Process\n\n1. **Scan names** \u2014 Read each in isolation. Precise enough?\n2. **Check scope-length fit** \u2014 Wide-scope names precise? Narrow-scope names brief?\n3. **Run consistency audit** \u2014 Same concept = same name? Same name = same concept?\n4. **Apply hard-to-name diagnostic** \u2014 Hard to choose? Investigate the design.\n5. **Assess obviousness** \u2014 Can a newcomer understand each function without reading its implementation?\n6. **Recommend** \u2014 Specific renames tied to the isolation test\n\nRed flag signals for naming and obviousness are cataloged in **red-flags** (Vague Name, Hard to Pick Name, Non-obvious Code)."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me also invoke the `red-flags` skill since `naming-obviousness` pointed to it, and review the code thoroughly before writing anything."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Skill",
+          "input": {
+            "skill": "red-flags"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "Launching skill: red-flags"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Base directory for this skill: skills/red-flags\n\n# Red Flags Diagnostic\n\nWhen invoked with , scope the scan to the specified file or directory. Read the target code first, then run every flag below against it.\n\nSystematic check of all 17 red flags against a code target. A red flag doesn't identify the cause \u2014 it signals that a cause exists and is worth finding.\n\n## When to Apply\n\n- Before merging a PR or completing a design review\n- When code \"feels wrong\" but the specific problem is unclear\n- When evaluating unfamiliar code for design quality\n- When asked for a \"red flags check\" or \"design diagnostic\"\n\n## The Red Flags\n\n### Structural (4)\n\n1. **Shallow Module** \u2014 Interface isn't much simpler than implementation.\n   _Check:_ Could a caller skip this module and do the work directly? \u2192 **deep-modules**\n   _Signals:_ More public methods than meaningful internal state \u00b7 Abstract class with only one implementation and no prospect of more \u00b7 Layer that exists \"for testability\" but adds no abstraction value \u00b7 A split that created more total interface surface than the original \u00b7 Error handling code longer than the happy path \u00b7 Excessive exceptions in a method signature\n\n2. **Pass-Through Method** \u2014 Method forwards arguments to another with a similar signature, adding zero logic.\n   _Check:_ Does removing the method lose any behavior? \u2192 **deep-modules**, **abstraction-quality**\n   _Signals:_ Method takes N parameters, passes N-1 unchanged \u00b7 Constructor injects collaborators just to delegate \u00b7 Class API mirrors its dependency's API \u00b7 Wrapper adds one behavior, delegates everything else \u00b7 \"Wrapper\" or \"Adapter\" classes that add no functionality \u00b7 Many thin layers providing the same abstraction \u00b7 Decorator with nineteen pass-throughs for one behavior\n\n3. **Conjoined Methods** \u2014 Can't understand one piece of code without reading another. Applies beyond methods \u2014 any two physically separated pieces that can only be understood together.\n   _Check:_ Do you flip between two pieces of code to understand either? \u2192 **module-boundaries**\n   _Signals:_ Method A sets up state that method B reads with no interface between them \u00b7 Splitting a method produced fragments that each require the others to make sense\n\n4. **Temporal Decomposition** \u2014 Structure follows execution order, not knowledge ownership.\n   _Check:_ Are boundaries drawn around \"steps\" rather than \"knowledge domains\"? \u2192 **information-hiding**\n   _Signals:_ Module named after a step in a process (Reader, Processor, Writer sharing format knowledge) \u00b7 Decomposition by execution order rather than by knowledge\n\n### Boundary (4)\n\n5. **Information Leakage** \u2014 Back-door leakage (shared knowledge not in any interface) is the most dangerous form.\n\n   > \"A design decision is reflected in multiple modules.\" \u2014 John Ousterhout, _A Philosophy of Software Design_\n   _Check:_ If this format/protocol/representation changes, how many modules need editing? \u2192 **information-hiding**\n   _Signals:_ Two files that must always be edited together \u00b7 Shared constants defining format details across modules \u00b7 Serialization/deserialization logic split across boundaries \u00b7 Two modules changing in lockstep with no visible API dependency \u00b7 Comments saying \"don't forget to also update X\" \u00b7 Cross-module dependency with no documentation on either side\n\n6. **Overexposure** \u2014 API forces callers to handle things they almost never need.\n   _Check:_ Must callers configure or know about rarely-used features to use common ones? \u2192 **general-vs-special**, **pull-complexity-down**\n   _Signals:_ Getter/setter pairs exposing internal representation \u00b7 API requiring callers to pass values they don't understand \u00b7 Config docs that say \"use the default unless you know what you're doing\" \u00b7 Setup code that repeats across every call site \u00b7 Builder requiring 10+ configuration calls \u00b7 API with 5+ parameters when most callers pass the same values for 3 \u00b7 Method signature with 3+ exception types \u00b7 Caller must catch an exception the module could have resolved \u00b7 Functions with many parameters \u00b7 New parameter added to an already-long parameter list\n\n7. **Repetition** \u2014 Same logic in multiple places \u2014 a signal you haven't found the right abstraction.\n   _Check:_ Would the next change of this type require edits in multiple locations? \u2192 **code-evolution**\n   _Signals:_ Same change pattern applied in multiple places \u00b7 Copy-pasted code with minor modifications \u00b7 All callers wrapping the same call in identical try-catch blocks \u00b7 Same constant or logic duplicated across many files\n\n8. **Special-General Mixture** \u2014 General mechanism contains knowledge specific to one use case.\n   _Check:_ Does this module have `if` branches or parameters serving only one caller? \u2192 **general-vs-special**\n   _Signals:_ Boolean parameter that changes behavior for one caller \u00b7 `if` branch added for one specific caller's needs \u00b7 Method name encoding a use case (e.g., `formatForEmailDisplay`) \u00b7 Method designed for exactly one use case when a general-purpose method could replace several \u00b7 \"Utility\" module that knows details of its callers\n\n### Documentation (2)\n\n9. **Comment Repeats Code** \u2014 All information in the comment is obvious from the adjacent code.\n   _Check:_ Does the comment add anything a competent reader wouldn't get from the code alone? \u2192 **comments-docs**\n   _Signals:_ Comment using the same words as the entity name\n\n10. **Implementation Documentation Contaminates Interface** \u2014 Interface comment describes implementation details. Signals a leaky abstraction.\n    _Check:_ Would the comment change if the implementation changed but behavior stayed the same? \u2192 **comments-docs**, **abstraction-quality**\n    _Signals:_ Comment describes _how_ in the interface instead of _what_ \u00b7 Interface comment mentions internal data structures or algorithms\n\n### Naming & Abstraction (4)\n\n11. **Vague Name** \u2014 Name so imprecise it doesn't convey useful information.\n    _Check (isolation test):_ Seen without context, could this name mean almost anything? \u2192 **naming-obviousness**\n    _Signals:_ `data`, `info`, `tmp`, `val` at module scope \u00b7 Generic container return types where a named class would be self-documenting \u00b7 Method name that doesn't predict what the method does\n\n12. **Hard to Pick Name** \u2014 Difficulty finding a precise name. Almost never a vocabulary problem \u2014 it's design feedback.\n    _Check:_ Is the entity doing two things or conflating two concepts? \u2192 **naming-obviousness**\n    _Signals:_ Name encodes a higher-level concept than the implementation honors\n\n13. **Hard to Describe** \u2014 Complete documentation must be long and qualified. Short descriptions come from well-designed abstractions.\n    _Check:_ Can you describe what this does in one sentence without qualifications? \u2192 **comments-docs**\n    _Signals:_ Long, qualifying interface comment (\"does X, except when Y, unless Z\") \u00b7 Method with no interface comment (nothing to say, or too much?)\n\n14. **Non-obvious Code** \u2014 Behavior or meaning cannot be understood quickly. **The meta-flag** \u2014 every other flag is a specific cause of this one.\n    _Check:_ Would a competent developer reading this for the first time understand it? \u2192 **naming-obviousness**\n    _Signals:_ Two different names for the same concept in the same module \u00b7 Same name meaning different things in different contexts \u00b7 Short names used far from their declaration \u00b7 Variable reused to mean different things mid-function \u00b7 Code where bugs keep appearing despite fixes \u00b7 Method with visible archaeological layers of organic growth \u00b7 Callers routinely reading the implementation to understand the interface\n\n### Process (3)\n\n15. **No Alternatives Considered** \u2014 Design chosen without comparing meaningfully different approaches.\n    _Check:_ Were at least two fundamentally different approaches evaluated? \u2192 **design-it-twice**\n    _Signals:_ \"This is obviously the right approach\" with no alternatives documented \u00b7 Design document with no \"alternatives considered\" section \u00b7 Two alternatives that are minor variations of each other \u00b7 A design chosen because it was first, not because it was compared \u00b7 Interface defended as \"the only way\"\n\n16. **Tactical Momentum** \u2014 Changes optimize for speed over design quality.\n    _Check:_ Does this change leave the system better or just different? \u2192 **strategic-mindset**, **code-evolution**\n    _Signals:_ PR description with no design decisions \u00b7 New feature bolted on rather than integrated \u00b7 \"Smallest possible change\" treated as sufficient \u00b7 TODO comments marking known shortcuts \u00b7 \"Workaround for...\" comments\n\n17. **Catch-and-Ignore** \u2014 Error handling that suppresses or discards errors without meaningful action.\n    _Check:_ Does the catch block do real work, or just make the compiler happy? \u2192 **error-design**\n    _Signals:_ Catch block that only logs and rethrows \u00b7 Caller handles an error by doing nothing or returning a default \u00b7 A module that silently discards all errors from an external dependency\n\n## Canary Flags\n\nFlags 12, 13, 14, and 15 surface during writing, before code review. **A design that's hard to name, describe, or compare should be reconsidered before it is built.** These are the cheapest signals \u2014 catch them and the structural flags never materialize.\n\n## Review Process\n\n1. **Identify scope** \u2014 file, module, PR diff, or class\n2. **Scan all flags** \u2014 For each: CLEAR, TRIGGERED, or N/A. If triggered: location, principle violated, candidate fix\n3. **Fill out the report** \u2014 Use `assets/red-flags-report.md`\n4. **Follow the arrows** \u2014 For each triggered flag, pull in the indicated lens for deeper analysis\n5. **Prioritize** \u2014 Boundary flags compound; canary flags are cheapest to fix; structural flags indicate architectural issues\n6. **Recommend** \u2014 Prioritized, actionable fixes tied to specific principles"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now I have everything I need. Let me think through this carefully before writing a single line of code.\n\n---\n\n## Reasoning Transcript\n\n### Step 1: What the code actually does\n\nReading `pipeline.js`:\n\n- `process(records)` \u2014 filters to active records only\n- `handle(records)` \u2014 normalizes name and email (trim + lowercase)\n- `run(records)` \u2014 orchestrates: filter, then normalize, returns result\n\nThe pipeline is: **filter active -> normalize fields -> return**\n\n### Step 2: Naming analysis (naming-obviousness skill applied)\n\nRunning the isolation test on every name:\n\n**`process(records)`** \u2014 FAIL. \"process\" is one of the most generic verbs in programming. Seen without context, it tells you nothing. What does it process? How? The implementation reveals it filters for active records. A precise name would be `filterActive` or `filterInactive` (depending on framing \u2014 filtering *to* active means *out* inactive).\n\n**`handle(records)`** \u2014 FAIL. \"handle\" is equally vacuous \u2014 it's a catch-all verb that appears in event systems, error handlers, and middleware. The implementation normalizes fields. A precise name would be `normalizeFields` or `normalizeContactFields`.\n\n**`run(records)`** \u2014 borderline. \"run\" is the orchestrator/entry point, which has a mild convention behind it, but `process` is already taken (and wrong), so the naming is also inconsistent in the scope-length sense. `run` at module scope carries no information. `buildPipeline`, `processPipeline`, or just being the default export with a descriptive name would be better.\n\n**`step1`, `step2`** inside `run` \u2014 These are the most egregious. They are explicit temporal decomposition names. They tell you *when* something happens, not *what* it is. `filtered` and `normalized` would convey meaning.\n\n**Red flags triggered:**\n- Flag 11 (Vague Name): `process`, `handle`, `run`, `step1`, `step2`\n- Flag 4 (Temporal Decomposition): the pipeline structure is named by order, not by knowledge domain\n- Flag 14 (Non-obvious Code): a reader must open every function to understand the pipeline\n\n### Step 3: Before adding the deduplication step \u2014 fix the naming\n\nThe `naming-obviousness` skill is explicit: **\"Names are a form of abstraction \u2014 a name claims what matters most about an entity.\"** Adding a new step into a pipeline with vague names will propagate the problem. The new step will either:\n- Get a vague name to match the existing style (`check`, `clean`, `transform`), or\n- Get a precise name that now creates inconsistency with its neighbors\n\nThe right move is to fix the existing names first, then add the new step consistently. This is also what the `code-evolution` skill would flag \u2014 a change should leave the system better, not just different (tactical momentum, Flag 16).\n\n### Step 4: What does deduplication mean here?\n\nThe records have `name` and `email` fields (visible from the normalize step). Deduplication needs a key. The natural deduplication key for contact-like records is `email` \u2014 it's the canonical unique identifier. After normalization, emails are lowercased and trimmed, so deduplication should happen *after* normalization (otherwise `User@Example.com` and `user@example.com` would not be caught as duplicates).\n\nPipeline order: filter active -> normalize -> deduplicate -> return\n\n### Step 5: Naming the deduplication step\n\n**`deduplicateByEmail(records)`** \u2014 precise, passes the isolation test. \"Deduplicate\" is the verb; \"ByEmail\" is the key strategy. A reader knows exactly what this does without reading the body.\n\nAlternative: `deduplicateRecords` \u2014 less precise, doesn't state the key. A record could theoretically be deduplicated by ID, name, or composite key. The \"ByEmail\" suffix is load-bearing information.\n\nAlternative: `uniqueByEmail` \u2014 reads nicely but sounds like a predicate/filter, not a transformer. Could confuse.\n\nDecision: `deduplicateByEmail` wins.\n\n### Step 6: Naming the intermediate variables in `run`\n\n- `step1` -> `active` (the result of filtering to active records)\n- `step2` -> `normalized` (the result of normalizing fields)\n- new step result -> `deduplicated`\n\n### Step 7: Renaming the existing functions\n\n- `process` -> `filterActive` \u2014 precise, imperative verb + what it selects\n- `handle` -> `normalizeFields` \u2014 precise, describes the transformation\n\n`run` is the pipeline orchestrator. Options: `run`, `processPipeline`, `execute`. Since this is a named export and the file is clearly a pipeline module, `run` is acceptable as the entry point name *if* the internal steps are now readable. But given the context \u2014 this is a demo of clarity \u2014 let's rename it to `runPipeline` to make the file's purpose explicit at the call site.\n\nActually, re-reading the CLAUDE.local.md: \"No storytime.\" The task is to add a deduplication step. Renaming all functions is a broader refactor than asked. But the `naming-obviousness` skill is clear: adding a well-named function into a poorly-named context creates inconsistency (consistency audit failure). And the `step1`/`step2` variables in `run` are definitely in scope since I'm touching `run` to add `step3`.\n\nMinimal but principled scope: rename `step1`/`step2`/`step3` inside `run` (I'm editing that function anyway), rename the new function precisely, and rename the existing functions since their names are the root of the design problem this demo is illustrating.\n\n### Step 8: Implementation of deduplication\n\n```js\nexport function deduplicateByEmail(records) {\n  const seen = new Set();\n  return records.filter((r) => {\n    if (seen.has(r.email)) return false;\n    seen.add(r.email);\n    return true;\n  });\n}\n```\n\nThis is a first-seen-wins strategy: keeps the first occurrence, discards subsequent duplicates with the same email. This is the natural choice since the records have already been ordered by whatever the caller provides.\n\nAlternative: use a `Map` and `values()`. Same result, slightly more allocation. No benefit here.\n\nAlternative: `records.filter((r, i) => records.findIndex(x => x.email === r.email) === i)` \u2014 O(n\u00b2), elegant-looking but wrong for large sets. Rejected.\n\nThe `Set`-based approach is O(n), idiomatic JavaScript, and readable.\n\n### Step 9: Final pipeline order in `run`\n\n```\nfilterActive -> normalizeFields -> deduplicateByEmail\n```\n\nNormalization before deduplication is intentional: `\" User@Example.com \"` and `\"user@example.com\"` should be treated as the same email and caught by deduplication. If we deduplicated first, they'd slip through.\n\nNow implementing:"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Edit",
+          "input": {
+            "file_path": "demos/3-clarity/pipeline.js"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "The file demos/3-clarity/pipeline.js has been updated successfully."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me verify the result."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "tool": "Read",
+          "input": {
+            "file_path": "demos/3-clarity/pipeline.js"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "text": "1\u2192export function filterActive(records) {\n     2\u2192  return records.filter((r) => r.active);\n     3\u2192}\n     4\u2192\n     5\u2192export function normalizeFields(records) {\n     6\u2192  return records.map((r) => ({\n     7\u2192    ...r,\n     8\u2192    name: r.name.trim().toLowerCase(),\n     9\u2192    email: r.email.trim().toLowerCase(),\n    10\u2192  }));\n    11\u2192}\n    12\u2192\n    13\u2192export function deduplicateByEmail(records) {\n    14\u2192  const seen = new Set();\n    15\u2192  return records.filter((r) => {\n    16\u2192    if (seen.has(r.email)) re"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "---\n\n## Full Reasoning and Decision Transcript\n\n### Skills invoked\n\n**`naming-obviousness`** \u2014 invoked first because the task requires adding a new function to an existing codebase, and naming is the primary design concern in a file this small. The skill's isolation test immediately revealed that every existing name was a vague name.\n\n**`red-flags`** \u2014 invoked to run a systematic diagnostic before writing anything. Confirmed three flags triggered: Flag 11 (Vague Name), Flag 4 (Temporal Decomposition), and Flag 14 (Non-obvious Code, the meta-flag).\n\n### What was wrong before\n\nThe original file had a pervasive naming problem:\n\n- `process` and `handle` fail the isolation test completely. Seen without context, they could mean almost anything. The implementations reveal that `process` filters and `handle` normalizes \u2014 neither verb predicts that.\n- `step1` and `step2` in `run` are textbook temporal decomposition naming: they describe execution order, not what the data represents at each stage.\n- As a result, `run` was the only function whose body was readable without cross-referencing its callees, and it was readable only because it had two lines.\n\n### Why renaming was in scope\n\nThe task was to add a deduplication step, which required editing `run`. Since `step1` and `step2` were being joined by `step3`, leaving them as temporal names would create a three-step sequence where the new step (`deduplicateByEmail`) was named precisely while its neighbors were named generically \u2014 a consistency audit failure. Fixing the intermediate variable names was necessary. Once those were fixed, the inconsistency between precise variable names and vague function names became the problem, which made renaming the functions the right call.\n\n### The new function: `deduplicateByEmail`\n\nThe deduplication key is `email` because:\n\n1. Email is the visible unique identifier in the record shape.\n2. After `normalizeFields`, emails are trimmed and lowercased, so semantic duplicates (`User@Example.com` vs `user@example.com`) are caught correctly.\n\nThis is why deduplication must come after normalization in the pipeline. Reversing the order would allow casing variants to slip through as distinct records.\n\nThe name `deduplicateByEmail` passes the isolation test: a reader knows the verb (deduplicate), the subject (implicit: records), and the key (by email). `uniqueByEmail` was considered but rejected because it reads like a predicate rather than a transformer. `deduplicateRecords` was considered but rejected because it omits the key \u2014 the key is load-bearing information for a reader reasoning about which duplicates will be caught.\n\nThe implementation uses a `Set` for O(n) performance. First-seen-wins semantics: the first record with a given email is kept, subsequent duplicates are dropped. This is the natural choice when the caller controls ordering and there is no secondary sort criterion in scope.\n\n### Final pipeline\n\n```\nfilterActive -> normalizeFields -> deduplicateByEmail\n```\n\nEach intermediate value in `run` now names the state of the data, not its position: `active`, `normalized`, `deduplicated`. A reader can scan `run` top-to-bottom and understand the full pipeline without opening any of the called functions."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "demo": "5-diagnostic",
+  "title": "Diagnostic",
+  "symbol": "\u2652",
+  "steps": [
+    {
+      "type": "user",
+      "text": "Add batch support to this \u2014 we need to process multiple orders at once"
+    },
+    {
+      "type": "assistant",
+      "text": "Let me read the existing processor and assess the design before adding batch support."
+    },
+    {
+      "type": "tool",
+      "tool": "Read",
+      "label": "orderProcessor.js"
+    },
+    {
+      "type": "skill",
+      "name": "deep-modules"
+    },
+    {
+      "type": "skill",
+      "name": "pull-complexity-down"
+    },
+    {
+      "type": "skill",
+      "name": "error-design"
+    },
+    {
+      "type": "assistant",
+      "text": "Now I have everything I need. Let me think through this carefully before writing a single line. --- ## Reasoning Transcript ### Step 1: Understand What Exists `OrderProcessor.processOrder` does six sequential things: validate, calculate total, apply coupon, check inventory, save order, send confirmation. Each step has its own DB query and error surface. ### Step 2: The Batch Problem A naive `for` loop over `processOrder` would work but has bad error semantics — one failed order would abort the entire batch. The `error-design` skill says: define errors out of existence where possible. A batch operation should collect failures and continue, returning a structured result of succeeded and failed orders."
+    },
+    {
+      "type": "tool",
+      "tool": "Edit",
+      "label": "orderProcessor.js"
+    },
+    {
+      "type": "assistant",
+      "text": "Done. Added `processBatch(orders)` which iterates over `processOrder`, collects successes and failures separately, and returns a structured result. No single order failure aborts the batch."
+    }
+  ],
+  "file": {
+    "name": "orderProcessor.js",
+    "initial": "export class OrderProcessor {\n  constructor(db, emailer, logger, config) {\n    this.db = db;\n    this.emailer = emailer;\n    this.logger = logger;\n    this.config = config;\n  }\n\n  async processOrder(order) {\n    // validate\n    if (!order.items || order.items.length === 0) {\n      throw new Error(\"Order must have items\");\n    }\n    if (!order.customer) {\n      throw new Error(\"Order must have customer\");\n    }\n    if (!order.customer.email) {\n      throw new Error(\"Customer must have email\");\n    }\n\n    // calculate total\n    let total = 0;\n    for (const item of order.items) {\n      total += item.price * item.qty;\n    }\n\n    // apply discount\n    if (order.coupon) {\n      const coupon = await this.db.query(\n        \"SELECT * FROM coupons WHERE code = ?\",\n        [order.coupon],\n      );\n      if (coupon && coupon.type === \"percent\") {\n        total = total * (1 - coupon.value / 100);\n      } else if (coupon && coupon.type === \"fixed\") {\n        total = total - coupon.value;\n      }\n    }\n\n    // check inventory\n    for (const item of order.items) {\n      const stock = await this.db.query(\n        \"SELECT qty FROM inventory WHERE sku = ?\",\n        [item.sku],\n      );\n      if (!stock || stock.qty < item.qty) {\n        throw new Error(`Insufficient stock for ${item.sku}`);\n      }\n    }\n\n    // save order\n    const orderId = await this.db.query(\n      \"INSERT INTO orders (customer_id, total, status) VALUES (?, ?, ?)\",\n      [order.customer.id, total, \"pending\"],\n    );\n\n    // update inventory\n    for (const item of order.items) {\n      await this.db.query(\n        \"UPDATE inventory SET qty = qty - ? WHERE sku = ?\",\n        [item.qty, item.sku],\n      );\n    }\n\n    // send confirmation\n    await this.emailer.send({\n      to: order.customer.email,\n      subject: `Order ${orderId} confirmed`,\n      body: `Your order total is $${total.toFixed(2)}`,\n    });\n\n    this.logger.info(`Order ${orderId} processed for ${order.customer.email}`);\n\n    return { orderId, total };\n  }\n}\n",
+    "final": "export class OrderProcessor {\n  constructor(db, emailer, logger, config) {\n    this.db = db;\n    this.emailer = emailer;\n    this.logger = logger;\n    this.config = config;\n  }\n\n  async processOrder(order) {\n    // validate\n    if (!order.items || order.items.length === 0) {\n      throw new Error(\"Order must have items\");\n    }\n    if (!order.customer) {\n      throw new Error(\"Order must have customer\");\n    }\n    if (!order.customer.email) {\n      throw new Error(\"Customer must have email\");\n    }\n\n    // calculate total\n    let total = 0;\n    for (const item of order.items) {\n      total += item.price * item.qty;\n    }\n\n    // apply discount\n    if (order.coupon) {\n      const coupon = await this.db.query(\n        \"SELECT * FROM coupons WHERE code = ?\",\n        [order.coupon],\n      );\n      if (coupon && coupon.type === \"percent\") {\n        total = total * (1 - coupon.value / 100);\n      } else if (coupon && coupon.type === \"fixed\") {\n        total = total - coupon.value;\n      }\n    }\n\n    // check inventory\n    for (const item of order.items) {\n      const stock = await this.db.query(\n        \"SELECT qty FROM inventory WHERE sku = ?\",\n        [item.sku],\n      );\n      if (!stock || stock.qty < item.qty) {\n        throw new Error(`Insufficient stock for ${item.sku}`);\n      }\n    }\n\n    // save order\n    const orderId = await this.db.query(\n      \"INSERT INTO orders (customer_id, total, status) VALUES (?, ?, ?)\",\n      [order.customer.id, total, \"pending\"],\n    );\n\n    // update inventory\n    for (const item of order.items) {\n      await this.db.query(\n        \"UPDATE inventory SET qty = qty - ? WHERE sku = ?\",\n        [item.qty, item.sku],\n      );\n    }\n\n    // send confirmation\n    await this.emailer.send({\n      to: order.customer.email,\n      subject: `Order ${orderId} confirmed`,\n      body: `Your order total is $${total.toFixed(2)}`,\n    });\n\n    this.logger.info(`Order ${orderId} processed for ${order.customer.email}`);\n\n    return { orderId, total };\n  }\n\n  async processBatch(orders) {\n    const succeeded = [];\n    const failed = [];\n\n    for (const order of orders) {\n      try {\n        const result = await this.processOrder(order);\n        succeeded.push({ order, result });\n      } catch (err) {\n        failed.push({ order, error: err.message });\n      }\n    }\n\n    this.logger.info(\n      `Batch complete: ${succeeded.length} succeeded, ${failed.length} failed`,\n    );\n\n    return { succeeded, failed };\n  }\n}\n"
+  }
+}

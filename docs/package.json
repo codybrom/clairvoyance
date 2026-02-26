@@ -1,0 +1,16 @@
+{
+  "name": "clairvoyance-site",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.6",
+    "@lucide/astro": "^0.575.0",
+    "astro": "^5.7.10",
+    "typescript": "^5.9.3"
+  }
+}

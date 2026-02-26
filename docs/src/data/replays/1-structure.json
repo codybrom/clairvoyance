@@ -1,0 +1,55 @@
+{
+  "demo": "1-structure",
+  "title": "Structure",
+  "symbol": "\u25cb",
+  "steps": [
+    {
+      "type": "user",
+      "text": "Create a PaymentClient class that wraps this external payment API"
+    },
+    {
+      "type": "assistant",
+      "text": "I'll read the API spec and the existing codebase to understand the patterns before designing the wrapper."
+    },
+    {
+      "type": "tool",
+      "tool": "Bash",
+      "label": "ls src/"
+    },
+    {
+      "type": "tool",
+      "tool": "Read",
+      "label": "externalPaymentApi.md and 3 more files"
+    },
+    {
+      "type": "skill",
+      "name": "deep-modules"
+    },
+    {
+      "type": "skill",
+      "name": "information-hiding"
+    },
+    {
+      "type": "skill",
+      "name": "pull-complexity-down"
+    },
+    {
+      "type": "assistant",
+      "text": "Now I have everything I need. Let me think through the design before writing any code. --- **Design Reasoning** **Observing the existing codebase structure** The existing code (`userController.js`, `userService.js`, `userRepo.js`) shows a layered architecture. The controller handles HTTP concerns, the service handles business logic, the repo handles data access. A PaymentClient should follow the same pattern — absorb all HTTP, URL, and auth complexity so callers never see it."
+    },
+    {
+      "type": "tool",
+      "tool": "Write",
+      "label": "paymentClient.js"
+    },
+    {
+      "type": "assistant",
+      "text": "Done. `PaymentClient` absorbs all HTTP, URL construction, auth headers, and error-code semantics. Callers just call `createCharge()` or `getCustomer()` — no knowledge of the underlying API leaks out."
+    }
+  ],
+  "file": {
+    "name": "paymentClient.js",
+    "initial": "# Stripe-like Payment API\n\nBase URL: https://api.payments.example.com/v1\n\n## Endpoints\n\n- POST /charges \u2014 Create a charge\n- GET /charges/:id \u2014 Get a charge\n- POST /charges/:id/refund \u2014 Refund a charge\n- GET /customers/:id \u2014 Get a customer\n- POST /customers \u2014 Create a customer\n- POST /customers/:id/payment-methods \u2014 Attach a payment method",
+    "final": "/**\n * PaymentClient wraps the external payment API.\n *\n * Owns exclusively: base URL, all URL construction, HTTP verbs, request/response\n * shapes, and HTTP status code semantics. No caller needs to know any of these.\n *\n * Throws PaymentError on non-2xx responses. The error carries statusCode and\n * message so callers can branch on specific failure modes without parsing strings.\n */\n\nexport class PaymentError extends Error {\n  constructor(statusCode, message) {\n    super(message);\n    this.name = \"PaymentError\";\n    this.statusCode = statusCode;\n  }\n}\n\nexport class PaymentClient {\n  #apiKey;\n  #baseUrl;\n\n  constructor(apiKey, { baseUrl = \"https://api.payments.example.com/v1\" } = {}) {\n    if (!apiKey) throw new Error(\"PaymentClient requires an apiKey\");\n    this.#apiKey = apiKey;\n    this.#baseUrl = baseUrl;\n  }\n\n  // --- Charges ---\n\n  async createCharge({ customerId, amount, currency, paymentMethodId, description }) {\n    return this.#post(\"/charges\", { customerId, amount, currency, paymentMethodId, description });\n  }\n\n  async getCharge(chargeId) {\n    return this.#get(`/charges/${chargeId}`);\n  }\n\n  async refundCharge(chargeId, { amount } = {}) {\n    return this.#post(`/charges/${chargeId}/refund`, amount != null ? { amount } : {});\n  }\n\n  // --- Customers ---\n\n  async createCustomer({ email, name, metadata }) {\n    return this.#post(\"/customers\", { email, name, metadata });\n  }\n\n  async getCustomer(customerId) {\n    return this.#get(`/customers/${customerId}`);\n  }\n\n  async attachPaymentMethod(customerId, { type, card, billingDetails }) {\n    return this.#post(`/customers/${customerId}/payment-methods`, {\n      type,\n      card,\n      billingDetails,\n    });\n  }\n\n  // --- Private HTTP helpers ---\n\n  async #get(path) {\n    return this.#request(\"GET\", path);\n  }\n\n  async #post(path, body) {\n    return this.#request(\"POST\", path, body);\n  }\n\n  async #request(method, path, body) {\n    const url = `${this.#baseUrl}${path}`;\n    const headers = {\n      Authorization: `Bearer ${this.#apiKey}`,\n      \"Content-Type\": \"application/json\",\n    };\n\n    const response = await fetch(url, {\n      method,\n      headers,\n      body: body !== undefined ? JSON.stringify(body) : undefined,\n    });\n\n    const data = await response.json().catch(() => null);\n\n    if (!response.ok) {\n      const message = data?.error?.message ?? data?.message ?? response.statusText;\n      throw new PaymentError(response.status, message);\n    }\n\n    return data;\n  }\n}\n"
+  }
+}

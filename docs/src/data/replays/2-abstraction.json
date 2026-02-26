@@ -1,0 +1,51 @@
+{
+  "demo": "2-abstraction",
+  "title": "Abstraction",
+  "symbol": "\uff0b",
+  "steps": [
+    {
+      "type": "user",
+      "text": "The cart throws too many errors in edge cases, customers are seeing error pages. Clean this up."
+    },
+    {
+      "type": "assistant",
+      "text": "Let me read the cart code and see where the unnecessary exceptions are coming from."
+    },
+    {
+      "type": "tool",
+      "tool": "Bash",
+      "label": "ls src/"
+    },
+    {
+      "type": "tool",
+      "tool": "Read",
+      "label": "cart.js and 1 more file"
+    },
+    {
+      "type": "skill",
+      "name": "error-design"
+    },
+    {
+      "type": "skill",
+      "name": "pull-complexity-down"
+    },
+    {
+      "type": "assistant",
+      "text": "Now I have what I need. Let me think through this carefully before writing anything. --- **Reasoning** The task is: \"The cart throws too many errors in edge cases, customers are seeing error pages.\" That is a direct signal to look at the error design of `cart.js`. Three methods throw on conditions that aren't actually errors — `removeItem` throws when the item is already gone, `updateQuantity` throws on zero quantity instead of treating it as a remove, and `applyCoupon` throws when replacing an existing coupon. These are all cases where the caller's desired end-state is achievable without an exception."
+    },
+    {
+      "type": "tool",
+      "tool": "Edit",
+      "label": "cart.js"
+    },
+    {
+      "type": "assistant",
+      "text": "Done. `removeItem` and `updateQuantity` no longer throw on missing items — the caller's desired state is already achieved. `applyCoupon` replaces instead of rejecting. Three fewer error surfaces for customers to hit."
+    }
+  ],
+  "file": {
+    "name": "cart.js",
+    "initial": "export class ShoppingCart {\n  constructor() {\n    this.items = [];\n  }\n\n  addItem(product, quantity) {\n    const existing = this.items.find((i) => i.product.id === product.id);\n    if (existing) {\n      existing.quantity += quantity;\n    } else {\n      this.items.push({ product, quantity });\n    }\n  }\n\n  removeItem(productId) {\n    const idx = this.items.findIndex((i) => i.product.id === productId);\n    if (idx === -1) {\n      throw new Error(`Product ${productId} not in cart`);\n    }\n    this.items.splice(idx, 1);\n  }\n\n  updateQuantity(productId, quantity) {\n    const item = this.items.find((i) => i.product.id === productId);\n    if (!item) {\n      throw new Error(`Product ${productId} not in cart`);\n    }\n    if (quantity <= 0) {\n      throw new Error(\"Quantity must be positive\");\n    }\n    item.quantity = quantity;\n  }\n\n  getTotal() {\n    return this.items.reduce(\n      (sum, i) => sum + i.product.price * i.quantity, 0);\n  }\n\n  applyCoupon(coupon) {\n    if (this.coupon) {\n      throw new Error(\"A coupon is already applied\");\n    }\n    if (coupon.minTotal && this.getTotal() < coupon.minTotal) {\n      throw new Error(\"Cart total below coupon minimum\");\n    }\n    this.coupon = coupon;\n  }\n}",
+    "final": "export class ShoppingCart {\n  constructor() {\n    this.items = [];\n  }\n\n  addItem(product, quantity) {\n    const existing = this.items.find((i) => i.product.id === product.id);\n    if (existing) {\n      existing.quantity += quantity;\n    } else {\n      this.items.push({ product, quantity });\n    }\n  }\n\n  removeItem(productId) {\n    const idx = this.items.findIndex((i) => i.product.id === productId);\n    if (idx !== -1) {\n      this.items.splice(idx, 1);\n    }\n    // No-op if the item is already absent \u2014 the desired state is already achieved.\n  }\n\n  updateQuantity(productId, quantity) {\n    if (quantity <= 0) {\n      // Treat zero/negative as a remove intent rather than an error.\n      this.removeItem(productId);\n      return;\n    }\n    const item = this.items.find((i) => i.product.id === productId);\n    if (item) {\n      item.quantity = quantity;\n    }\n    // No-op if the item is not in the cart \u2014 no state to update.\n  }\n\n  getTotal() {\n    return this.items.reduce(\n      (sum, i) => sum + i.product.price * i.quantity,\n      0,\n    );\n  }\n\n  applyCoupon(coupon) {\n    if (coupon.minTotal && this.getTotal() < coupon.minTotal) {\n      throw new Error(\n        `Coupon requires a minimum cart total of ${coupon.minTotal}`,\n      );\n    }\n    // Replaces any previously applied coupon \u2014 last applied wins.\n    this.coupon = coupon;\n  }\n}\n"
+  }
+}

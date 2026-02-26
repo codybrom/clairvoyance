@@ -1,0 +1,46 @@
+{
+  "demo": "3-clarity",
+  "title": "Clarity",
+  "symbol": "\u25c7",
+  "steps": [
+    {
+      "type": "user",
+      "text": "Add a step that deduplicates records"
+    },
+    {
+      "type": "assistant",
+      "text": "Let me read the existing pipeline to understand the current steps before adding deduplication."
+    },
+    {
+      "type": "tool",
+      "tool": "Read",
+      "label": "pipeline.js"
+    },
+    {
+      "type": "skill",
+      "name": "naming-obviousness"
+    },
+    {
+      "type": "skill",
+      "name": "red-flags"
+    },
+    {
+      "type": "assistant",
+      "text": "Now I have everything I need. Let me think through this carefully before writing a single line of code. --- ## Reasoning Transcript ### Step 1: What the code actually does Reading `pipeline.js`: - `process(records)` — filters to active records only - `handle(records)` — normalizes name and email (trim + lowercase) - `run(records)` — chains step1 → step2 ### Step 2: Naming Red Flags Every name here fails the isolation test. `process`, `handle`, `run`, `step1`, `step2` — none of them tell you what the function actually does. Before adding deduplication, I need to rename the existing functions so the pipeline reads as a sequence of clear operations."
+    },
+    {
+      "type": "tool",
+      "tool": "Edit",
+      "label": "pipeline.js"
+    },
+    {
+      "type": "assistant",
+      "text": "Done. Renamed `process` → `filterActive`, `handle` → `normalizeFields`, `step1`/`step2` → descriptive locals. Added `deduplicateByEmail`. The pipeline now reads as a sequence of named operations."
+    }
+  ],
+  "file": {
+    "name": "pipeline.js",
+    "initial": "export function process(records) {\n  return records.filter((r) => r.active);\n}\n\nexport function handle(records) {\n  return records.map((r) => ({\n    ...r,\n    name: r.name.trim().toLowerCase(),\n    email: r.email.trim().toLowerCase(),\n  }));\n}\n\nexport function run(records) {\n  const step1 = process(records);\n  const step2 = handle(step1);\n  return step2;\n}",
+    "final": "export function filterActive(records) {\n  return records.filter((r) => r.active);\n}\n\nexport function normalizeFields(records) {\n  return records.map((r) => ({\n    ...r,\n    name: r.name.trim().toLowerCase(),\n    email: r.email.trim().toLowerCase(),\n  }));\n}\n\nexport function deduplicateByEmail(records) {\n  const seen = new Set();\n  return records.filter((r) => {\n    if (seen.has(r.email)) return false;\n    seen.add(r.email);\n    return true;\n  });\n}\n\nexport function run(records) {\n  const active = filterActive(records);\n  const normalized = normalizeFields(active);\n  const deduplicated = deduplicateByEmail(normalized);\n  return deduplicated;\n}\n"
+  }
+}

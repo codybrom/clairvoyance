@@ -1,0 +1,97 @@
+/* ═══════ DESIGN TOKENS ═══════ */
+
+:root {
+  --ink: oklch(0.15 0.06 290);
+  --surface: oklch(0.19 0.06 290);
+  --card: oklch(0.26 0.05 290);
+
+  --gold: oklch(0.75 0.12 75);
+  --gold-dim: oklch(0.63 0.1 75);
+  --gold-glow: oklch(0.75 0.12 75 / 0.12);
+
+  --lavender: oklch(0.73 0.08 290);
+  --text: oklch(0.88 0.02 290);
+  --text-mid: oklch(0.6 0.03 290);
+  --text-dim: oklch(0.4 0.03 290);
+
+  --green: oklch(0.78 0.14 155);
+  --red: oklch(0.68 0.14 20);
+
+  --font-display: var(--font-serif);
+  --font-body: var(--font-sans);
+  --font-code: var(--font-mono);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --radius: 14px;
+  --radius-sm: 6px;
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+
+  &::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    filter: url(#grain);
+    opacity: 1;
+  }
+}
+
+a {
+  color: var(--gold-dim);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in oklch, var(--gold) 25%, transparent);
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+
+  &:hover {
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+}
+
+/* ═══════ SCROLL REVEAL ═══════ */
+
+.reveal {
+  opacity: 0;
+  translate: 0 24px;
+  transition:
+    opacity 0.65s var(--ease-out-expo),
+    translate 0.65s var(--ease-out-expo);
+}
+
+.reveal.vis {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.stagger > .reveal:nth-child(1) {
+  transition-delay: 0s;
+}
+.stagger > .reveal:nth-child(2) {
+  transition-delay: 0.07s;
+}
+.stagger > .reveal:nth-child(3) {
+  transition-delay: 0.14s;
+}
+.stagger > .reveal:nth-child(4) {
+  transition-delay: 0.21s;
+}
+.stagger > .reveal:nth-child(5) {
+  transition-delay: 0.28s;
+}

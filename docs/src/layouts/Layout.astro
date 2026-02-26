@@ -1,0 +1,71 @@
+---
+import { Font } from "astro:assets";
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      name="description"
+      content="Good software isn't written. It's designed. Software design skills for AI coding agents."
+    />
+    <meta property="og:title" content={title} />
+    <meta
+      property="og:description"
+      content="Good software isn't written. It's designed. Software design skills for AI coding agents."
+    />
+    <meta property="og:image" content="https://clairvoyance.fyi/og.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta
+      name="twitter:description"
+      content="Good software isn't written. It's designed. Software design skills for AI coding agents."
+    />
+    <meta name="twitter:image" content="https://clairvoyance.fyi/og.png" />
+    <Font cssVariable="--font-serif" preload />
+    <Font cssVariable="--font-mono" preload />
+    <Font cssVariable="--font-sans" preload />
+  </head>
+  <body>
+    <svg aria-hidden="true" style="position:absolute;width:0;height:0">
+      <filter id="grain">
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.8"
+          numOctaves="4"
+          stitchTiles="stitch"
+          result="noise"></feTurbulence>
+        <feColorMatrix in="noise" type="saturate" values="0" result="mono"
+        ></feColorMatrix>
+        <feComponentTransfer in="mono" result="clamped">
+          <feFuncA type="linear" slope="0.1"></feFuncA>
+        </feComponentTransfer>
+      </filter>
+    </svg>
+    <slot />
+
+    <script>
+      const obs = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) e.target.classList.add("vis");
+          }
+        },
+        { threshold: 0.15 },
+      );
+      document.querySelectorAll(".reveal").forEach((el) => obs.observe(el));
+    </script>
+  </body>
+</html>

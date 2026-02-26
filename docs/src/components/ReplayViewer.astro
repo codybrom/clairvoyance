@@ -1,0 +1,1471 @@
+---
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  SkipBack,
+  SkipForward,
+  Circle,
+  Plus,
+  Diamond,
+  Star,
+  Waves,
+} from "@lucide/astro";
+
+const tabIconMap: Record<string, any> = {
+  "1-structure": Star,
+  "2-abstraction": Plus,
+  "3-clarity": Circle,
+  "4-process": Diamond,
+  "5-diagnostic": Waves,
+};
+
+interface Props {
+  replays: {
+    demo: string;
+    title: string;
+    symbol?: string;
+    steps: {
+      type: string;
+      text?: string;
+      name?: string;
+      tool?: string;
+      label?: string;
+      content?: string;
+    }[];
+    file?: {
+      name: string;
+      initial: string;
+      final?: string;
+      initialHtml?: string;
+      finalHtml?: string;
+    };
+  }[];
+  defaultDemo?: string;
+}
+
+const { replays, defaultDemo = "3-clarity" } = Astro.props;
+---
+
+<div class="replay-wrap" data-default={defaultDemo}>
+  <!-- Tab bar -->
+  <nav class="replay-tabs">
+    {
+      replays.map((r) => {
+        const TabIcon = tabIconMap[r.demo];
+        return (
+          <button
+            class:list={["replay-tab", { active: r.demo === defaultDemo }]}
+            data-demo={r.demo}
+          >
+            <span class="tab-symbol">
+              {TabIcon ? <TabIcon size={18} /> : r.symbol}
+            </span>
+            <span class="tab-label">{r.title}</span>
+          </button>
+        );
+      })
+    }
+  </nav>
+
+  <!-- Viewer -->
+  <div class="replay-viewer">
+    <!-- Title bar -->
+    <div class="replay-titlebar">
+      <div class="titlebar-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="titlebar-text">clairvoyance · session replay</div>
+    </div>
+
+    <!-- Split pane -->
+    <div class="replay-panes">
+      <!-- Chat pane -->
+      <div class="replay-chat">
+        <div class="chat-messages"></div>
+      </div>
+
+      <!-- Code pane -->
+      <div class="replay-code">
+        <div class="code-tab"><span class="code-filename"></span></div>
+        <pre class="code-content"></pre>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="replay-progress">
+      <button class="replay-playpause" aria-label="Play/Pause">
+        <span class="play-icon"><Play size={14} /></span>
+        <span class="pause-icon"><Pause size={14} /></span>
+        <span class="rewatch-icon"><RotateCcw size={14} /> Rewatch</span>
+      </button>
+      <div class="progress-track">
+        <div class="progress-fill"></div>
+      </div>
+      <div class="replay-controls">
+        <button class="step-btn step-back" aria-label="Previous step"
+          ><SkipBack size={14} /></button
+        >
+        <button class="step-btn step-fwd" aria-label="Next step"
+          ><SkipForward size={14} /></button
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- Data store -->
+  <script is:inline define:vars={{ replays }}>
+    window.__replayData = replays;
+  </script>
+</div>
+
+<script>
+  class ReplayEngine {
+    container: HTMLElement;
+    replays: Record<string, any>;
+    current: any;
+    stepIndex: number = -1;
+    playing: boolean = false;
+    finished: boolean = false;
+    timer: number | null = null;
+    charTimer: number | null = null;
+    spinTimers: number[] = [];
+    progressRaf: number | null = null;
+    progressStart: number = 0;
+    progressDuration: number = 0;
+    generation: number = 0;
+
+    // Zener-style symbol groups — each is a morph sequence
+    static symbolGroups = [
+      // circle breathe
+      ["·", "∘", "○", "◎", "●", "◎", "○", "∘"],
+      // cross pulse
+      ["·", "✛", "✚", "╋", "✚", "✛", "∘", "·"],
+      // star pulse
+      ["·", "✧", "✦", "★", "✦", "✧", "∘", "·"],
+      // square pulse
+      ["·", "◻", "▣", "◼", "▣", "◻", "∘", "·"],
+      // triangle pulse
+      ["·", "△", "▲", "▲", "△", "∘", "·"],
+      // diamond pulse
+      ["·", "◇", "◈", "◆", "◈", "◇", "∘", "·"],
+      // circle to star
+      ["·", "∘", "○", "◎", "●", "✧", "✦", "★", "✦", "✧", "∘", "·"],
+      // triangle to diamond
+      ["·", "△", "▲", "▲", "◆", "◈", "◇", "◈", "◆", "▲", "△", "∘", "·"],
+    ];
+
+    chatEl: HTMLElement;
+    codeEl: HTMLPreElement;
+    filenameEl: HTMLElement;
+    fillEl: HTMLElement;
+    playpauseEl: HTMLElement;
+    isVisible: boolean = true;
+
+    constructor(container: HTMLElement) {
+      this.container = container;
+      this.replays = {};
+      for (const r of (window as any).__replayData) {
+        this.replays[r.demo] = r;
+      }
+
+      this.chatEl = container.querySelector(".chat-messages")!;
+      this.codeEl = container.querySelector(".code-content")!;
+      this.filenameEl = container.querySelector(".code-filename")!;
+      this.fillEl = container.querySelector(".progress-fill")!;
+      this.playpauseEl = container.querySelector(".replay-playpause")!;
+
+      // Pause playback when viewer scrolls mostly offscreen
+      const visObs = new IntersectionObserver(
+        (entries) => {
+          const wasVisible = this.isVisible;
+          this.isVisible = entries[0].isIntersecting;
+          if (!this.isVisible && wasVisible && this.playing) {
+            this.pause();
+          }
+        },
+        { threshold: 0.5 },
+      );
+      visObs.observe(container.querySelector(".replay-viewer")!);
+
+      this.bindEvents();
+      this.loadDemo(container.dataset.default || "3-clarity");
+    }
+
+    bindEvents() {
+      // Tab switching — load and immediately play
+      this.container.querySelectorAll(".replay-tab").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const demo = (btn as HTMLElement).dataset.demo!;
+          this.loadDemo(demo);
+          this.container
+            .querySelectorAll(".replay-tab")
+            .forEach((t) => t.classList.remove("active"));
+          btn.classList.add("active");
+          this.play();
+        });
+      });
+
+      // Play/pause/rewatch
+      this.playpauseEl.addEventListener("click", () => {
+        if (this.finished) {
+          // Rewatch — reset and play
+          this.loadDemo(this.current.demo);
+          this.play();
+        } else {
+          this.togglePlay();
+        }
+      });
+
+      // Step buttons
+      this.container
+        .querySelector(".step-back")
+        ?.addEventListener("click", () => {
+          if (!this.playing) this.stepBack();
+        });
+      this.container
+        .querySelector(".step-fwd")
+        ?.addEventListener("click", () => {
+          if (!this.playing) this.stepForward();
+        });
+
+      // Progress bar click
+      this.container
+        .querySelector(".progress-track")
+        ?.addEventListener("click", (e: Event) => {
+          const track = e.currentTarget as HTMLElement;
+          const rect = track.getBoundingClientRect();
+          const pct = ((e as MouseEvent).clientX - rect.left) / rect.width;
+          const targetStep = Math.floor(pct * this.current.steps.length);
+          this.jumpTo(targetStep);
+        });
+
+      // Auto-play on scroll
+      const obs = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && this.stepIndex === -1) {
+            this.play();
+          }
+        },
+        { threshold: 0.3 },
+      );
+      obs.observe(this.container.querySelector(".replay-viewer")!);
+
+      // Pause on tab hidden
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden && this.playing) this.pause();
+      });
+    }
+
+    loadDemo(demo: string) {
+      this.stop();
+      this.finished = false;
+      this.container.classList.remove("is-finished");
+      this.current = this.replays[demo];
+      this.stepIndex = -1;
+      this.chatEl.innerHTML = '<div class="chat-spacer"></div>';
+      this.progressPausedAt = 0;
+      this.fillEl.style.width = "0%";
+      this.progressDuration = this.estimateDuration();
+
+      if (this.current.file) {
+        const isEmpty = !this.current.file.initial;
+        this.filenameEl.textContent = isEmpty
+          ? "Untitled-1"
+          : this.current.file.name;
+        if (isEmpty) {
+          this.codeEl.innerHTML =
+            '<span class="empty-file">No file open</span>';
+        } else {
+          this.codeEl.innerHTML =
+            this.current.file.initialHtml || this.current.file.initial;
+        }
+        this.container.querySelector<HTMLElement>(
+          ".replay-code",
+        )!.style.display = "";
+      } else {
+        this.container.querySelector<HTMLElement>(
+          ".replay-code",
+        )!.style.display = "none";
+      }
+    }
+
+    togglePlay() {
+      if (this.playing) this.pause();
+      else this.play();
+    }
+
+    progressPausedAt: number = 0;
+
+    play() {
+      this.playing = true;
+      this.container.classList.add("is-playing");
+      // Set start time: resume from paused position, or start fresh
+      this.progressStart = performance.now() - this.progressPausedAt;
+      this.progressPausedAt = 0;
+      this.startProgressBar();
+      this.advance();
+    }
+
+    estimateDuration(): number {
+      let ms = 0;
+      const steps = this.current.steps;
+      for (let i = 0; i < steps.length; i++) {
+        const s = steps[i];
+        switch (s.type) {
+          case "user":
+            ms += (s.text?.length || 0) * 30 + 1200;
+            break;
+          case "assistant": {
+            const parts = (s.text || "").split(" --- ");
+            const words = parts[0].split(" ").length;
+            const thinkLen =
+              parts.length > 1 ? parts.slice(1).join(" --- ").length : 0;
+            ms += 1500 + words * 50 + thinkLen * 12 + 1000;
+            break;
+          }
+          case "skill": {
+            const next = steps[i + 1];
+            ms += next && next.type === "skill" ? 600 : 2500;
+            break;
+          }
+          case "tool":
+            ms += 1750 + 400; // avg spinDot + scheduleNext
+            break;
+        }
+      }
+      return ms;
+    }
+
+    startProgressBar() {
+      const tick = () => {
+        const elapsed = performance.now() - this.progressStart;
+        const pct = Math.min(100, (elapsed / this.progressDuration) * 100);
+        this.fillEl.style.width = `${pct}%`;
+        if (pct < 100 && this.playing) {
+          this.progressRaf = requestAnimationFrame(tick);
+        }
+      };
+      this.progressRaf = requestAnimationFrame(tick);
+    }
+
+    stopProgressBar() {
+      if (this.progressRaf) {
+        cancelAnimationFrame(this.progressRaf);
+        this.progressRaf = null;
+      }
+    }
+
+    // Soft pause — preserves state for resume
+    pause() {
+      this.playing = false;
+      this.container.classList.remove("is-playing");
+      this.progressPausedAt = performance.now() - this.progressStart;
+      this.clearTimers();
+    }
+
+    // Hard stop — kills everything, bumps generation so orphaned callbacks are no-ops
+    stop() {
+      this.playing = false;
+      this.container.classList.remove("is-playing");
+      this.generation++;
+      this.clearTimers();
+    }
+
+    clearTimers() {
+      this.stopProgressBar();
+      if (this.timer) {
+        clearTimeout(this.timer);
+        this.timer = null;
+      }
+      if (this.charTimer) {
+        clearInterval(this.charTimer);
+        this.charTimer = null;
+      }
+      for (const id of this.spinTimers) {
+        clearInterval(id);
+        clearTimeout(id);
+      }
+      this.spinTimers = [];
+    }
+
+    advance() {
+      if (!this.playing) return;
+      this.stepIndex++;
+      if (this.stepIndex >= this.current.steps.length) {
+        this.addFinishLine();
+        this.pause();
+        this.fillEl.style.width = "100%";
+        this.finished = true;
+        this.container.classList.add("is-finished");
+        return;
+      }
+
+      const step = this.current.steps[this.stepIndex];
+
+      // Dim any previous thinking blocks
+      this.chatEl
+        .querySelectorAll(".msg-thinking:not(.is-past)")
+        .forEach((el) => {
+          el.classList.add("is-past");
+        });
+
+      switch (step.type) {
+        case "user":
+          this.typeUser(step.text, () => this.scheduleNext(1200));
+          break;
+        case "assistant":
+          this.thinkThenType(step.text, () => this.scheduleNext(1000));
+          break;
+        case "skill": {
+          this.addSkill(step.name);
+          const nextStep = this.current.steps[this.stepIndex + 1];
+          const moreSkills = nextStep && nextStep.type === "skill";
+          this.scheduleNext(moreSkills ? 600 : 2500);
+          break;
+        }
+        case "tool":
+          this.addTool(step.label, step.tool, () => {
+            if (step.tool === "Write" || step.tool === "Edit") {
+              this.showCodeTransition();
+            }
+            this.scheduleNext(400);
+          });
+          break;
+      }
+    }
+
+    scheduleNext(delay: number) {
+      const gen = this.generation;
+      this.timer = window.setTimeout(() => {
+        if (this.generation !== gen) return;
+        this.advance();
+      }, delay);
+    }
+
+    // User text: type character by character
+    typeUser(text: string, done: () => void) {
+      const gen = this.generation;
+      const msgEl = this.addMessage("user");
+      const textEl = msgEl.querySelector(".msg-text")!;
+      let i = 0;
+      const len = text.length;
+      this.charTimer = window.setInterval(() => {
+        if (this.generation !== gen) {
+          clearInterval(this.charTimer!);
+          return;
+        }
+        if (i < len) {
+          textEl.textContent += text[i];
+          i++;
+          this.scrollChat();
+        } else {
+          clearInterval(this.charTimer!);
+          this.charTimer = null;
+          done();
+        }
+      }, 30);
+    }
+
+    // Assistant: spinner while thinking, then prompt + text streams in
+    // If text contains ---, split into message + thinking block
+    thinkThenType(text: string, done: () => void) {
+      const msgEl = this.addMessage("assistant-thinking");
+      const promptEl = msgEl.querySelector(".msg-prompt")!;
+      const textEl = msgEl.querySelector(".msg-text")!;
+
+      // During thinking: Zener symbol spinner on the prompt
+      const gen = this.generation;
+      this.spinDot(promptEl as HTMLElement, 1500, () => {
+        if (this.generation !== gen) return;
+        msgEl.classList.remove("msg-assistant-thinking");
+        msgEl.classList.add("msg-assistant");
+
+        // Check for reasoning transcript separator
+        const parts = text.split(" --- ");
+        const mainText = parts[0];
+        const thinkingText =
+          parts.length > 1 ? parts.slice(1).join(" --- ") : null;
+
+        // Stream the main text word by word, rendering TUI markdown each tick
+        const words = mainText.split(" ");
+        let i = 0;
+        let soFar = "";
+        this.charTimer = window.setInterval(() => {
+          if (this.generation !== gen) {
+            clearInterval(this.charTimer!);
+            return;
+          }
+          if (i < words.length) {
+            soFar += (i > 0 ? " " : "") + words[i];
+            textEl.innerHTML = this.tuiMarkdown(soFar);
+            i++;
+            this.scrollChat();
+          } else {
+            clearInterval(this.charTimer!);
+            this.charTimer = null;
+            if (thinkingText) {
+              this.streamThinking(thinkingText, done);
+            } else {
+              done();
+            }
+          }
+        }, 50);
+      });
+    }
+
+    // Render a thinking block with letter-by-letter streaming
+    streamThinking(text: string, done: () => void) {
+      const gen = this.generation;
+      const el = document.createElement("div");
+      el.className = "msg msg-thinking";
+
+      const header = document.createElement("div");
+      header.className = "thinking-header";
+      header.innerHTML = `<span class="thinking-label">Thinking…</span>`;
+      el.appendChild(header);
+
+      const body = document.createElement("div");
+      body.className = "thinking-body";
+      el.appendChild(body);
+
+      this.chatEl.appendChild(el);
+      this.scrollChat();
+
+      // Letter-by-letter streaming with live TUI markdown
+      let i = 0;
+      let soFar = "";
+      this.charTimer = window.setInterval(() => {
+        if (this.generation !== gen) {
+          clearInterval(this.charTimer!);
+          return;
+        }
+        if (i < text.length) {
+          soFar += text[i];
+          i++;
+          if (i % 4 === 0 || i === text.length) {
+            body.innerHTML = this.tuiMarkdown(soFar);
+            this.scrollChat();
+          }
+        } else {
+          clearInterval(this.charTimer!);
+          this.charTimer = null;
+          body.innerHTML = this.tuiMarkdown(text);
+          const label = header.querySelector(".thinking-label")!;
+          label.textContent = `(Thought for ${Math.ceil(text.length / 40)}s)`;
+          this.scrollChat();
+          done();
+        }
+      }, 12);
+    }
+
+    addMessage(role: string): HTMLElement {
+      // Dim all previous user prompts
+      this.chatEl.querySelectorAll(".msg-user .msg-prompt").forEach((p) => {
+        p.classList.add("is-past");
+      });
+
+      const el = document.createElement("div");
+      el.className = `msg msg-${role}`;
+      const prompt = role === "user" ? "❯" : "◆";
+      el.innerHTML = `<span class="msg-prompt">${prompt}</span><span class="msg-text"></span>`;
+      this.chatEl.appendChild(el);
+      this.scrollChat();
+      return el;
+    }
+
+    addSkill(name: string) {
+      const el = document.createElement("div");
+      el.className = "msg msg-skill";
+      el.innerHTML = `<span class="skill-marker">🔮</span><span class="skill-name">${name}</span> <span class="skill-label">activated</span>`;
+      this.chatEl.appendChild(el);
+      this.scrollChat();
+    }
+
+    pickSymbols(): string[] {
+      const groups = ReplayEngine.symbolGroups;
+      return groups[Math.floor(Math.random() * groups.length)];
+    }
+
+    spinDot(el: HTMLElement, duration: number, done?: () => void) {
+      const gen = this.generation;
+      const symbols = this.pickSymbols();
+      let frame = 0;
+      el.textContent = symbols[0];
+      el.classList.add("is-spinning");
+      const intervalId = window.setInterval(() => {
+        if (this.generation !== gen) {
+          clearInterval(intervalId);
+          return;
+        }
+        frame = (frame + 1) % symbols.length;
+        el.textContent = symbols[frame];
+      }, 150);
+      const timeoutId = window.setTimeout(() => {
+        clearInterval(intervalId);
+        if (this.generation !== gen) return;
+        el.textContent = "◆";
+        el.classList.remove("is-spinning");
+        done?.();
+      }, duration);
+      this.spinTimers.push(intervalId, timeoutId);
+    }
+
+    addTool(label: string, tool: string, done: () => void) {
+      const el = document.createElement("div");
+      el.className = "msg msg-tool";
+      el.innerHTML = `<span class="tool-dot">·</span><span class="tool-label">${tool}(${label})</span>`;
+      this.chatEl.appendChild(el);
+      this.scrollChat();
+      const dot = el.querySelector(".tool-dot")!;
+      this.spinDot(dot as HTMLElement, 1500 + Math.random() * 500, done);
+    }
+
+    addFinishLine() {
+      const verbs = [
+        "Cooked",
+        "Conjured",
+        "Divined",
+        "Channeled",
+        "Manifested",
+      ];
+      const verb = verbs[Math.floor(Math.random() * verbs.length)];
+      const secs = 20 + Math.floor(Math.random() * 30);
+      const el = document.createElement("div");
+      el.className = "msg msg-finish";
+      el.innerHTML = `<span class="finish-star">★</span><span class="finish-text">${verb} for ${secs}s</span>`;
+      this.chatEl.appendChild(el);
+      this.scrollChat();
+    }
+
+    showCodeTransition() {
+      if (!this.current.file?.final) return;
+      // Update filename if it was Untitled
+      this.filenameEl.textContent = this.current.file.name;
+      const initial = this.current.file.initial || "";
+      const final = this.current.file.final;
+
+      // Build maps of line → highlighted HTML from Shiki output
+      const initialHtmlLines = this.splitHighlightedLines(
+        this.current.file.initialHtml || "",
+      );
+      const finalHtmlLines = this.splitHighlightedLines(
+        this.current.file.finalHtml || "",
+      );
+
+      const diff = this.computeDiff(initial, final);
+      this.codeEl.innerHTML = "";
+
+      let oldIdx = 0;
+      let newIdx = 0;
+      diff.forEach((line) => {
+        const lineEl = document.createElement("div");
+        lineEl.className = `diff-line diff-${line.type}`;
+        let highlighted: string;
+        if (line.type === "del") {
+          highlighted = initialHtmlLines[oldIdx] || this.escapeHtml(line.text);
+          oldIdx++;
+        } else if (line.type === "add") {
+          highlighted = finalHtmlLines[newIdx] || this.escapeHtml(line.text);
+          newIdx++;
+        } else {
+          // context line — advance both
+          highlighted = finalHtmlLines[newIdx] || this.escapeHtml(line.text);
+          oldIdx++;
+          newIdx++;
+        }
+        lineEl.innerHTML = `<span class="diff-prefix">${line.prefix}</span> ${highlighted}`;
+        this.codeEl.appendChild(lineEl);
+      });
+
+      // Scroll code pane to first changed line (if not already visible)
+      const firstChange = this.codeEl.querySelector(
+        ".diff-add, .diff-del",
+      ) as HTMLElement | null;
+      if (firstChange) {
+        const elTop = firstChange.offsetTop - this.codeEl.offsetTop;
+        const elBot = elTop + firstChange.offsetHeight;
+        const viewTop = this.codeEl.scrollTop;
+        const viewBot = viewTop + this.codeEl.clientHeight;
+        if (elTop < viewTop || elBot > viewBot) {
+          this.codeEl.scrollTo({
+            top: Math.max(0, elTop - this.codeEl.clientHeight / 3),
+            behavior: "smooth",
+          });
+        }
+      }
+    }
+
+    splitHighlightedLines(html: string): string[] {
+      if (!html) return [];
+      // Shiki outputs spans with <br> or newlines between lines
+      // Split on actual newlines in the HTML output
+      return html.split("\n");
+    }
+
+    escapeHtml(text: string): string {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    computeDiff(
+      oldText: string,
+      newText: string,
+    ): { type: string; prefix: string; text: string }[] {
+      const oldLines = oldText.split("\n");
+      const newLines = newText.split("\n");
+      const result: { type: string; prefix: string; text: string }[] = [];
+
+      // Simple LCS-based diff
+      const m = oldLines.length;
+      const n = newLines.length;
+      const dp: number[][] = Array.from({ length: m + 1 }, () =>
+        Array(n + 1).fill(0),
+      );
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          dp[i][j] =
+            oldLines[i - 1] === newLines[j - 1]
+              ? dp[i - 1][j - 1] + 1
+              : Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+
+      // Backtrack to build diff
+      const actions: { type: string; text: string }[] = [];
+      let i = m,
+        j = n;
+      while (i > 0 || j > 0) {
+        if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
+          actions.unshift({ type: "ctx", text: oldLines[i - 1] });
+          i--;
+          j--;
+        } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+          actions.unshift({ type: "add", text: newLines[j - 1] });
+          j--;
+        } else {
+          actions.unshift({ type: "del", text: oldLines[i - 1] });
+          i--;
+        }
+      }
+
+      for (const a of actions) {
+        result.push({
+          type: a.type,
+          prefix: a.type === "add" ? "+" : a.type === "del" ? "-" : " ",
+          text: a.text,
+        });
+      }
+      return result;
+    }
+
+    // Convert markdown to TUI-styled HTML
+    tuiMarkdown(text: string): string {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\*\*(.+?)\*\*/g, '<br><span class="tui-bold">$1</span><br>') // bold as block heading
+        .replace(/`(.+?)`/g, '<span class="tui-code">$1</span>') // inline code
+        .replace(/#{3}\s+/g, '<br><span class="tui-heading-pad"></span>') // ### → line break + indent
+        .replace(/#{2}\s+/g, '<br><span class="tui-heading-mark">§ </span>') // ## → section marker
+        .replace(/\s-\s/g, "<br>  · ") // " - " → line break + bullet
+        .replace(/\n/g, "<br>")
+        .trim();
+    }
+
+    addThinkingInstant(text: string) {
+      const el = document.createElement("div");
+      el.className = "msg msg-thinking";
+      const secs = Math.ceil(text.length / 40);
+      const header = document.createElement("div");
+      header.className = "thinking-header";
+      header.innerHTML = `<span class="thinking-label">(Thought for ${secs}s)</span>`;
+      const body = document.createElement("div");
+      body.className = "thinking-body";
+      body.innerHTML = this.tuiMarkdown(text);
+      el.appendChild(header);
+      el.appendChild(body);
+      this.chatEl.appendChild(el);
+    }
+
+    scrollChat() {
+      // Only auto-scroll if the viewer is in the viewport — prevents
+      // the page from being yanked back when the user scrolls past.
+      if (!this.isVisible) return;
+      this.chatEl.scrollTop = this.chatEl.scrollHeight;
+    }
+
+    setProgress(pct: number) {
+      this.fillEl.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+    }
+
+    // Step controls (when paused)
+    stepForward() {
+      if (this.stepIndex >= this.current.steps.length - 1) return;
+      this.stepIndex++;
+      this.renderStepInstant(this.stepIndex);
+    }
+
+    stepBack() {
+      if (this.stepIndex <= 0) return;
+      this.stepIndex--;
+      this.clearFinished();
+      this.replayUpTo(this.stepIndex);
+    }
+
+    jumpTo(target: number) {
+      const was = this.playing;
+      const lastIdx = this.current.steps.length - 1;
+      const t = Math.max(0, Math.min(target, lastIdx));
+
+      // Clicking at the very start → full restart
+      if (t === 0) {
+        this.loadDemo(this.current.demo);
+        if (was) this.play();
+        return;
+      }
+
+      this.stop();
+      this.clearFinished();
+      this.replayUpTo(t);
+      // Sync the progress bar clock to the jumped-to position
+      const total = this.current.steps.length;
+      this.progressPausedAt = ((t + 1) / total) * this.progressDuration;
+      if (t >= lastIdx) {
+        this.addFinishLine();
+        this.finished = true;
+        this.container.classList.add("is-finished");
+        this.scrollChat();
+      } else if (was) {
+        this.play();
+      }
+    }
+
+    clearFinished() {
+      if (this.finished) {
+        this.finished = false;
+        this.container.classList.remove("is-finished");
+      }
+    }
+
+    replayUpTo(target: number) {
+      this.chatEl.innerHTML = '<div class="chat-spacer"></div>';
+      if (this.current.file) {
+        const isEmpty = !this.current.file.initial;
+        this.filenameEl.textContent = isEmpty
+          ? "Untitled-1"
+          : this.current.file.name;
+        if (isEmpty) {
+          this.codeEl.innerHTML =
+            '<span class="empty-file">No file open</span>';
+        } else {
+          this.codeEl.innerHTML =
+            this.current.file.initialHtml || this.current.file.initial;
+        }
+      }
+      for (let i = 0; i <= target; i++) {
+        this.renderStepInstant(i);
+      }
+      this.stepIndex = target;
+      const total = this.current?.steps?.length || 1;
+      this.setProgress(((target + 1) / total) * 100);
+    }
+
+    renderStepInstant(idx: number) {
+      const step = this.current.steps[idx];
+      switch (step.type) {
+        case "user": {
+          const el = this.addMessage("user");
+          el.querySelector(".msg-text")!.textContent = step.text;
+          break;
+        }
+        case "assistant": {
+          const parts = step.text.split(" --- ");
+          const el = this.addMessage("assistant");
+          el.querySelector(".msg-text")!.innerHTML = this.tuiMarkdown(parts[0]);
+          if (parts.length > 1) {
+            this.addThinkingInstant(parts.slice(1).join(" --- "));
+          }
+          break;
+        }
+        case "skill":
+          this.addSkill(step.name);
+          break;
+        case "tool":
+          this.addTool(step.label, step.tool, () => {});
+          if (step.tool === "Write" || step.tool === "Edit") {
+            this.showCodeTransition();
+          }
+          break;
+      }
+      this.scrollChat();
+    }
+  }
+
+  const wrap = document.querySelector<HTMLElement>(".replay-wrap");
+  if (wrap) new ReplayEngine(wrap);
+</script>
+
+<style>
+  .replay-wrap {
+    max-width: 100%;
+  }
+
+  /* ═══════ TABS ═══════ */
+  .replay-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .replay-tab {
+    flex: 1;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface);
+    border: 1px solid oklch(1 0 0 / 0.05);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 1rem;
+    color: var(--text-dim);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition:
+      border-color 0.2s,
+      color 0.2s;
+
+    &:hover {
+      border-color: oklch(0.75 0.12 75 / 0.2);
+      color: var(--text-mid);
+    }
+
+    &.active {
+      border-color: oklch(0.75 0.12 75 / 0.4);
+      color: var(--gold);
+    }
+  }
+
+  .tab-symbol {
+    display: flex;
+    align-items: center;
+  }
+
+  .tab-label {
+    font-weight: 400;
+  }
+
+  /* ═══════ VIEWER CHROME ═══════ */
+  .replay-viewer {
+    background: var(--surface);
+    border: 1px solid oklch(1 0 0 / 0.06);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .replay-titlebar {
+    display: flex;
+    align-items: center;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid oklch(1 0 0 / 0.04);
+    gap: 0.8rem;
+  }
+
+  .titlebar-dots {
+    display: flex;
+    gap: 6px;
+
+    & span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: oklch(1 0 0 / 0.08);
+    }
+
+    & span:nth-child(1) {
+      background: oklch(0.65 0.2 25);
+    }
+    & span:nth-child(2) {
+      background: oklch(0.75 0.15 85);
+    }
+    & span:nth-child(3) {
+      background: oklch(0.7 0.18 145);
+    }
+  }
+
+  .titlebar-text {
+    flex: 1;
+    font-family: var(--font-code), "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .replay-playpause {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: "Menlo", "Monaco", ui-monospace, monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    transition: color 0.2s;
+    padding: 0.3rem 0.5rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+
+    &:hover {
+      color: var(--gold);
+    }
+  }
+
+  /* Default: show play */
+  .play-icon {
+    display: flex;
+    align-items: center;
+  }
+  .pause-icon {
+    display: none;
+  }
+  .rewatch-icon {
+    display: none;
+  }
+
+  /* Playing: show pause */
+  .is-playing .play-icon {
+    display: none;
+  }
+  .is-playing .pause-icon {
+    display: flex;
+    align-items: center;
+  }
+  .is-playing .rewatch-icon {
+    display: none;
+  }
+
+  /* Finished: show rewatch */
+  .is-finished .play-icon {
+    display: none;
+  }
+  .is-finished .pause-icon {
+    display: none;
+  }
+  .is-finished .rewatch-icon {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--gold);
+  }
+
+  /* ═══════ SPLIT PANES ═══════ */
+  .replay-panes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: 70vh;
+    min-height: 500px;
+    max-height: 750px;
+
+    @media (width <= 900px) {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+  }
+
+  /* ═══════ CHAT PANE ═══════ */
+  .replay-chat {
+    border-right: 1px solid oklch(1 0 0 / 0.04);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    position: relative;
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2.5rem;
+      background: linear-gradient(to bottom, var(--surface), transparent);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    @media (width <= 900px) {
+      border-right: none;
+      border-bottom: 1px solid oklch(1 0 0 / 0.04);
+      height: 380px;
+    }
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    scroll-behavior: smooth;
+    font-family:
+      "Menlo", "Monaco", "Cascadia Code", "SF Mono", ui-monospace, monospace;
+    font-size: 0.85rem;
+    line-height: 1.55;
+
+    /* Scrollbar */
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    &::-webkit-scrollbar-track {
+      background: oklch(1 0 0 / 0.03);
+    }
+    &::-webkit-scrollbar-thumb {
+      background: oklch(1 0 0 / 0.2);
+      border-radius: 4px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: oklch(1 0 0 / 0.35);
+    }
+  }
+
+  /* Hanging indent: bullet stays left, text wraps aligned */
+  :global(.chat-spacer) {
+    flex: 1 1 auto;
+  }
+
+  :global(.msg) {
+    display: block;
+    padding-left: 1.75em;
+    text-indent: -1.75em;
+    font: inherit;
+    animation: msgIn 0.15s ease-out;
+  }
+
+  :global(.msg-user) {
+    margin-top: 1rem;
+  }
+  :global(.msg-assistant),
+  :global(.msg-assistant-thinking) {
+    margin-top: 0.6rem;
+  }
+
+  @keyframes msgIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  :global(.msg-prompt) {
+    font-weight: 500;
+    margin-right: 0.5em;
+  }
+
+  :global(.msg-prompt.is-past) {
+    color: var(--text-dim);
+  }
+
+  :global(.msg-text) {
+    text-indent: 0;
+  }
+
+  :global(.msg-user .msg-prompt) {
+    color: var(--gold);
+  }
+  :global(.msg-user .msg-text) {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  :global(.msg-assistant .msg-prompt),
+  :global(.msg-assistant-thinking .msg-prompt) {
+    color: var(--lavender);
+  }
+  :global(.msg-assistant .msg-text),
+  :global(.msg-assistant-thinking .msg-text) {
+    color: var(--text-mid);
+  }
+
+  :global(.msg-prompt.is-spinning) {
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  :global(.msg-skill) {
+    display: block;
+    padding-left: 1.75em;
+    text-indent: -1.75em;
+    font: inherit;
+    margin-top: 0.4rem;
+  }
+
+  :global(.skill-marker) {
+    margin-right: 0.5em;
+  }
+  :global(.skill-name) {
+    color: var(--gold);
+    font-weight: 700;
+  }
+  :global(.skill-label) {
+    color: var(--text-dim);
+  }
+
+  :global(.msg-tool) {
+    display: block;
+    padding-left: 1.75em;
+    text-indent: -1.75em;
+    font: inherit;
+    color: var(--text-dim);
+    margin-top: 0.3rem;
+  }
+
+  :global(.tool-dot) {
+    color: var(--gold);
+    margin-right: 0.5em;
+  }
+
+  :global(.msg-thinking) {
+    margin-top: 0.3rem;
+    margin-left: 1.75em;
+    padding: 0.4rem 0 0.4rem 0.75rem;
+    border-left: 2px solid oklch(1 0 0 / 0.06);
+    font: inherit;
+    animation: msgIn 0.15s ease-out;
+    word-break: break-word;
+    transition: opacity 0.3s;
+    /* Reset hanging indent from .msg */
+    text-indent: 0;
+    padding-right: 0;
+  }
+
+  :global(.msg-thinking.is-past) {
+    opacity: 0.55;
+  }
+
+  :global(.thinking-header) {
+    margin-bottom: 0.25rem;
+  }
+
+  :global(.thinking-label) {
+    color: var(--text-mid);
+    font-size: 0.7rem;
+    font-style: italic;
+    opacity: 0.85;
+  }
+
+  :global(.thinking-body) {
+    color: var(--text-mid);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    opacity: 0.9;
+    word-break: break-word;
+  }
+
+  /* TUI markdown styles */
+  :global(.tui-heading-mark) {
+    color: var(--gold-dim);
+    font-weight: 700;
+  }
+
+  :global(.tui-heading-pad) {
+    display: inline;
+  }
+
+  :global(.tui-bold) {
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  :global(.tui-italic) {
+    font-style: italic;
+  }
+
+  :global(.tui-code) {
+    color: var(--lavender);
+    background: oklch(1 0 0 / 0.04);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    font-size: 0.92em;
+  }
+
+  :global(.msg-finish) {
+    display: block;
+    padding-left: 1.75em;
+    text-indent: -1.75em;
+    font: inherit;
+    margin-top: 1.2rem;
+    color: var(--text-dim);
+  }
+
+  :global(.finish-star) {
+    color: var(--gold-dim);
+    margin-right: 0.5em;
+  }
+
+  :global(.finish-text) {
+    font-style: italic;
+    color: var(--text-dim);
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  /* ═══════ CODE PANE ═══════ */
+  .replay-code {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    position: relative;
+  }
+
+  .code-tab {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid oklch(1 0 0 / 0.04);
+    font-family: var(--font-code), "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    background: oklch(0 0 0 / 0.15);
+  }
+
+  .code-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1rem;
+    font-family: var(--font-code), "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.8rem;
+    line-height: 1.7;
+    color: var(--text-mid);
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: normal;
+    tab-size: 2;
+    margin: 0;
+
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    &::-webkit-scrollbar-track {
+      background: oklch(1 0 0 / 0.03);
+    }
+    &::-webkit-scrollbar-thumb {
+      background: oklch(1 0 0 / 0.2);
+      border-radius: 4px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: oklch(1 0 0 / 0.35);
+    }
+  }
+
+  /* Diff line styles */
+  :global(.diff-line) {
+    font-family: var(--font-code), "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.8rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+
+  :global(.diff-ctx) {
+    color: var(--text-dim);
+  }
+
+  :global(.diff-add) {
+    color: oklch(0.75 0.18 145);
+    background: oklch(0.75 0.18 145 / 0.08);
+  }
+
+  :global(.diff-del) {
+    color: oklch(0.7 0.18 25);
+    background: oklch(0.7 0.18 25 / 0.08);
+    text-decoration: line-through;
+    opacity: 0.7;
+  }
+
+  :global(.code-content:has(.empty-file)) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  :global(.empty-file) {
+    color: var(--text-dim);
+    font-style: italic;
+    opacity: 0.4;
+    font-size: 0.8rem;
+  }
+
+  /* Shiki inline styles handle syntax colors — ensure spans inherit font */
+  :global(.code-content span) {
+    font: inherit;
+    line-height: inherit;
+  }
+
+  /* ═══════ PROGRESS BAR ═══════ */
+  .replay-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    border-top: 1px solid oklch(1 0 0 / 0.04);
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 3px;
+    background: oklch(1 0 0 / 0.06);
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 2px;
+    width: 0%;
+  }
+
+  .replay-controls {
+    display: flex;
+    gap: 0.3rem;
+  }
+
+  .step-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0.2rem;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+
+    &:hover {
+      color: var(--gold);
+    }
+  }
+
+  .is-playing .step-btn {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+</style>
