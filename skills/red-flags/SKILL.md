@@ -1,6 +1,6 @@
 ---
 name: red-flags
-description: Scans code for common design smells across structure, boundaries, documentation, naming, and process. Use when the user asks for a red flags scan, when reviewing a PR, evaluating unfamiliar code, or when code feels wrong but the problem is unclear. Produces a structured report with status, violated principle, and candidate fix for each flag.
+description: Scans code against 17 named design smells and produces a structured diagnostic report. Use when reviewing a PR for design quality, evaluating unfamiliar code against a comprehensive checklist or when the user asks for a red flags scan. Not for diagnosing why code feels complex (use complexity-recognition) or evaluating whether a PR maintains design trajectory (use code-evolution).
 argument-hint: "[file or directory]"
 metadata:
   allowed-tools: Read, Grep
@@ -8,9 +8,9 @@ metadata:
 
 # Red Flags Diagnostic
 
-When invoked with $ARGUMENTS, scope the scan to the specified file or directory. Read the target code first, then run every flag below against it.
+When invoked with $ARGUMENTS, scope the scan to the specified file or directory. Read the target code first, then run every flag below against it. Each flag points to a deeper lens from Clairvoyance (https://clairvoyance.fyi). This skill works best when the full collection is installed.
 
-Systematic check of all 17 red flags against a code target. A red flag doesn't identify the cause — it signals that a cause exists and is worth finding.
+A red flag is a signal, not a diagnosis. It tells you something is wrong but not why. Each flag below points to a deeper lens that identifies the root cause.
 
 ## When to Apply
 
@@ -54,7 +54,7 @@ Method forwards arguments to another with a similar signature, adding zero logic
 
 #### 3. Conjoined Methods
 
-Can't understand one piece of code without reading another. Applies beyond methods — any two physically separated pieces that can only be understood together.
+Two separate pieces of code that can only be understood together.
 
 - **Check:** → **module-boundaries**
   - Do you flip between two pieces of code to understand either?
@@ -76,19 +76,15 @@ Structure follows execution order, not knowledge ownership.
 
 #### 5. Information Leakage
 
-Back-door leakage (shared knowledge not in any interface) is the most dangerous form.
-
-> "A design decision is reflected in multiple modules." — John Ousterhout, _A Philosophy of Software Design_
+When a design decision leaks across module boundaries, changing that decision often forces changes in every module that knows about it. The most dangerous leaks are invisible, where two modules share knowledge but no interface acknowledges the dependency.
 
 - **Check:** → **information-hiding**
   - If this format/protocol/representation changes, how many modules need editing?
 - **Signals:**
   - Two files that must always be edited together
-  - Shared constants defining format details across modules
   - Serialization/deserialization logic split across boundaries
   - Two modules changing in lockstep with no visible API dependency
   - Comments saying "don't forget to also update X"
-  - Cross-module dependency with no documentation on either side
 
 #### 6. Overexposure
 
@@ -105,12 +101,11 @@ API forces callers to handle things they almost never need.
   - API with 5+ parameters when most callers pass the same values for 3
   - Method signature with 3+ exception types
   - Caller must catch an exception the module could have resolved
-  - Functions with many parameters
   - New parameter added to an already-long parameter list
 
 #### 7. Repetition
 
-Same logic in multiple places — a signal you haven't found the right abstraction.
+Same logic appears in multiple places. The next change of this type will require edits everywhere.
 
 - **Check:** → **code-evolution**
   - Would the next change of this type require edits in multiple locations?
@@ -163,18 +158,18 @@ Name so imprecise it doesn't convey useful information.
 - **Check (isolation test):** → **naming-obviousness**
   - Seen without context, could this name mean almost anything?
 - **Signals:**
-  - `data`, `info`, `tmp`, `val` at module scope
-  - Generic container return types where a named class would be self-documenting
+  - Thin or generic names like `data`, `info`, `tmp`, `val` at module scope
+  - Non-specific container return types where a named class would be self-documenting
   - Method name that doesn't predict what the method does
 
 #### 12. Hard to Pick Name
 
-Difficulty finding a precise name. Almost never a vocabulary problem — it's design feedback.
+Struggling to find a precise name isn't a vocabulary problem. It's design feedback.
 
 - **Check:** → **naming-obviousness**
-  - Is the entity doing two things or conflating two concepts?
+  - Is the item doing one thing but conflating multiple concepts? Doing multiple things but only implying one?
 - **Signals:**
-  - Name encodes a higher-level concept than the implementation honors
+  - Name implies a higher-level concept than the implementation honors
 
 #### 13. Hard to Describe
 
@@ -188,7 +183,7 @@ Complete documentation must be long and qualified. Short descriptions come from 
 
 #### 14. Non-obvious Code
 
-Behavior or meaning cannot be understood quickly. **The meta-flag** — every other flag is a specific cause of this one.
+This is the meta-flag because every other flag on this list is a specific cause of non-obvious code. When someone reads the code for the first time, they might not be able to tell what it does or why it does it.
 
 - **Check:** → **naming-obviousness**
   - Would a competent developer reading this for the first time understand it?
@@ -242,13 +237,14 @@ Error handling that suppresses or discards errors without meaningful action.
 
 ## Canary Flags
 
-Flags 12, 13, 14, and 15 surface during writing, before code review. **A design that's hard to name, describe, or compare should be reconsidered before it is built.** These are the cheapest signals — catch them and the structural flags never materialize.
+_Hard to Pick Name_, _Hard to Describe_, _Non-obvious Code_ and _No Alternatives Considered_ surface during writing, before code review. Catch them early and the structural flags never materialize.
 
 ## Review Process
 
-1. **Identify scope** — file, module, PR diff, or class
-2. **Scan all flags** — For each: CLEAR, TRIGGERED, or N/A. If triggered: location, principle violated, candidate fix
-3. **Fill out the report** — Use `assets/red-flags-report.md`
-4. **Follow the arrows** — For each triggered flag, pull in the indicated lens for deeper analysis
-5. **Prioritize** — Boundary flags compound; canary flags are cheapest to fix; structural flags indicate architectural issues
-6. **Recommend** — Prioritized, actionable fixes tied to specific principles
+1. **Identify scope**: file, module, PR diff, or class
+2. **Scan all flags**: For each: CLEAR, TRIGGERED, or N/A. If triggered: location, principle violated, candidate fix
+3. **Structure a report**: Group findings by category (Structural, Boundary, Documentation, Naming/Abstraction, Process). Summarize flags triggered, critical issues and recommended actions.
+4. **Follow the arrows**: For each triggered flag, pull in the indicated lens for deeper analysis
+5. **Check for syndromes**: Multiple triggered flags may share a root cause. See `references/flag-interaction-map.md` for named clusters. A syndrome points at an architectural issue. Fixing the root cause resolves all flags in the cluster.
+6. **Prioritize**: Boundary flags compound over time and infect adjacent code, so fix those first. Canary flags are the cheapest to act on. Structural flags require refactoring but affect a bounded area.
+7. **Recommend**: Create a report with prioritized, actionable fixes tied to specific principles.

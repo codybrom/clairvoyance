@@ -14,7 +14,9 @@ When invoked with $ARGUMENTS, focus the analysis on the specified file or module
 
 > "Exception handling code rarely executes. Bugs can go undetected for a long time, and when the exception handling code is finally needed, there's a good chance that it won't work." — John Ousterhout, _A Philosophy of Software Design_
 
-**The "too many exceptions" anti-pattern:** programmers are taught "the more errors detected, the better," leading to an over-defensive style that throws exceptions for anything suspicious. But throwing exceptions is easy; handling them is hard.
+## The "Too Many Exceptions" Anti-Pattern
+
+Programmers are taught that "the more errors detected, the better," but this leads to an over-defensive style that throws exceptions for anything suspicious. Throwing exceptions is easy. Handling them is hard.
 
 > "Classes with lots of exceptions have complex interfaces, and they are shallower than classes with fewer exceptions." — John Ousterhout, _A Philosophy of Software Design_
 
@@ -56,10 +58,10 @@ Propagate only if the caller genuinely must decide. If the caller can't do anyth
 The general move: instead of "do X" (fails if preconditions aren't met), write "ensure state S" (trivially satisfied if state already holds).
 
 - **Unset variable?** "Delete this variable" (fails if absent) → "ensure this variable no longer exists" (always succeeds)
-- **File not found on delete?** Unix `unlink` doesn't "delete a file" — it removes a directory entry. Returns success even if processes have the file open.
-- **Substring not found?** Python slicing clamps out-of-range indices — no exception, no defensive code. Java's `substring` throws `IndexOutOfBoundsException`, forcing bounds-clamping around a one-line call.
+- **File not found on delete?** Unix `unlink` doesn't "delete a file." It removes a directory entry. Returns success even if processes have the file open.
+- **Substring not found?** Python slicing clamps out-of-range indices (no exception, no defensive code). Java's `substring` throws `IndexOutOfBoundsException`, forcing bounds-clamping around a one-line call.
 
-**Like a spice — a small amount improves the result, but too much ruins the dish.** Only works when the exception information is genuinely not needed outside the module. Anti-example: a networking module that masked all network exceptions left callers with no way to detect lost messages or failed peers. The module should have exposed those errors because callers needed that information to build reliable applications.
+Defining errors out of existence is like a spice: a small amount improves the result but too much ruins the dish. The technique only works when the exception information is genuinely not needed outside the module. A networking module that masked all network exceptions left callers with no way to detect lost messages or failed peers. Those errors needed to be exposed because callers depended on them to build reliable applications.
 
 ### Exception Masking
 
@@ -69,15 +71,15 @@ Handle internally without exposing to callers. Valid when:
 - Recovery doesn't lose important information
 - The masking behavior is part of the module's specification
 
-TCP masking packet loss is the canonical example. **Safety check:** Would a developer debugging the system want to know this happened? If yes, log it. If the loss is irreversible and important, don't mask — propagate.
+TCP masks packet loss this way. Before masking, ask whether a developer debugging the system would want to know it happened. If yes, log it. If the loss is irreversible and important, don't mask. Propagate.
 
 ### Exception Aggregation
 
-Replace many specific exceptions with fewer general ones handled in one place. **Masking absorbs errors low; aggregation catches errors high.** Together they produce an hourglass: middle layers have no exception handling at all.
+Replace many specific exceptions with fewer general ones handled in one place. Masking absorbs errors low and aggregation catches errors high. Together they produce an hourglass where middle layers have no exception handling at all.
 
 #### Web Server Pattern
 
-Let all `NoSuchParameter` exceptions propagate to the top-level dispatcher where a single handler generates the error response. New handlers automatically work with the system. The same applies to any request-processing loop: catch in one place near the top, abort the current request, clean up, and continue.
+Let all `NoSuchParameter` exceptions propagate to the top-level dispatcher where a single handler generates the error response. New handlers automatically work with the system. The same applies to any request-processing loop: catch in one place near the top, abort the current request, clean up and continue.
 
 ### Aggregation Through Promotion
 
@@ -85,7 +87,7 @@ Rather than building separate recovery for each failure type, promote smaller fa
 
 ### Just Crash
 
-When an error is difficult or impossible to handle and occurs infrequently, the simplest response is to print diagnostic information and abort. Out-of-memory errors are the canonical example — there's not much an application can do, and the handler itself may need to allocate memory. The `ckalloc` pattern (wrap the allocator, abort on failure) eliminates exception handling at every call site.
+When an error is difficult or impossible to handle and occurs infrequently, the simplest response is to print diagnostic information and abort. Out-of-memory errors fit this pattern because there's not much an application can do and the handler itself may need to allocate memory. The same principle applies anywhere: wrap the operation so it aborts on failure, eliminating exception handling at every call site.
 
 #### Appropriate When
 
@@ -97,11 +99,11 @@ The system's value depends on handling that failure (e.g., a replicated storage 
 
 ## Review Process
 
-1. **Inventory exceptions** — List every error case, exception throw, and error return
-2. **Apply the decision tree** — For each: can it be defined out? Masked? Aggregated?
-3. **Check depth impact** — How many exception types are in the module's interface?
-4. **Audit catch blocks** — Are callers doing meaningful work, or just logging and re-throwing?
-5. **Evaluate safety** — For any proposed masking, verify nothing important is lost
-6. **Recommend simplification** — Propose specific reductions in error surface
+1. **Inventory exceptions**: List every error case, exception throw, and error return.
+2. **Apply the decision tree**: Can each one be defined out? Masked? Aggregated?
+3. **Check depth impact**: How many exception types are in the module's interface?
+4. **Audit catch blocks**: Are callers doing meaningful work, or just logging and re-throwing?
+5. **Evaluate safety**: For any proposed masking, verify nothing important is lost.
+6. **Recommend simplification**: Propose specific reductions in error surface.
 
 Red flag signals for error design are cataloged in **red-flags** (Catch-and-Ignore, Overexposure, Shallow Module).

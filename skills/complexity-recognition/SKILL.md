@@ -1,6 +1,6 @@
 ---
 name: complexity-recognition
-description: Diagnoses what makes code complex and why. Use when the user asks to analyze complexity, when code feels complex but the specific problem is unclear, when simple changes require edits in many places, or when the code has surprising behavior. Identifies symptoms (change amplification, cognitive load, unknown unknowns) and root causes (dependencies, obscurity).
+description: Diagnoses what makes code complex and why, using the three-symptom two-root-cause framework. Use when code feels harder to work with than it should but the specific problem is unclear. This skill identifies WHETHER complexity exists and WHERE it comes from. Not for scanning a checklist of known design smells (use red-flags) or evaluating a specific module's depth (use deep-modules).
 argument-hint: "[file or module path]"
 metadata:
   allowed-tools: Read, Grep
@@ -46,13 +46,11 @@ Directly measurable: count files touched for a single-concept change. Use this f
 
 #### 2. Cognitive Load
 
-**Warning: fewer lines doesn't always mean less cognitive load.** A terse framework requiring reverse-engineering its entire mental model is not simpler. The question is _how much do I need to know?_
+Fewer lines does not always mean less cognitive load. A terse framework requiring reverse-engineering its entire mental model is not simpler. The question is _how much do I need to know?_
 
 #### 3. Unknown Unknowns
 
-**The worst symptom.** Change amplification is visible. Cognitive load is navigable. Unknown unknowns are neither — you finish the change feeling confident, and the bug ships.
-
-**The design goal that counters all three:** make the system **obvious**.
+Unknown unknowns are the worst symptom because they are invisible. Change amplification is visible and cognitive load is navigable, but unknown unknowns let you finish a change feeling confident while the bug ships. The design goal that counters all three symptoms is to make the system obvious.
 
 > "An obvious system is one where a developer can make a quick guess about what to do, without thinking very hard, and yet be confident that the guess is correct." — John Ousterhout, _A Philosophy of Software Design_
 
@@ -68,7 +66,7 @@ Important information is not obvious. Vague names, undocumented assumptions, inv
 
 > "The need for extensive documentation is often a red flag that the design isn't quite right." — John Ousterhout, _A Philosophy of Software Design_
 
-**Where the root causes intersect:** Hidden dependencies (a dependency that exists without surface representation in the code) produce the worst bugs. No signal to search for, no warning that information is missing.
+These two root causes intersect in hidden dependencies, where a dependency exists without any surface representation in the code. Hidden dependencies produce the worst bugs because there is no signal to search for and no warning that information is missing.
 
 ### Complexity Is Incremental
 
@@ -78,18 +76,18 @@ Every developer can justify their small addition, but if everyone reasons this w
 
 ### Elimination vs. Encapsulation
 
-1. **Eliminate** — Redesign so the complexity doesn't exist. Always best.
-2. **Encapsulate** — Hide it in a deep module so most developers never encounter it.
+1. **Eliminate**: Redesign so the complexity doesn't exist. Always best.
+2. **Encapsulate**: Hide it in a deep module so most developers never encounter it.
 
 > "Isolating complexity in a place where it will never be seen is almost as good as eliminating the complexity entirely." — John Ousterhout, _A Philosophy of Software Design_
 
 ## Review Process
 
-1. **Identify hot paths** — Which code is modified most frequently?
-2. **Check for change amplification** — Pick a likely change, count files touched
-3. **Assess cognitive load** — What must a developer know to work here safely?
-4. **Hunt unknown unknowns** — Hidden dependencies, implicit invariants, undocumented constraints?
-5. **Trace root causes** — Dependency or obscurity?
-6. **Recommend** — Eliminate the complexity, or encapsulate it in a deep module
+1. **Identify hot paths**: Which code is modified most frequently?
+2. **Check for change amplification**: Pick a likely change, count files touched
+3. **Assess cognitive load**: What must a developer know to work here safely?
+4. **Hunt unknown unknowns**: Hidden dependencies, implicit invariants, undocumented constraints?
+5. **Trace root causes**: Dependency or obscurity?
+6. **Recommend**: Eliminate the complexity, or encapsulate it in a deep module
 
 Red flag signals for complexity are cataloged in **red-flags** (Repetition, Overexposure, Information Leakage, Non-obvious Code).

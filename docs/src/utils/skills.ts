@@ -18,11 +18,11 @@ export interface Skill {
 }
 
 const PILLAR_HUES: Record<string, number> = {
-  Structure: 75,    // gold/amber
+  Structure: 75, // gold/amber
   Abstraction: 155, // teal
-  Clarity: 275,     // violet
-  Process: 30,      // orange
-  Diagnostic: 25,   // red
+  Clarity: 275, // violet
+  Process: 30, // orange
+  Diagnostic: 25, // red
 };
 
 const PILLARS = [
@@ -64,7 +64,7 @@ const PILLARS = [
     icon: "Waves",
     name: "Diagnostic",
     hue: PILLAR_HUES.Diagnostic,
-    skills: ["red-flags"],
+    skills: ["red-flags", "design-review", "diagnose"],
   },
 ];
 

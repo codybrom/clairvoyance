@@ -12,7 +12,7 @@ When invoked with $ARGUMENTS, focus the analysis on the specified file or module
 
 > "What particularly surprised me is that general-purpose interfaces are simpler and deeper than special-purpose ones." — John Ousterhout, _A Philosophy of Software Design_
 
-General-purpose modules are simpler, deeper and actually less work to build — even when used in only one context. They also produce better information hiding: a general-purpose interface doesn't need to know about specific callers, so knowledge stays where it belongs.
+General-purpose modules are simpler, deeper and actually less work to build, even when used in only one context. They also produce better information hiding. A general-purpose interface doesn't need to know about specific callers, so knowledge stays where it belongs.
 
 ## When to Apply
 
@@ -27,12 +27,12 @@ General-purpose modules are simpler, deeper and actually less work to build — 
 
 > "What is the simplest interface that will cover all my current needs?" — John Ousterhout, _A Philosophy of Software Design_
 
-Not "the most general interface possible." The target is **somewhat general-purpose**:
+Not "the most general interface possible." The target is **somewhat general-purpose**.
 
-- **Functionality** scoped to current needs — don't build features you don't need
-- **Interface** general enough to support multiple uses — don't tie it to today's caller
+- **Functionality**: Scoped to current needs. Doesn't build features you don't need.
+- **Interface**: General enough to support multiple uses. Doesn't tie it only to today's caller.
 
-**A general-purpose interface is usually simpler than a special-purpose one** — fewer methods means lower cognitive load. Fewer methods per capability is the signal of increasing generality.
+**A general-purpose interface is usually simpler than a special-purpose one**. Fewer methods means lower cognitive load. Fewer methods per capability is the signal of increasing generality.
 
 Two companion questions:
 
@@ -49,7 +49,7 @@ Methods or parameters that only serve specific callers. The interface widens, an
 
 #### Inside Method Bodies
 
-Special cases as `if` branches. The fix is to choose a representation that makes edge cases disappear. A search function that returns null on no match forces every caller to null-check before looping. Return an empty array instead and the `for` loop handles it — zero iterations, zero `if` branches.
+Special cases show up as `if` branches in method bodies. The fix is to choose a representation that makes edge cases disappear. A search function that returns null on no match forces every caller to null-check before looping. Return an empty array instead and the `for` loop handles it: zero iterations, zero `if` branches.
 
 > "The best way to do this is by designing the normal case in a way that automatically handles the edge conditions without any extra code." — John Ousterhout, _A Philosophy of Software Design_
 
@@ -65,13 +65,19 @@ Before writing a getter or setter: should callers know about this property at al
 
 Gatekeeping question: "Will callers be able to determine a better value than we can determine here?" The answer is usually no.
 
+### The Default Position
+
+When unsure, err on the side of slightly more general. A slightly-too-general interface has unused capabilities (low cost). A slightly-too-special interface requires a rewrite when the second use case arrives (high cost).
+
+But "slightly more general" means one step, not three. Generality should come from simplifying the interface, not from adding parameters.
+
 ## Review Process
 
-1. **Identify the general mechanism** — What is the core operation?
-2. **Separate special from general** — Is caller-specific logic in the core? Special-case `if` branches that could be eliminated?
-3. **Apply the generality test** — Simplest interface that covers all current needs?
-4. **Audit getters/setters** — Exposing representation or abstraction?
-5. **Review defaults** — Could required parameters become optional?
-6. **Recommend** — Push specialization to edges; deepen with defaults
+1. **Identify the general mechanism**: What is the core operation?
+2. **Separate special from general**: Is caller-specific logic in the core? Special-case `if` branches that could be eliminated?
+3. **Apply the generality test**: Simplest interface that covers all current needs?
+4. **Audit getters/setters**: Exposing representation or abstraction?
+5. **Review defaults**: Could required parameters become optional?
+6. **Recommend**: Push specialization to edges. Deepen with defaults.
 
 Red flag signals for generality are cataloged in **red-flags** (Special-General Mixture, Overexposure).

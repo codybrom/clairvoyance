@@ -1,18 +1,27 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "clairvoyance-plugins",
-  "description": "See through complexity. Agentic skills implementing \"A Philosophy of Software Design\" by John Ousterhout.",
   "owner": {
-    "name": "Cody Bromley"
+    "name": "Cody Bromley",
+    "url": "https://github.com/codybrom",
+    "email": "esp@clairvoyance.fyi"
+  },
+  "metadata": {
+    "description": "Official Clairvoyance plugin marketplace",
+    "version": "1.0.0",
+    "homepage": "https://clairvoyance.fyi",
+    "repository": "https://github.com/codybrom/clairvoyance"
   },
   "plugins": [
     {
       "name": "clairvoyance",
-      "description": "See through complexity. Agentic skills implementing \"A Philosophy of Software Design\" by John Ousterhout.",
-      "version": "1.0.0",
-      "source": "./",
-      "author": {
-        "name": "Cody Bromley"
-      }
+      "source": {
+        "source": "url",
+        "url": "https://github.com/codybrom/clairvoyance.git"
+      },
+      "description": "ESP for AI Coding — Agent skills on the philosophy of software design, grounded in decades of engineering experience.",
+      "version": "1.1.0",
+      "strict": true
     }
   ]
 }

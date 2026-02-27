@@ -10,7 +10,8 @@ interface Props {
   pillarHue: number;
 }
 
-const { slug, title, description, pillarIcon, pillarName, pillarHue } = Astro.props;
+const { slug, title, description, pillarIcon, pillarName, pillarHue } =
+  Astro.props;
 
 const iconMap = { Circle, Plus, Diamond, Star, Waves } as Record<string, any>;
 const IconComponent = iconMap[pillarIcon];
@@ -111,7 +112,7 @@ const hue = pillarHue;
     color: var(--text-mid);
     line-height: 1.55;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }

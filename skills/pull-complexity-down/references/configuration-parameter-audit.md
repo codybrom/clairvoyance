@@ -6,7 +6,7 @@ Every configuration parameter is a decision the developer chose not to make. Thi
 
 ### The "Just In Case" Parameter
 
-A parameter added because the developer wasn't sure what value to use, not because different callers need different values. The documentation says "use the default unless you know what you're doing" — an admission that the parameter serves the developer's uncertainty, not the caller's needs.
+A parameter added because the developer wasn't sure what value to use, not because different callers need different values. The documentation says "use the default unless you know what you're doing": an admission that the parameter serves the developer's uncertainty, not the caller's needs.
 
 > **Test:** Do all known callers pass the same value (or use the default)? If yes, make it a constant.
 
@@ -20,17 +20,17 @@ A parameter exposed for "flexibility" before any caller has requested it. Often 
 
 A parameter that the module could determine from information it already has. Timeout intervals that could be computed from observed latency. Buffer sizes that could scale with input size. Thread pool sizes that could adapt to core count.
 
-> **Test:** Could the module compute a reasonable value from runtime measurements or internal state? If yes, compute it. Dynamic computation beats static configuration — it's more accurate, adapts to conditions, and removes the parameter from the interface entirely.
+> **Test:** Could the module compute a reasonable value from runtime measurements or internal state? If yes, compute it. Dynamic computation beats static configuration: it's more accurate, adapts to conditions, and removes the parameter from the interface entirely.
 
 ### The Cascading Parameter
 
-A parameter passed through multiple layers because one deep module needs it. Every intermediate layer must accept it, forward it, and document it — paying interface cost for a decision it doesn't participate in.
+A parameter passed through multiple layers because one deep module needs it. Every intermediate layer must accept it, forward it, and document it, paying interface cost for a decision it doesn't participate in.
 
 > **Test:** Does the intermediate layer use this parameter, or just pass it through? If pass-through, this is a pass-through variable problem. Consider a context object or restructuring so the needing module can obtain the value directly.
 
 ### The Conflicting Pair
 
-Two parameters that interact in ways callers can't predict. Setting one constrains what values are valid for the other, but the constraint isn't enforced — it's documented (if at all) in a comment. Callers must understand the interaction to configure correctly.
+Two parameters that interact in ways callers can't predict. Setting one constrains what values are valid for the other, but the constraint isn't enforced. It's documented (if at all) in a comment. Callers must understand the interaction to configure correctly.
 
 > **Test:** Can a caller set these parameters independently without creating an invalid state? If not, the parameters encode a single decision that should be expressed as one choice, not two.
 
@@ -56,4 +56,4 @@ When a cluster of parameters always appear in a few standard combinations, offer
 
 ### Absorb with Sensible Defaults
 
-The minimum move. Set a default that works for 95% of callers. The parameter still exists but disappears from the common interface. This is partial improvement — better than nothing, but not as good as elimination.
+The minimum move. Set a default that works for 95% of callers. The parameter still exists but disappears from the common interface. This is partial improvement: better than nothing, but not as good as elimination.

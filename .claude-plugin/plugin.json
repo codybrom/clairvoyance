@@ -1,9 +1,21 @@
 {
   "name": "clairvoyance",
-  "version": "1.0.0",
-  "description": "See through complexity. Agentic skills implementing \"A Philosophy of Software Design\" by John Ousterhout.",
+  "version": "1.1.0",
+  "description": "ESP for AI Coding — Agent skills on the philosophy of software design, grounded in decades of engineering experience.",
   "author": {
-    "name": "Cody Bromley"
+    "name": "Cody Bromley",
+    "url": "https://github.com/codybrom",
+    "email": "esp@clairvoyance.fyi"
   },
-  "license": "MIT"
+  "homepage": "https://clairvoyance.fyi",
+  "repository": "https://github.com/codybrom/clairvoyance",
+  "license": "MIT",
+  "keywords": [
+    "software-design-patterns",
+    "software-philosophy",
+    "code-quality",
+    "design-review"
+  ],
+  "agents": "./agents/",
+  "hooks": "./hooks/hooks.json"
 }

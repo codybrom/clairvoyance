@@ -6,6 +6,7 @@ interface Props {
   title: string;
   description?: string;
   canonical?: string;
+  alternateMarkdown?: string;
   type?: string;
   author?: string;
   publishedTime?: string;
@@ -13,11 +14,12 @@ interface Props {
 }
 
 const defaultDescription =
-  "Good software isn't written. It's designed. Battle-tested philosophy on software design, grounded in decades of engineering experience.";
+  "ESP for AI Coding. Agent skills on the philosophy of software design, grounded in decades of engineering experience.";
 const {
   title,
   description = defaultDescription,
   canonical,
+  alternateMarkdown,
   type = "website",
   author,
   publishedTime,
@@ -32,6 +34,23 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link
+      rel="alternate"
+      type="text/plain"
+      href="/llms.txt"
+      title="LLM-friendly summary"
+    />
+
+    {
+      alternateMarkdown && (
+        <link
+          rel="alternate"
+          type="text/markdown"
+          href={alternateMarkdown}
+          title="Raw skill (Markdown)"
+        />
+      )
+    }
     {canonical && <link rel="canonical" href={canonical} />}
     <meta name="description" content={description} />
     <meta property="og:title" content={title} />

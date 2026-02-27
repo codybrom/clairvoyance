@@ -89,6 +89,9 @@ const allSkills = getAllSkills();
       Complexity hides all over your code. Each skill teaches your AI assistant
       exactly where to look.
     </p>
+    <a href="/skills" class="catalog-all-link reveal">
+      Browse all skills or take the quiz &rarr;
+    </a>
     <div class="catalog-grid stagger">
       {
         allSkills.map((s) => (
@@ -103,9 +106,6 @@ const allSkills = getAllSkills();
         ))
       }
     </div>
-    <a href="/skills" class="catalog-mobile-link reveal">
-      Browse all {allSkills.length} skills &rarr;
-    </a>
   </section>
 
   <!-- ═══════ SESSION REPLAY ═══════ -->
@@ -146,7 +146,8 @@ const allSkills = getAllSkills();
   <footer>
     <p>
       <a href="https://github.com/codybrom/clairvoyance">Clairvoyance</a> · <a
-        href="https://github.com/codybrom/clairvoyance/blob/main/LICENSE"
+        href="/skills">All Skills</a
+      > · <a href="https://github.com/codybrom/clairvoyance/blob/main/LICENSE"
         >MIT License</a
       > · © 2026
       <a href="https://github.com/codybrom">Cody Bromley</a>
@@ -279,18 +280,26 @@ const allSkills = getAllSkills();
 
   .catalog-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
     text-align: left;
     max-width: 1100px;
 
+    @media (width <= 900px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
     @media (width <= 640px) {
-      display: none;
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (width <= 400px) {
+      grid-template-columns: 1fr;
     }
   }
 
-  .catalog-mobile-link {
-    display: none;
+  .catalog-all-link {
+    display: inline-block;
     font-family: var(--font-body);
     font-weight: 400;
     font-size: 1rem;
@@ -300,6 +309,7 @@ const allSkills = getAllSkills();
     border: 1px solid oklch(0.75 0.12 75 / 0.25);
     border-radius: 8px;
     margin-top: 0.5rem;
+    margin-bottom: 2.5rem;
     transition:
       background 0.2s,
       border-color 0.2s;
@@ -307,10 +317,6 @@ const allSkills = getAllSkills();
     &:hover {
       background: oklch(0.75 0.12 75 / 0.06);
       border-color: oklch(0.75 0.12 75 / 0.4);
-    }
-
-    @media (width <= 640px) {
-      display: inline-block;
     }
   }
 

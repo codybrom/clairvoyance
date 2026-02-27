@@ -2,10 +2,11 @@
 import Layout from "../../layouts/Layout.astro";
 import SkillCard from "../../components/SkillCard.astro";
 import CrystalBall from "../../assets/crystal-ball.svg";
-import { getSkillsByPillar } from "../../utils/skills";
-import { Circle, Plus, Diamond, Star, Waves } from "@lucide/astro";
+import { getAllSkills, getSkillsByPillar } from "../../utils/skills";
+import { Circle, Plus, Diamond, Star, Waves, HelpCircle } from "@lucide/astro";
 
 const pillarGroups = getSkillsByPillar();
+const allSkills = getAllSkills();
 
 const iconMap = { Circle, Plus, Diamond, Star, Waves } as Record<string, any>;
 ---
@@ -27,6 +28,11 @@ const iconMap = { Circle, Plus, Diamond, Star, Waves } as Record<string, any>;
     <p class="subtitle">
       Software design skills for AI coding agents, organized by pillar.
     </p>
+
+    <button class="quiz-trigger" id="open-quiz">
+      <HelpCircle size={16} />
+      Which skill do I need?
+    </button>
 
     {
       pillarGroups.map((group) => {
@@ -55,6 +61,73 @@ const iconMap = { Circle, Plus, Diamond, Star, Waves } as Record<string, any>;
     }
   </main>
 
+  <!-- ═══════ QUIZ MODAL ═══════ -->
+  <div class="modal-backdrop hidden" id="modal-backdrop">
+    <div class="modal-dialog" id="modal-dialog">
+      <button class="modal-close" id="modal-close" aria-label="Close"
+        >&times;</button
+      >
+      <h2 class="modal-title">Which Skill Do I Need?</h2>
+      <p class="modal-subtitle">
+        Start with what bothers you. Answer a few questions and get a
+        recommendation.
+      </p>
+      <div class="question-card" id="question-card">
+        <p class="question-text" id="question-text"></p>
+        <div class="options" id="options"></div>
+        <div class="result-box hidden" id="result-box">
+          <span class="result-label">Recommended</span>
+          {
+            allSkills.map((s) => {
+              const Icon = iconMap[s.pillarIcon];
+              const shortDesc = s.description.split(/\.\s*Use when/i)[0] + ".";
+              return (
+                <a
+                  class="result-card hidden"
+                  data-skill={s.slug}
+                  href={`/skills/${s.slug}`}
+                  style={`--pillar-hue: ${s.pillarHue};`}
+                >
+                  <span class="result-card-header">
+                    <span class="result-card-icon">
+                      {Icon && <Icon size={14} />}
+                    </span>
+                    <span class="result-card-pillar">{s.pillar}</span>
+                  </span>
+                  <span class="result-card-title">{s.title}</span>
+                  <span class="result-card-desc">{shortDesc}</span>
+                  <span class="result-card-read">Read &rarr;</span>
+                </a>
+              );
+            })
+          }
+          <div class="result-also-wrap hidden" id="result-also">
+            <span class="result-also-label">Also consider</span>
+            {
+              allSkills.map((s) => {
+                const Icon = iconMap[s.pillarIcon];
+                return (
+                  <a
+                    class="result-also-card hidden"
+                    data-skill={s.slug}
+                    href={`/skills/${s.slug}`}
+                    style={`--pillar-hue: ${s.pillarHue};`}
+                  >
+                    <span class="result-also-icon">
+                      {Icon && <Icon size={12} />}
+                    </span>
+                    <span class="result-also-title">{s.title}</span>
+                  </a>
+                );
+              })
+            }
+          </div>
+        </div>
+        <button class="start-over hidden" id="start-over">Start Over</button>
+      </div>
+    </div>
+  </div>
+
   <footer class="skills-footer">
     <a href="https://github.com/codybrom/clairvoyance" class="footer-star-btn">
       <Star size={16} />
@@ -69,6 +142,266 @@ const iconMap = { Circle, Plus, Diamond, Star, Waves } as Record<string, any>;
     </p>
   </footer>
 </Layout>
+
+<script>
+  // ═══════ DECISION TREE ═══════
+  const tree: Record<
+    string,
+    {
+      question: string;
+      options: Array<{
+        label: string;
+        next?: string;
+        result?: string;
+        also?: string;
+      }>;
+    }
+  > = {
+    start: {
+      question: "What\u2019s bothering you?",
+      options: [
+        {
+          label: "Something smells but I can\u2019t pinpoint it",
+          next: "vague",
+        },
+        {
+          label: "Every change turns into a scavenger hunt",
+          next: "structure",
+        },
+        { label: "This API is painful to use", next: "interface" },
+        { label: "The code is hard to read or understand", next: "clarity" },
+        {
+          label: "I\u2019m starting fresh or need a second opinion",
+          next: "process",
+        },
+      ],
+    },
+    vague: {
+      question: "What does \u201Coff\u201D feel like?",
+      options: [
+        {
+          label: "It works, but I\u2019d hate to maintain it",
+          result: "complexity-recognition",
+          also: "red-flags",
+        },
+        {
+          label: "Every small change breaks something unexpected",
+          next: "structure",
+        },
+      ],
+    },
+    structure: {
+      question: "What happens when you make a change?",
+      options: [
+        {
+          label: "I end up editing five files for one feature",
+          next: "spread",
+        },
+        {
+          label: "There are layers that just pass data through",
+          result: "abstraction-quality",
+          also: "deep-modules",
+        },
+        {
+          label: "I can\u2019t tell which module owns what",
+          result: "module-boundaries",
+        },
+      ],
+    },
+    spread: {
+      question: "Why are so many files involved?",
+      options: [
+        {
+          label: "The same internal details are hardcoded everywhere",
+          result: "information-hiding",
+        },
+        {
+          label: "I keep copying the same logic around",
+          result: "code-evolution",
+        },
+        {
+          label: "Things that belong together live in different places",
+          result: "module-boundaries",
+        },
+      ],
+    },
+    interface: {
+      question: "What makes it painful?",
+      options: [
+        {
+          label: "Callers need too much boilerplate to use it",
+          result: "pull-complexity-down",
+        },
+        {
+          label: "It only works for one specific use case",
+          result: "general-vs-special",
+        },
+        {
+          label: "The abstraction isn\u2019t saving me any work",
+          result: "deep-modules",
+        },
+      ],
+    },
+    clarity: {
+      question: "What\u2019s confusing?",
+      options: [
+        {
+          label: "I can\u2019t come up with a good name for this",
+          result: "naming-obviousness",
+          also: "design-it-twice",
+        },
+        {
+          label: "The comments are useless or nonexistent",
+          result: "comments-docs",
+        },
+        {
+          label: "There are try/catch blocks and error paths everywhere",
+          result: "error-design",
+        },
+      ],
+    },
+    process: {
+      question: "What are you trying to do?",
+      options: [
+        { label: "I don\u2019t know where to begin", result: "diagnose" },
+        {
+          label: "I\u2019m designing something from scratch",
+          result: "design-it-twice",
+          also: "comments-docs",
+        },
+        {
+          label: "This was hacked together and it shows",
+          result: "strategic-mindset",
+          also: "code-evolution",
+        },
+        {
+          label: "I need to review this before it ships",
+          result: "design-review",
+        },
+      ],
+    },
+  };
+
+  // ═══════ QUIZ DOM ═══════
+  const questionText = document.getElementById(
+    "question-text",
+  ) as HTMLParagraphElement;
+  const optionsEl = document.getElementById("options") as HTMLDivElement;
+  const resultBox = document.getElementById("result-box") as HTMLDivElement;
+  const resultAlso = document.getElementById("result-also") as HTMLDivElement;
+  const startOver = document.getElementById("start-over") as HTMLButtonElement;
+  const card = document.getElementById("question-card") as HTMLDivElement;
+
+  function showSkillCard(container: string, slug: string) {
+    // Hide all cards in that category, show the matching one
+    const selector =
+      container === "primary" ? ".result-card" : ".result-also-card";
+    document
+      .querySelectorAll(selector)
+      .forEach((el) => el.classList.add("hidden"));
+    const match = document.querySelector(`${selector}[data-skill="${slug}"]`);
+    if (match) match.classList.remove("hidden");
+  }
+
+  function clearChildren(el: HTMLElement) {
+    while (el.firstChild) {
+      el.removeChild(el.firstChild);
+    }
+  }
+
+  function showQuestion(key: string) {
+    const node = tree[key];
+    if (!node) return;
+
+    resultBox.classList.add("hidden");
+    resultAlso.classList.add("hidden");
+    startOver.classList.add("hidden");
+    questionText.classList.remove("hidden");
+    optionsEl.classList.remove("hidden");
+
+    card.classList.add("fade-out");
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        questionText.textContent = node.question;
+        clearChildren(optionsEl);
+
+        for (const opt of node.options) {
+          const btn = document.createElement("button");
+          btn.className = "option-btn";
+          btn.textContent = opt.label;
+          btn.addEventListener("click", () => {
+            if (opt.result) {
+              showResult(opt.result, opt.also);
+            } else if (opt.next) {
+              showQuestion(opt.next);
+            }
+          });
+          optionsEl.appendChild(btn);
+        }
+
+        card.classList.remove("fade-out");
+        card.classList.add("fade-in");
+        setTimeout(() => card.classList.remove("fade-in"), 350);
+      }, 180);
+    });
+  }
+
+  function showResult(slug: string, also?: string) {
+    card.classList.add("fade-out");
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        optionsEl.classList.add("hidden");
+        questionText.classList.add("hidden");
+
+        showSkillCard("primary", slug);
+        resultBox.classList.remove("hidden");
+
+        if (also) {
+          showSkillCard("also", also);
+          resultAlso.classList.remove("hidden");
+        } else {
+          resultAlso.classList.add("hidden");
+        }
+
+        startOver.classList.remove("hidden");
+
+        card.classList.remove("fade-out");
+        card.classList.add("fade-in");
+        setTimeout(() => card.classList.remove("fade-in"), 350);
+      }, 180);
+    });
+  }
+
+  startOver.addEventListener("click", () => showQuestion("start"));
+
+  // ═══════ MODAL ═══════
+  const backdrop = document.getElementById("modal-backdrop") as HTMLDivElement;
+  const dialog = document.getElementById("modal-dialog") as HTMLDivElement;
+  const openBtn = document.getElementById("open-quiz") as HTMLButtonElement;
+  const closeBtn = document.getElementById("modal-close") as HTMLButtonElement;
+
+  function openModal() {
+    showQuestion("start");
+    backdrop.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeModal() {
+    backdrop.classList.add("hidden");
+    document.body.style.overflow = "";
+  }
+
+  openBtn.addEventListener("click", openModal);
+  closeBtn.addEventListener("click", closeModal);
+  backdrop.addEventListener("click", (e) => {
+    if (e.target === backdrop) closeModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !backdrop.classList.contains("hidden")) {
+      closeModal();
+    }
+  });
+</script>
 
 <style>
   .skills-index {
@@ -122,8 +455,383 @@ const iconMap = { Circle, Plus, Diamond, Star, Waves } as Record<string, any>;
     color: var(--text-mid);
     font-size: 1.05rem;
     line-height: 1.65;
-    margin-bottom: 3rem;
+    margin-bottom: 1.25rem;
   }
+
+  /* ═══════ QUIZ TRIGGER ═══════ */
+
+  .quiz-trigger {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    gap: 0.6rem;
+    background: oklch(0.75 0.12 75 / 0.08);
+    border: 1px solid oklch(0.75 0.12 75 / 0.25);
+    border-radius: 8px;
+    padding: 0.8rem 1.75rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--gold);
+    cursor: pointer;
+    margin-bottom: 3rem;
+    transition:
+      background 0.2s,
+      border-color 0.2s,
+      box-shadow 0.2s,
+      translate 0.2s;
+
+    &:hover {
+      background: oklch(0.75 0.12 75 / 0.14);
+      border-color: oklch(0.75 0.12 75 / 0.4);
+      box-shadow: 0 0 24px oklch(0.75 0.12 75 / 0.1);
+      translate: 0 -1px;
+    }
+  }
+
+  /* ═══════ MODAL ═══════ */
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: oklch(0.08 0 0 / 0.75);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  .modal-backdrop.hidden {
+    display: none;
+  }
+
+  .modal-dialog {
+    position: relative;
+    background: var(--surface, oklch(0.14 0 0));
+    border: 1px solid oklch(1 0 0 / 0.08);
+    border-radius: var(--radius, 12px);
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    max-width: 540px;
+    width: 100%;
+    animation: modalIn 0.25s ease-out;
+  }
+
+  @keyframes modalIn {
+    from {
+      opacity: 0;
+      scale: 0.96;
+      translate: 0 12px;
+    }
+    to {
+      opacity: 1;
+      scale: 1;
+      translate: 0 0;
+    }
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+    transition: color 0.2s;
+
+    &:hover {
+      color: var(--text);
+    }
+  }
+
+  .modal-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(1.4rem, 3vw, 1.8rem);
+    margin-bottom: 0.5rem;
+  }
+
+  .modal-subtitle {
+    font-weight: 200;
+    font-size: 0.95rem;
+    color: var(--text-mid);
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+  }
+
+  /* ═══════ FLOWCHART ═══════ */
+
+  .question-card {
+    transition:
+      opacity 0.18s ease,
+      translate 0.18s ease;
+  }
+
+  .question-card.fade-out {
+    opacity: 0;
+    translate: 0 8px;
+  }
+
+  .question-card.fade-in {
+    animation: cardIn 0.35s var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1))
+      forwards;
+  }
+
+  @keyframes cardIn {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+    }
+    to {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+
+  .question-text {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(1.1rem, 3vw, 1.3rem);
+    line-height: 1.35;
+    margin-bottom: 1.25rem;
+    color: var(--text);
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .options.hidden {
+    display: none;
+  }
+
+  :global(.option-btn) {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: oklch(1 0 0 / 0.03);
+    border: 1px solid oklch(1 0 0 / 0.06);
+    border-radius: var(--radius-sm, 6px);
+    padding: 0.7rem 1rem;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 300;
+    color: var(--text);
+    cursor: pointer;
+    transition:
+      background 0.2s,
+      border-color 0.2s,
+      color 0.2s;
+  }
+
+  :global(.option-btn:hover) {
+    background: oklch(0.75 0.12 75 / 0.08);
+    border-color: oklch(0.75 0.12 75 / 0.3);
+    color: var(--gold);
+  }
+
+  /* ═══════ RESULT ═══════ */
+
+  .question-text.hidden {
+    display: none;
+  }
+
+  .result-box {
+    padding: 0;
+  }
+
+  .result-box.hidden {
+    display: none;
+  }
+
+  .result-label {
+    display: block;
+    font-family: var(--font-code, monospace);
+    font-size: 0.7rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 0.75rem;
+  }
+
+  .result-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--card, oklch(0.18 0.01 75));
+    border: 1px solid oklch(0.5 0.04 var(--pillar-hue) / 0.15);
+    border-radius: var(--radius, 12px);
+    text-decoration: none;
+    transition:
+      border-color 0.3s,
+      translate 0.3s,
+      box-shadow 0.3s,
+      background 0.3s;
+
+    &.hidden {
+      display: none;
+    }
+
+    &:hover {
+      border-color: oklch(0.7 0.1 var(--pillar-hue) / 0.4);
+      translate: 0 -2px;
+      box-shadow: 0 6px 30px oklch(0.5 0.08 var(--pillar-hue) / 0.12);
+      background: oklch(0.22 0.02 var(--pillar-hue));
+    }
+
+    &:hover .result-card-read {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+
+  .result-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .result-card-icon {
+    color: oklch(0.7 0.1 var(--pillar-hue));
+    display: flex;
+    align-items: center;
+  }
+
+  .result-card-pillar {
+    font-family: var(--font-code, monospace);
+    font-size: 0.7rem;
+    color: oklch(0.7 0.1 var(--pillar-hue));
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .result-card-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.2rem;
+    color: var(--text);
+    line-height: 1.25;
+  }
+
+  .result-card-desc {
+    font-size: 0.85rem;
+    font-weight: 300;
+    color: var(--text-mid);
+    line-height: 1.55;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .result-card-read {
+    font-family: var(--font-code, monospace);
+    font-size: 0.75rem;
+    color: oklch(0.75 0.1 var(--pillar-hue));
+    letter-spacing: 0.05em;
+    opacity: 0;
+    translate: 0 4px;
+    transition:
+      opacity 0.25s,
+      translate 0.25s;
+  }
+
+  .result-also-wrap {
+    margin-top: 0.75rem;
+    text-align: center;
+  }
+
+  .result-also-wrap.hidden {
+    display: none;
+  }
+
+  .result-also-label {
+    display: block;
+    font-family: var(--font-code, monospace);
+    font-size: 0.65rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  .result-also-card {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1rem;
+    background: var(--card, oklch(0.18 0.01 75));
+    border: 1px solid oklch(0.5 0.04 var(--pillar-hue) / 0.1);
+    border-radius: var(--radius-sm, 8px);
+    text-decoration: none;
+    transition:
+      border-color 0.3s,
+      background 0.3s;
+
+    &.hidden {
+      display: none;
+    }
+
+    &:hover {
+      border-color: oklch(0.7 0.1 var(--pillar-hue) / 0.3);
+      background: oklch(0.22 0.02 var(--pillar-hue));
+    }
+  }
+
+  .result-also-icon {
+    color: oklch(0.7 0.1 var(--pillar-hue));
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .result-also-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 0.95rem;
+    color: var(--text-mid);
+    line-height: 1.25;
+  }
+
+  .start-over {
+    display: block;
+    margin: 1.5rem auto 0;
+    background: none;
+    border: 1px solid oklch(1 0 0 / 0.08);
+    border-radius: var(--radius-sm, 6px);
+    padding: 0.55rem 1.5rem;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition:
+      color 0.2s,
+      border-color 0.2s;
+  }
+
+  .start-over:hover {
+    color: var(--text-mid);
+    border-color: oklch(1 0 0 / 0.15);
+  }
+
+  .start-over.hidden {
+    display: none;
+  }
+
+  /* ═══════ SKILLS GRID ═══════ */
 
   .pillar-group {
     margin-bottom: 3rem;
@@ -153,6 +861,8 @@ const iconMap = { Circle, Plus, Diamond, Star, Waves } as Record<string, any>;
       grid-template-columns: 1fr;
     }
   }
+
+  /* ═══════ FOOTER ═══════ */
 
   .skills-footer {
     max-width: 780px;
@@ -200,6 +910,14 @@ const iconMap = { Circle, Plus, Diamond, Star, Waves } as Record<string, any>;
       background: oklch(0.8 0.12 75);
       box-shadow: 0 0 40px oklch(0.75 0.12 75 / 0.2);
       translate: 0 -1px;
+    }
+  }
+
+  /* ═══════ RESPONSIVE ═══════ */
+
+  @media (width <= 640px) {
+    .modal-dialog {
+      padding: 1.25rem;
     }
   }
 </style>

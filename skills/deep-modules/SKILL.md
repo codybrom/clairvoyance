@@ -1,6 +1,6 @@
 ---
 name: deep-modules
-description: Evaluates module depth — whether interfaces hide enough complexity. Use when the user asks to check module depth, when a module's interface seems disproportionate to its functionality, when there are too many small classes, or when methods just forward calls to other methods. Detects shallow modules, classitis, and pass-through methods.
+description: Measures module depth, whether the interface is simple relative to the implementation behind it. Use when a module's interface has too many parameters or methods, when there are too many small classes each doing too little or when methods just forward calls to other methods. Not for evaluating whether adjacent layers provide different abstractions (use abstraction-quality) or deciding whether to merge/split specific modules (use module-boundaries).
 argument-hint: "[file or module path]"
 metadata:
   allowed-tools: Read, Grep
@@ -30,9 +30,9 @@ Deep modules maximize benefit relative to cost.
 
 > "It is more important for a module to have a simple interface than a simple implementation." — John Ousterhout, _A Philosophy of Software Design_
 
-Implementation complexity is paid once. Interface complexity is paid by every caller, forever. The deepest possible module has no interface at all — garbage collection is the canonical example.
+Implementation complexity is paid once. Interface complexity is paid by every caller, forever. The deepest possible module has no interface at all. Garbage collection does complex work and callers never interact with it.
 
-Remember: the interface has two layers. The **formal interface** (signatures, types, exceptions) and the **informal interface** (ordering constraints, side effects, performance characteristics, thread safety). The informal interface is usually larger and more dangerous — if undocumented, it produces unknown unknowns.
+Remember: the interface has two layers. The **formal interface** (signatures, types, exceptions) and the **informal interface** (ordering constraints, side effects, performance characteristics, thread safety). The informal interface is usually larger and more dangerous. If undocumented, it produces unknown unknowns.
 
 ### The Depth Test
 
@@ -48,7 +48,9 @@ A concrete signal: if the documentation for a method would be longer than its im
 
 ### Depth Applies at Every Scale
 
-**Methods should be deep too.** A method with hundreds of lines is fine if it has a simple signature and does one complete thing. Splitting into shallow pieces replaces one interface with many — net cost increase. _Depth first, length second._
+#### Methods Should Be Deep Too
+
+A method with hundreds of lines is fine if it has a simple signature and does one complete thing. Splitting into shallow pieces replaces one interface with many: net cost increase. _Depth first, length second._
 
 > "Don't sacrifice depth for length." — John Ousterhout, _A Philosophy of Software Design_
 
@@ -62,7 +64,7 @@ A method with several sequential blocks is fine as one method if the blocks are 
 
 ### Classitis
 
-**The dominant modern error is over-decomposing** — splitting things into too many small pieces rather than too few large ones. You can often make something deeper by combining closely related things; once unified, they may simplify each other in ways that were invisible when apart.
+The dominant modern error is over-decomposing: splitting things into too many small pieces rather than too few large ones. You can often make something deeper by combining closely related things. Once unified, they may simplify each other in ways that were invisible when apart.
 
 Signs:
 
@@ -105,7 +107,7 @@ A pass-through method adds interface cost with zero benefit. The telltale sign i
 
 #### When Legitimate
 
-Dispatchers that route based on arguments, and multiple implementations of a shared interface (e.g., OS disk drivers), duplicate signatures with meaningfully different behavior.
+Dispatchers that route based on arguments, and multiple implementations of a shared interface and duplicate signatures with meaningfully different behavior.
 
 ### Pass-Through Variables
 
@@ -113,38 +115,38 @@ Data threaded through a chain of signatures just to reach one deep method. Each 
 
 #### Fixes (in Order of Preference)
 
-1. **Shared object** — if an object is already accessible to both the top and bottom methods, store the data there
-2. **Context object** — a single object holding cross-cutting state (configuration, shared subsystems, performance counters), with references stored in instance variables via constructors so it doesn't itself become a pass-through argument
-3. **Global variable** — avoids pass-through but prevents multiple instances of the system in one process; generally avoid
+1. **Shared object**: if an object is already accessible to both the top and bottom methods, store the data there
+2. **Context object**: a single object holding cross-cutting state (configuration, shared subsystems, performance counters), with references stored in instance variables via constructors so it doesn't itself become a pass-through argument
+3. **Global variable**: avoids pass-through but prevents multiple instances of the system in one process. Generally avoid
 
-Context objects are the most common solution but not ideal — without discipline they become grab-bags of data that create non-obvious dependencies. Variables in a context should be immutable when possible.
+Context objects are the most common solution but not ideal. Without discipline they become grab-bags of data that create non-obvious dependencies. Variables in a context should be immutable when possible.
 
 ### Interface vs Implementation
 
-**A class's interface should normally be different from its implementation.** If callers see the same structure they'd see without the class, the class isn't hiding anything.
+If callers see the same structure they'd see without the class, the class isn't hiding anything.
 
-**Shallow:** `config.getString("timeout")` — callers must know the key name, parse the string to a number, and handle missing values themselves. The interface mirrors the internal key-value store.
+**Shallow** — `config.getString("timeout")`: callers must know the key name, parse the string to a number, and handle missing values themselves. The interface mirrors the internal key-value store.
 
-**Deep:** `config.getTimeout()` — callers get a typed value with defaults already applied. The class absorbs parsing, validation, and key naming so callers don't have to.
+**Deep** — `config.getTimeout()`: callers get a typed value with defaults already applied. The class absorbs parsing, validation, and key naming so callers don't have to.
 
 ### Interface Simplification Tactics
 
-- **Defaults** — Every parameter with a sensible default is one less thing callers must specify. The common case should require no special effort from callers
-- **Define errors out of existence** — Every eliminated exception is one less interface element
-- **General-purpose design** — Distill to the essential operation; special cases go in a layer above
-- **Pull complexity downwards** — Handle edge cases internally rather than exposing them
+- **Defaults**: Every parameter with a sensible default is one less thing callers must specify. The common case should require no special effort from callers
+- **Define errors out of existence**: Every eliminated exception is one less interface element
+- **General-purpose design**: Distill to the essential operation. Special cases go in a layer above
+- **Pull complexity downwards**: Handle edge cases internally rather than exposing them
 
 ## Review Process
 
-1. **List modules** — Identify the classes, functions, or APIs under review
-2. **Measure depth** — For each: count interface elements vs. implementation scope
-3. **Flag shallow modules** — Any module where interface ~= implementation in complexity
-4. **Check for classitis** — Are there clusters of thin classes that should be merged?
-5. **Audit pass-throughs** — Are any methods just forwarding calls?
-6. **Propose deepening** — For each issue, recommend: merge, absorb, or eliminate
+1. **List modules**: Identify the classes, functions, or APIs under review
+2. **Measure depth**: For each: count interface elements vs. implementation scope
+3. **Flag shallow modules**: Any module where interface ~= implementation in complexity
+4. **Check for classitis**: Are there clusters of thin classes that should be merged?
+5. **Audit pass-throughs**: Are any methods just forwarding calls?
+6. **Propose deepening**: For each issue, recommend: merge, absorb, or eliminate
 
 ## Relationship to Other Lenses
 
-This skill asks "is the module deep enough?" — does the interface justify what's behind it? **abstraction-quality** asks the prior question: "is the abstraction genuine?" — does each layer provide a different way of thinking? A module can be deep but sit in a layer that duplicates the abstraction of its neighbor. When adjacent layers look suspiciously similar, hand off to **abstraction-quality**.
+This skill asks "is the module deep enough?": does the interface justify what's behind it? **abstraction-quality** asks the prior question: "is the abstraction genuine?": does each layer provide a different way of thinking? A module can be deep but sit in a layer that duplicates the abstraction of its neighbor. When adjacent layers look suspiciously similar, hand off to **abstraction-quality**.
 
 Red flag signals for module depth are cataloged in **red-flags** (Shallow Module, Pass-Through Method).

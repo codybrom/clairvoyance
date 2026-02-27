@@ -4,23 +4,21 @@
 
 <h1 align="center">Clairvoyance</h1>
 
-Clairvoyance is a set of agent skills and commands inspired by John Ousterhout's *A Philosophy of Software Design*. Each skill focuses on one design dimension (module depth, information hiding, error handling, etc.) and suggests concrete tests and decision criteria to apply during code review and implementation.
-
-The goal is to get your agent to write software the way Ousterhout argues it should be written: strategically, with deep modules, clean abstractions, and relentless simplicity. Instead of applying these principles yourself after the fact, Clairvoyance nudges agents to bake them into the code as it's being written.
+AI agents can write working code, but they don't stop to consider effective design unless asked. Clairvoyance is a set of skills inspired by John Ousterhout's [*A Philosophy of Software Design*](https://web.stanford.edu/~ouster/cgi-bin/aposd.php). Each skill gives your agent **extrasensory perspective** around software design, with concrete tests to see ahead of obstacles during implementation and review.
 
 ## How It Works
 
-Each skill teaches your agent to ask specific questions.
+Skills activate automatically and push your agent to ask questions like:
 
 - *Does this interface hide real complexity, or just pass things through?*
 - *Can this method be understood without reading another one in a different file?*
 - *Is error handling pushing work onto callers that the module could handle itself?*
 
-Skills activate automatically when relevant, or you can invoke them directly as slash commands: `/red-flags` for a design smell scan, `/deep-modules` to check interface depth, `/design-it-twice` to compare alternatives before committing.
+You can also invoke them directly. Use `/red-flags` to trigger a design smell scan, `/deep-modules` to check interface depth and `/design-it-twice` to compare alternatives before committing.
 
 ## Installation
 
-Installation differs by platform. Claude Code has a built-in plugin marketplace. Codex and OpenCode require manual setup.
+**Note:** Installation differs by platform. Claude Code has a built-in plugin marketplace. Codex and OpenCode require manual setup.
 
 ### Claude Code (via Plugin Marketplace)
 
@@ -102,6 +100,8 @@ Machine-readable skill index for LLM agents:
 | Skill | Covers |
 | --- | --- |
 | `red-flags` | Design smell scan covering structure, boundaries, documentation, naming, and process |
+| `design-review` | Structured review funnel from complexity triage through structural, interface, and surface checks |
+| `diagnose` | Routes a vague symptom or complaint to the most relevant skill via a decision tree |
 
 ## Attribution
 

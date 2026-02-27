@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Before this code change, briefly check: (1) If creating a new module, class, or interface — was more than one design approach considered? If not, consider suggesting /design-it-twice. (2) If adding a parameter or exception to an existing interface — is complexity being pushed to callers? If so, consider suggesting /pull-complexity-down. (3) If splitting or merging modules — consider suggesting /module-boundaries. (4) If adding error handling — consider suggesting /error-design. Only mention a suggestion if it's clearly relevant. Say nothing if the change is routine. Keep any suggestion to one sentence.",
+            "model": "haiku"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read|Grep",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "After reading this code, briefly check: (1) Does the module have a very wide interface (many public methods, many parameters)? If so, consider suggesting /deep-modules. (2) Are there many catch blocks or exception types? If so, consider suggesting /error-design. (3) Do names feel vague or confusing? If so, consider suggesting /naming-obviousness. (4) Does the code feel unfamiliar and its quality uncertain? If so, consider suggesting /red-flags. Only mention a suggestion if a signal is clearly present. Say nothing if the code looks routine. Keep any suggestion to one sentence.",
+            "model": "haiku"
+          }
+        ]
+      }
+    ]
+  }
+}

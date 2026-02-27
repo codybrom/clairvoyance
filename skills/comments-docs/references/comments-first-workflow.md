@@ -4,7 +4,7 @@
 
 When building a class or module, write comments as part of design, not after implementation:
 
-1. **Write the class interface comment** — describe the overall abstraction before writing any code.
+1. **Write the class interface comment**: describe the overall abstraction before writing any code.
 
 2. **Write interface comments and signatures for the most important public methods.** Leave bodies empty. Iterate until the structure feels right.
 
@@ -22,7 +22,7 @@ By the time implementation is complete, so is your documentation.
 
 ### Better comments
 
-You write the comment while the design decision is live in your context window — not after implementation, when you're reconstructing intent from code you already wrote. Comments written after the fact describe what the code does. Comments written first describe what it should do and why.
+You write the comment while the design decision is live in your context window, not after implementation, when you're reconstructing intent from code you already wrote. Comments written after the fact describe what the code does. Comments written first describe what it should do and why.
 
 ### Better designs
 
@@ -35,7 +35,7 @@ Comments are a **complexity canary**. If you notice any of these while writing, 
 
 ### Less rework, fewer tokens
 
-Comments are a small fraction of total output — even if half of all lines are comments, they account for well under 10% of the tokens spent on a task. Skipping them saves almost nothing. Meanwhile, writing code first means the abstraction evolves during implementation, causing revisions that cost far more than the comments would have. Comments-first settles the abstraction before implementation begins. Writing comments first is almost certainly cheaper than deferring them.
+Comments are a small fraction of total output. Even if half of all lines are comments, they account for well under 10% of the tokens spent on a task. Skipping them saves almost nothing. Meanwhile, writing code first means the abstraction evolves during implementation, causing revisions that cost far more than the comments would have. Comments-first settles the abstraction before implementation begins. Writing comments first is almost certainly cheaper than deferring them.
 
 ## Why After-the-fact Comments Fail
 

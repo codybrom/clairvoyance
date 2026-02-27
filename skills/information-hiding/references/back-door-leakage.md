@@ -1,6 +1,6 @@
 # Back-Door Leakage Detection Patterns
 
-Back-door leakage is invisible by definition — nothing in any interface signals the dependency. These patterns help you see it anyway.
+Back-door leakage is invisible by definition. Nothing in any interface signals the dependency. These patterns help you see it anyway.
 
 ## Structural Signatures
 
@@ -18,13 +18,13 @@ Modules that communicate through a shared medium (file, database, queue, shared 
 
 ### Ordering Assumptions
 
-Module A assumes module B has already run, or has set some state, but nothing in A's interface declares this dependency. The system works because the call sequence happens to be correct — until someone reorders it.
+Module A assumes module B has already run, or has set some state, but nothing in A's interface declares this dependency. The system works because the call sequence happens to be correct, until someone reorders it.
 
 > **Look for:** Methods that silently depend on initialization order. Code that reads state another module wrote without any contract guaranteeing it's been written. Tests that pass only when run in a specific order.
 
 ### Shared Constants That Aren't
 
-Two modules use the same magic number, string, or threshold — but each defines its own copy. They must match, but nothing enforces this. Changing one without the other produces silent bugs.
+Two modules use the same magic number, string or threshold, but each defines its own copy. They must match, but nothing enforces this. Changing one without the other produces silent bugs.
 
 > **Look for:** Duplicate literal values across modules. Timeout values, buffer sizes, retry counts, format strings that appear in multiple files without a shared definition.
 
@@ -38,11 +38,11 @@ The most common form. One module writes data (to disk, network, database) and an
 
 ### The Change Propagation Test
 
-Pick any internal implementation detail in a module. Ask: if I changed this, what else would break? If the answer includes another module — and the connection isn't visible in any interface — that's back-door leakage.
+Pick any internal implementation detail in a module. Ask: _:if I changed this, what else would break?"_ If the answer includes another module, and the connection isn't visible in any interface, that's back-door leakage.
 
 ### The Grep Test
 
-If you need to grep the codebase to find all the places affected by a change, the knowledge has leaked. Well-hidden knowledge lives in one place; the compiler or type system enforces the boundary. Grep-driven changes are back-door leakage made temporarily visible.
+If you need to grep the codebase to find all the places affected by a change, the knowledge has leaked. Well-hidden knowledge lives in one place. The compiler or type system enforces the boundary. Grep-driven changes are back-door leakage made temporarily visible.
 
 ### The New Developer Test
 
@@ -50,7 +50,7 @@ Could a developer unfamiliar with the codebase modify module A without knowing m
 
 ### The Git Co-Change Test
 
-Two files that repeatedly appear in the same commit — but have no direct API dependency — are likely coupled through shared knowledge. Git history makes invisible dependencies visible after the fact.
+Two files that repeatedly appear in the same commit but have no direct API dependency are likely coupled through shared knowledge. Git history makes invisible dependencies visible after the fact.
 
 ## The Wrong Fix
 
