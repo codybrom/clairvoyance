@@ -1,0 +1,88 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Privacy Policy — Clairvoyance">
+  <section class="privacy">
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: February 27, 2026</p>
+
+    <h2>What Clairvoyance does</h2>
+    <p>
+      Clairvoyance is a set of software design skills for AI coding agents. All
+      skills run locally inside your agent's session. Clairvoyance does not
+      operate any servers, APIs, or external services.
+    </p>
+
+    <h2>Data collection</h2>
+    <p>
+      Clairvoyance does not collect, transmit, or store any user data. No
+      telemetry, no analytics, no tracking. Your code never leaves your machine
+      through Clairvoyance.
+    </p>
+
+    <h2>Third-party services</h2>
+    <p>
+      Clairvoyance has no MCP servers and no dependencies on external services.
+      It consists of markdown skill files and prompt-based hooks that run
+      entirely within your agent session.
+    </p>
+
+    <h2>Cookies</h2>
+    <p>
+      This documentation site does not use cookies or any tracking technologies.
+    </p>
+
+    <h2>Changes</h2>
+    <p>
+      If this policy changes, the update will be reflected here with a new date.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      Questions? Open an issue on <a
+        href="https://github.com/codybrom/clairvoyance">GitHub</a
+      > or reach out to <a href="https://github.com/codybrom">Cody Bromley</a>.
+    </p>
+  </section>
+</Layout>
+
+<style>
+  .privacy {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: clamp(3rem, 8vw, 6rem) clamp(1.5rem, 5vw, 3rem);
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(2rem, 5vw, 3rem);
+    margin-bottom: 0.5rem;
+  }
+
+  .updated {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 3rem;
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.2rem;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    font-weight: 200;
+    font-size: 1rem;
+    color: var(--text-mid);
+    line-height: 1.7;
+  }
+
+  a {
+    color: var(--gold);
+  }
+</style>
