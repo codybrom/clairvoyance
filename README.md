@@ -30,7 +30,7 @@ You can also invoke them directly. Use `/red-flags` to trigger a design smell sc
 ### skills.sh
 
 ```bash
-npx skills add codybrom/clairvoyance
+npx skills add codybrom/clairvoyance --all
 ```
 
 ### Codex
