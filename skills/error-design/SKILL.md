@@ -29,27 +29,25 @@ When invoked with $ARGUMENTS, focus the analysis on the specified file or module
 
 ### The Decision Tree
 
-_The book presents four techniques without prescribing this ordering. This tree is a synthesis for practical use._
+_The four techniques below have no canonical ordering. This tree sequences them by preference for practical use._
 
 For every error condition:
 
-```
-1. Can the error be defined out of existence?
-   → Change the interface so the condition isn't an error.
-   YES: Do this. Always the best option.
+#### 1. Can the error be defined out of existence?
 
-2. Can the error be masked?
-   → Handle internally without propagating.
-   YES: Mask if handling is safe and complete.
+Change the interface so the condition isn't an error. If yes: do this. Always the best option.
 
-3. Can the error be aggregated?
-   → Replace many specific exceptions with one general mechanism.
-   YES: Aggregate to reduce interface surface.
+#### 2. Can the error be masked?
 
-4. Must the caller handle it?
-   → Propagate only if the caller genuinely must decide.
-   If the caller can't do anything meaningful: crash.
-```
+Handle internally without propagating. If yes: mask if handling is safe and complete.
+
+#### 3. Can the error be aggregated?
+
+Replace many specific exceptions with one general mechanism. If yes: aggregate to reduce interface surface.
+
+#### 4. Must the caller handle it?
+
+Propagate only if the caller genuinely must decide. If the caller can't do anything meaningful: crash.
 
 ### Define Errors Out of Existence
 
@@ -89,7 +87,13 @@ Rather than building separate recovery for each failure type, promote smaller fa
 
 When an error is difficult or impossible to handle and occurs infrequently, the simplest response is to print diagnostic information and abort. Out-of-memory errors are the canonical example — there's not much an application can do, and the handler itself may need to allocate memory. The `ckalloc` pattern (wrap the allocator, abort on failure) eliminates exception handling at every call site.
 
-**Appropriate when:** the error is infrequent, recovery is impractical, and the caller can't do anything meaningful. **Not appropriate when:** the system's value depends on handling that failure (e.g., a replicated storage system must handle I/O errors, not crash on them).
+#### Appropriate When
+
+The error is infrequent, recovery is impractical, and the caller can't do anything meaningful.
+
+#### Not Appropriate When
+
+The system's value depends on handling that failure (e.g., a replicated storage system must handle I/O errors, not crash on them).
 
 ## Review Process
 

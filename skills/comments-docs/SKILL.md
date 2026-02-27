@@ -29,13 +29,21 @@ When invoked with $ARGUMENTS, focus the analysis on the specified file or module
 
 ### Four Comment Types
 
-**1. Interface Comments** — _What_ and _why_ for callers. Must be sufficient to use the interface without reading implementation. Operate at two levels: **intuition** (a sentence giving the mental model) and **precision** (argument/return docs more specific than the code). A comment that says "offset" does not specify inclusive vs exclusive.
+#### 1. Interface Comments
 
-**2. Implementation Comments** — _What_ a block does (high-level) and _why_, not line-by-line _how_. For variable comments, **think nouns, not verbs** — describe what the variable represents, not how it's manipulated.
+_What_ and _why_ for callers. Must be sufficient to use the interface without reading implementation. Operate at two levels: **intuition** (a sentence giving the mental model) and **precision** (argument/return docs more specific than the code). A comment that says "offset" does not specify inclusive vs exclusive.
 
-**3. Cross-Module Comments** — Document dependencies spanning module boundaries. Place at a convergence point, or maintain a central designNotes file with labeled sections per topic and short pointer comments in the code (`// See "Zombies" in designNotes`). Neither approach is perfect — this is a genuinely unsolved problem.
+#### 2. Implementation Comments
 
-**4. Data Structure Member Comments** — Each field should have a comment capturing what's not obvious from the type or name: what it represents, units, valid ranges, boundary conditions (inclusive/exclusive), nullability, resource ownership (who frees/closes), invariants, and relationships to other fields.
+_What_ a block does (high-level) and _why_, not line-by-line _how_. For variable comments, **think nouns, not verbs** — describe what the variable represents, not how it's manipulated.
+
+#### 3. Cross-Module Comments
+
+Document dependencies spanning module boundaries. Place at a convergence point, or maintain a central designNotes file with labeled sections per topic and short pointer comments in the code (`// See "Zombies" in designNotes`). Neither approach is perfect — this is a genuinely unsolved problem.
+
+#### 4. Data Structure Member Comments
+
+Each field should have a comment capturing what's not obvious from the type or name: what it represents, units, valid ranges, boundary conditions (inclusive/exclusive), nullability, resource ownership (who frees/closes), invariants, and relationships to other fields.
 
 ### "Comment Repeats Code" Test
 

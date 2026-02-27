@@ -50,7 +50,7 @@ body {
     position: fixed;
     inset: 0;
     z-index: -1;
-    filter: url(#grain);
+    background: url("/grain.png") repeat;
     opacity: 1;
   }
 }

@@ -40,11 +40,17 @@ A gnarly subsystem that nobody modifies contributes almost nothing. A moderately
 
 ### Three Symptoms
 
-**1. Change Amplification** — Directly measurable: count files touched for a single-concept change. Use this for refactoring prioritization.
+#### 1. Change Amplification
 
-**2. Cognitive Load** — **Warning: fewer lines doesn't always mean less cognitive load.** A terse framework requiring reverse-engineering its entire mental model is not simpler. The question is _how much do I need to know?_
+Directly measurable: count files touched for a single-concept change. Use this for refactoring prioritization.
 
-**3. Unknown Unknowns** — **The worst symptom.** Change amplification is visible. Cognitive load is navigable. Unknown unknowns are neither — you finish the change feeling confident, and the bug ships.
+#### 2. Cognitive Load
+
+**Warning: fewer lines doesn't always mean less cognitive load.** A terse framework requiring reverse-engineering its entire mental model is not simpler. The question is _how much do I need to know?_
+
+#### 3. Unknown Unknowns
+
+**The worst symptom.** Change amplification is visible. Cognitive load is navigable. Unknown unknowns are neither — you finish the change feeling confident, and the bug ships.
 
 **The design goal that counters all three:** make the system **obvious**.
 

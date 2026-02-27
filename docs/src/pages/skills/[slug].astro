@@ -103,7 +103,7 @@ const htmlContent = rawHtml
   .replace(/<p>When invoked with \$ARGUMENTS[^<]*<\/p>/g, "")
   .replace(
     /\s*—\s*([^<,]+),\s*<em>([^<]+)<\/em>/g,
-    "<cite>$1, <em>$2</em></cite>",
+    "<cite>— $1, <em>$2</em></cite>",
   )
   .replace(/<(h[234])>(.*?)<\/\1>/g, (_match, tag, inner) => {
     const plain = inner.replace(/<[^>]+>/g, "");
@@ -117,7 +117,6 @@ const htmlContent = rawHtml
 // Find prev/next across all skills (wraps around)
 const allSkills = getAllSkills();
 const currentIndex = allSkills.findIndex((s) => s.slug === skill.slug);
-const rawMarkdownUrl = `https://raw.githubusercontent.com/codybrom/clairvoyance/main/skills/${skill.slug}/SKILL.md`;
 const lastUpdated = skill.lastUpdated
   ? new Date(skill.lastUpdated).toLocaleDateString("en-US", {
       year: "numeric",
@@ -145,10 +144,11 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
         <CrystalBall width="20" height="20" />
         <span>Clairvoyance</span>
       </a>
-      <button class="copy-md-btn" data-url={rawMarkdownUrl}>
+      <button class="copy-md-btn">
         <Copy size={14} />
         <span>Copy as Markdown</span>
       </button>
+      <div id="skill-md" hidden set:text={skill.content} />
     </nav>
 
     <div class="skill-header">
@@ -250,21 +250,14 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
 <script>
   const btn = document.querySelector<HTMLButtonElement>(".copy-md-btn");
   btn?.addEventListener("click", async () => {
-    const url = btn.dataset.url;
-    if (!url) return;
-    try {
-      const res = await fetch(url);
-      const text = await res.text();
-      await navigator.clipboard.writeText(text);
-      const label = btn.querySelector("span");
-      if (label) {
-        const orig = label.textContent;
-        label.textContent = "Copied!";
-        setTimeout(() => (label.textContent = orig), 1800);
-      }
-    } catch {
-      // fallback: open raw URL
-      window.open(url, "_blank");
+    const md = document.getElementById("skill-md")?.textContent;
+    if (!md) return;
+    await navigator.clipboard.writeText(md);
+    const label = btn.querySelector("span");
+    if (label) {
+      const orig = label.textContent;
+      label.textContent = "Copied!";
+      setTimeout(() => (label.textContent = orig), 1800);
     }
   });
 </script>
