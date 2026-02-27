@@ -5,9 +5,10 @@ interface Props {
   icon: string;
   name: string;
   skills: string[];
+  hue: number;
 }
 
-const { icon, name, skills } = Astro.props;
+const { icon, name, skills, hue } = Astro.props;
 
 const iconMap = { Circle, Plus, Diamond, Star, Waves } as Record<string, any>;
 const IconComponent = iconMap[icon];
@@ -21,7 +22,7 @@ function formatSkill(slug: string): string {
 }
 ---
 
-<div class="pillar reveal">
+<div class="pillar reveal" style={`--pillar-hue: ${hue};`}>
   <span class="pillar-watermark" aria-hidden="true">
     {IconComponent && <IconComponent size={160} />}
   </span>
@@ -44,6 +45,12 @@ function formatSkill(slug: string): string {
     border-radius: var(--radius);
     background: var(--card);
     aspect-ratio: 3 / 4;
+
+    @media (width <= 640px) {
+      padding: 1.25rem 1rem;
+      aspect-ratio: auto;
+      min-height: 230px;
+    }
     position: relative;
     overflow: hidden;
     display: flex;
@@ -55,9 +62,9 @@ function formatSkill(slug: string): string {
       box-shadow 0.35s;
 
     &:hover {
-      border-color: oklch(0.75 0.12 75 / 0.3);
+      border-color: oklch(0.7 0.1 var(--pillar-hue) / 0.4);
       translate: 0 -3px;
-      box-shadow: 0 8px 40px oklch(0 0 0 / 0.3);
+      box-shadow: 0 8px 40px oklch(0.5 0.08 var(--pillar-hue) / 0.15);
     }
 
     &:hover .pillar-watermark {
@@ -71,7 +78,7 @@ function formatSkill(slug: string): string {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--gold);
+    color: oklch(0.7 0.1 var(--pillar-hue));
     opacity: 0.05;
     pointer-events: none;
     transition: opacity 0.4s;
@@ -98,12 +105,16 @@ function formatSkill(slug: string): string {
     font-size: 1.75rem;
     color: var(--text);
     letter-spacing: -0.01em;
+
+    @media (width <= 480px) {
+      font-size: 1.4rem;
+    }
   }
 
   .pillar-count {
     font-family: var(--font-code);
     font-size: 0.8rem;
-    color: var(--gold-dim);
+    color: oklch(0.65 0.08 var(--pillar-hue));
     margin-top: 0.25rem;
   }
 
@@ -121,5 +132,9 @@ function formatSkill(slug: string): string {
     font-weight: 400;
     color: oklch(0.75 0.02 290);
     line-height: 1.4;
+
+    @media (width <= 480px) {
+      font-size: 0.78rem;
+    }
   }
 </style>

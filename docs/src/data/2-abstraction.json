@@ -5,7 +5,7 @@
   "steps": [
     {
       "type": "user",
-      "text": "The cart throws too many errors in edge cases, customers are seeing error pages. Clean this up."
+      "text": "The cart throws too many errors in edge cases and customers are seeing error pages. Clean this up."
     },
     {
       "type": "assistant",

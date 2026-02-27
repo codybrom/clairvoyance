@@ -5,7 +5,7 @@
   "steps": [
     {
       "type": "user",
-      "text": "Add batch support to this \u2014 we need to process multiple orders at once"
+      "text": "Add batch support to process multiple orders at once."
     },
     {
       "type": "assistant",

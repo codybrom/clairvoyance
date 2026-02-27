@@ -33,10 +33,19 @@ const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
       <button class="copy-btn">Copy</button>
     </div>
 
-    <p class="install-or">or via skills.sh</p>
-
+    <p class="install-label spaced">Other Agents (via Skills.sh)</p>
     <div class="install-box" data-command={skillsShCommand}>
       <code><span>$</span> {skillsShCommand}</code>
+      <button class="copy-btn">Copy</button>
+    </div>
+
+    <p class="install-label spaced">Universal (LLMs.txt)</p>
+
+    <div
+      class="install-box"
+      data-command="https://clairvoyance.fyi/llms-full.txt"
+    >
+      <code>clairvoyance.fyi/llms-full.txt</code>
       <button class="copy-btn">Copy</button>
     </div>
 
@@ -67,6 +76,7 @@ const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
     display: flex;
     flex-direction: column;
     align-items: center;
+    overflow: hidden;
     justify-content: center;
     text-align: center;
     padding: 2rem;
@@ -160,6 +170,8 @@ const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
     position: relative;
     z-index: 1;
     align-items: center;
+    width: 100%;
+    max-width: 600px;
   }
 
   .install-label {
@@ -169,6 +181,10 @@ const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
     text-transform: uppercase;
     color: var(--gold-dim);
     margin: 0;
+
+    &.spaced {
+      margin-top: 1.5rem;
+    }
   }
 
   .install-or {
@@ -203,6 +219,8 @@ const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
     border-radius: 10px;
     padding: 0.8rem 1.1rem 0.8rem 1.2rem;
     cursor: pointer;
+    max-width: 100%;
+    overflow: hidden;
     transition:
       border-color 0.3s,
       box-shadow 0.3s;
@@ -217,6 +235,14 @@ const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
       font-size: 0.95rem;
       font-weight: 400;
       color: var(--lavender);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+
+      @media (width <= 480px) {
+        font-size: 0.75rem;
+      }
 
       & span {
         color: var(--text-dim);

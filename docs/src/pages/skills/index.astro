@@ -1,0 +1,205 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import SkillCard from "../../components/SkillCard.astro";
+import CrystalBall from "../../assets/crystal-ball.svg";
+import { getSkillsByPillar } from "../../utils/skills";
+import { Circle, Plus, Diamond, Star, Waves } from "@lucide/astro";
+
+const pillarGroups = getSkillsByPillar();
+
+const iconMap = { Circle, Plus, Diamond, Star, Waves } as Record<string, any>;
+---
+
+<Layout
+  title="All Skills — Clairvoyance"
+  description="Browse all Clairvoyance software design skills for AI coding agents, organized by pillar."
+  canonical="https://clairvoyance.fyi/skills"
+>
+  <main class="skills-index">
+    <nav class="skills-nav">
+      <a href="/" class="brand-link">
+        <CrystalBall width="20" height="20" />
+        <span>Clairvoyance</span>
+      </a>
+    </nav>
+
+    <h1>All Skills</h1>
+    <p class="subtitle">
+      Software design skills for AI coding agents, organized by pillar.
+    </p>
+
+    {
+      pillarGroups.map((group) => {
+        const Icon = iconMap[group.icon];
+        return (
+          <section class="pillar-group">
+            <h2 class="pillar-heading" style={`--pillar-hue: ${group.hue};`}>
+              {Icon && <Icon size={18} />}
+              {group.name}
+            </h2>
+            <div class="skills-grid">
+              {group.skills.map((s) => (
+                <SkillCard
+                  slug={s.slug}
+                  title={s.title}
+                  description={s.description}
+                  pillarIcon={s.pillarIcon}
+                  pillarName={s.pillar}
+                  pillarHue={s.pillarHue}
+                />
+              ))}
+            </div>
+          </section>
+        );
+      })
+    }
+  </main>
+
+  <footer class="skills-footer">
+    <a href="https://github.com/codybrom/clairvoyance" class="footer-star-btn">
+      <Star size={16} />
+      Star Clairvoyance on GitHub
+    </a>
+    <p>
+      <a href="https://github.com/codybrom/clairvoyance">Clairvoyance</a> · <a
+        href="https://github.com/codybrom/clairvoyance/blob/main/LICENSE"
+        >MIT License</a
+      > · © 2026
+      <a href="https://github.com/codybrom">Cody Bromley</a>
+    </p>
+  </footer>
+</Layout>
+
+<style>
+  .skills-index {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 2rem clamp(1.5rem, 5vw, 3rem) 4rem;
+  }
+
+  .skills-nav {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .brand-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    border-bottom: none;
+    color: var(--text);
+    transition: color 0.2s;
+
+    & :global(svg),
+    & :global(img) {
+      width: 36px;
+      height: 36px;
+      filter: drop-shadow(0 0 8px oklch(0.75 0.12 75 / 0.3));
+    }
+
+    & span {
+      font-family: var(--font-display);
+      font-size: 1.7rem;
+      font-weight: 400;
+    }
+
+    &:hover {
+      color: var(--gold);
+    }
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(2rem, 5vw, 3rem);
+    margin-bottom: 0.75rem;
+  }
+
+  .subtitle {
+    font-weight: 200;
+    color: var(--text-mid);
+    font-size: 1.05rem;
+    line-height: 1.65;
+    margin-bottom: 3rem;
+  }
+
+  .pillar-group {
+    margin-bottom: 3rem;
+  }
+
+  .pillar-heading {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.4rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+
+    & :global(svg) {
+      color: oklch(0.7 0.1 var(--pillar-hue));
+    }
+  }
+
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+
+    @media (width <= 500px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .skills-footer {
+    max-width: 780px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 2.5rem clamp(1.5rem, 5vw, 3rem);
+    border-top: 1px solid oklch(1 0 0 / 0.03);
+
+    & p {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-weight: 300;
+    }
+
+    & p a {
+      color: var(--text-dim);
+      border-bottom: none;
+
+      &:hover {
+        color: var(--gold-dim);
+      }
+    }
+  }
+
+  .footer-star-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--gold);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    text-decoration: none;
+    border: none;
+    margin-bottom: 1.5rem;
+    transition:
+      background 0.3s,
+      box-shadow 0.3s,
+      translate 0.3s;
+
+    &:hover {
+      background: oklch(0.8 0.12 75);
+      box-shadow: 0 0 40px oklch(0.75 0.12 75 / 0.2);
+      translate: 0 -1px;
+    }
+  }
+</style>

@@ -1,7 +1,9 @@
 import { defineConfig, fontProviders } from "astro/config";
+import sitemap from "@astrojs/sitemap";
 
 export default defineConfig({
   site: "https://clairvoyance.fyi",
+  integrations: [sitemap()],
   experimental: {
     fonts: [
       {

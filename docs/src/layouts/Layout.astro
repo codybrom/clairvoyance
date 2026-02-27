@@ -4,9 +4,25 @@ import "../styles/global.css";
 
 interface Props {
   title: string;
+  description?: string;
+  canonical?: string;
+  type?: string;
+  author?: string;
+  publishedTime?: string;
+  modifiedTime?: string;
 }
 
-const { title } = Astro.props;
+const defaultDescription =
+  "Good software isn't written. It's designed. Battle-tested philosophy on software design, grounded in decades of engineering experience.";
+const {
+  title,
+  description = defaultDescription,
+  canonical,
+  type = "website",
+  author,
+  publishedTime,
+  modifiedTime,
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -16,23 +32,27 @@ const { title } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta
-      name="description"
-      content="Good software isn't written. It's designed. Software design skills for AI coding agents."
-    />
+    {canonical && <link rel="canonical" href={canonical} />}
+    <meta name="description" content={description} />
     <meta property="og:title" content={title} />
-    <meta
-      property="og:description"
-      content="Good software isn't written. It's designed. Software design skills for AI coding agents."
-    />
+    <meta property="og:description" content={description} />
     <meta property="og:image" content="https://clairvoyance.fyi/og.png" />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={type} />
+    {canonical && <meta property="og:url" content={canonical} />}
+    {author && <meta name="author" content={author} />}
+    {
+      publishedTime && (
+        <meta property="article:published_time" content={publishedTime} />
+      )
+    }
+    {
+      modifiedTime && (
+        <meta property="article:modified_time" content={modifiedTime} />
+      )
+    }
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
-    <meta
-      name="twitter:description"
-      content="Good software isn't written. It's designed. Software design skills for AI coding agents."
-    />
+    <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content="https://clairvoyance.fyi/og.png" />
     <Font cssVariable="--font-serif" preload />
     <Font cssVariable="--font-mono" preload />

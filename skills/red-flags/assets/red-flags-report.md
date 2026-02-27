@@ -1,4 +1,4 @@
-# APOSD Red Flags Report
+# Red Flags Report
 
 **Target:** [file/module/PR being reviewed]
 **Date:** [date]
@@ -44,5 +44,4 @@
 **Recommended actions:** [prioritized fixes]
 
 ---
-*Status values: CLEAR, TRIGGERED, N/A*
-*Based on A Philosophy of Software Design, 2nd Ed.*
+Status values: CLEAR, TRIGGERED, N/A

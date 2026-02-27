@@ -1,4 +1,8 @@
-# Clairvoyance
+<p align="center">
+  <img src="docs/src/assets/crystal-ball.svg" width="80" alt="Clairvoyance">
+</p>
+
+<h1 align="center">Clairvoyance</h1>
 
 Clairvoyance is a set of agent skills and commands inspired by John Ousterhout's *A Philosophy of Software Design*. Each skill focuses on one design dimension (module depth, information hiding, error handling, etc.) and suggests concrete tests and decision criteria to apply during code review and implementation.
 
@@ -50,6 +54,13 @@ Fetch and follow instructions from https://raw.githubusercontent.com/codybrom/cl
 ```
 
 See [.opencode/INSTALL.md](.opencode/INSTALL.md) for detailed steps.
+
+### llms.txt
+
+Machine-readable skill index for LLM agents:
+
+- [clairvoyance.fyi/llms.txt](https://clairvoyance.fyi/llms.txt) — table of contents with descriptions
+- [clairvoyance.fyi/llms-full.txt](https://clairvoyance.fyi/llms-full.txt) — full content of all skills
 
 ## What's Inside
 
@@ -105,21 +116,22 @@ The skills and code in this project are independently authored original works by
 
 ## Contributing
 
-Skills live directly in this repository. To contribute:
+Contributions are welcome beyond the inspiration material, but should reinforce the core philosophy of thinking strategically about software design.
+
+To contribute:
 
 1. Fork the repository
-2. Create a branch for your skill
-3. Follow the [`writing-skills`](https://github.com/obra/superpowers/blob/main/skills/writing-skills/SKILL.md) skill from [Superpowers](https://github.com/obra/superpowers) for creating and testing new skills
-4. Each skill lives in `skills/<skill-name>/SKILL.md` with optional `references/` files
-5. Submit a PR
+2. Create a branch
+3. Follow the [`writing-skills`](https://github.com/obra/superpowers/blob/main/skills/writing-skills/SKILL.md) skill from [Superpowers](https://github.com/obra/superpowers) for creating and testing skills
+4. Add your skill in `skills/<skill-name>/SKILL.md` with optional `references/` files
+5. Commit your changes and submit a PR
 
 ## Updating
 
-Skills update automatically when you update the plugin:
-
-```bash
-/plugin update clairvoyance
-```
+- **Claude Code:** `/plugin update clairvoyance`
+- **skills.sh:** `npx skills update codybrom/clairvoyance`
+- **Codex / OpenCode:** Re-run the install instructions — these agents fetch the latest from `main` each time.
+- **llms.txt:** Always up to date at [clairvoyance.fyi/llms-full.txt](https://clairvoyance.fyi/llms-full.txt).
 
 ## License
 

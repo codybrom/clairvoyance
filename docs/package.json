@@ -9,8 +9,11 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.9.6",
+    "@astrojs/sitemap": "^3.7.0",
     "@lucide/astro": "^0.575.0",
     "astro": "^5.7.10",
+    "gray-matter": "^4.0.3",
+    "marked": "^17.0.3",
     "typescript": "^5.9.3"
   }
 }

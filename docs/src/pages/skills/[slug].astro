@@ -1,0 +1,741 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import CrystalBall from "../../assets/crystal-ball.svg";
+import { getAllSkills } from "../../utils/skills";
+import {
+  Circle,
+  Plus,
+  Diamond,
+  Star,
+  Waves,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Pencil,
+  FileText,
+} from "@lucide/astro";
+import { createHighlighter } from "shiki";
+import { Marked } from "marked";
+
+export function getStaticPaths() {
+  const skills = getAllSkills();
+  return skills.map((skill) => ({
+    params: { slug: skill.slug },
+    props: { skill },
+  }));
+}
+
+const { skill } = Astro.props;
+
+const iconMap = { Circle, Plus, Diamond, Star, Waves } as Record<string, any>;
+const PillarIcon = iconMap[skill.pillarIcon];
+
+// Render markdown with Shiki code highlighting (singleton)
+if (!(globalThis as any).__shikiHighlighter) {
+  (globalThis as any).__shikiHighlighter = createHighlighter({
+    themes: ["github-dark-dimmed"],
+    langs: [
+      "javascript",
+      "typescript",
+      "python",
+      "markdown",
+      "json",
+      "bash",
+      "yaml",
+    ],
+  });
+}
+const highlighter = await (globalThis as any).__shikiHighlighter;
+
+const GITHUB_BASE = `https://github.com/codybrom/clairvoyance/blob/main/skills/${skill.slug}`;
+
+const skillsBySlug = new Map(getAllSkills().map((s) => [s.slug, s]));
+
+const marked = new Marked({
+  renderer: {
+    code({ text, lang }) {
+      const language = lang || "text";
+      try {
+        return highlighter.codeToHtml(text, {
+          lang: language,
+          theme: "github-dark-dimmed",
+        });
+      } catch {
+        return `<pre><code>${text}</code></pre>`;
+      }
+    },
+    link({ href, title, text }) {
+      const isRelative =
+        !href.startsWith("http") &&
+        !href.startsWith("//") &&
+        !href.startsWith("#");
+      const url = isRelative ? `${GITHUB_BASE}/${href}` : href;
+      const titleAttr = title ? ` title="${title}"` : "";
+      return `<a href="${url}"${titleAttr}>${text}</a>`;
+    },
+    codespan({ text }) {
+      const isFilePath =
+        /^[\w./-]+\.\w+$/.test(text) && !text.startsWith("http");
+      if (isFilePath) {
+        return `<a href="${GITHUB_BASE}/${text}" class="code-file-link"><code>${text}</code></a>`;
+      }
+      return `<code>${text}</code>`;
+    },
+    strong({ text }) {
+      const plain =
+        typeof text === "string"
+          ? text
+          : ((text as any)?.raw?.replace(/<[^>]+>/g, "") ?? "");
+      const linked = skillsBySlug.get(plain);
+      if (linked) {
+        return `<a href="/skills/${plain}" class="skill-link">${linked.title}</a>`;
+      }
+      return `<strong>${typeof text === "string" ? text : ((text as any)?.raw ?? text)}</strong>`;
+    },
+  },
+});
+
+const descriptionBox = `<div class="skill-description"><span class="skill-description-label">Description for AI Agent:</span><p>${skill.description}</p></div>`;
+const rawHtml = marked.parse(skill.content) as string;
+const htmlContent = rawHtml
+  .replace(/<h1>[^<]*<\/h1>/, descriptionBox)
+  .replace(/<p>When invoked with \$ARGUMENTS[^<]*<\/p>/g, "")
+  .replace(
+    /\s*—\s*([^<,]+),\s*<em>([^<]+)<\/em>/g,
+    "<cite>$1, <em>$2</em></cite>",
+  )
+  .replace(/<(h[234])>(.*?)<\/\1>/g, (_match, tag, inner) => {
+    const plain = inner.replace(/<[^>]+>/g, "");
+    const id = plain
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-");
+    return `<${tag} id="${id}"><a href="#${id}" class="heading-link">${inner}</a></${tag}>`;
+  });
+
+// Find prev/next across all skills (wraps around)
+const allSkills = getAllSkills();
+const currentIndex = allSkills.findIndex((s) => s.slug === skill.slug);
+const rawMarkdownUrl = `https://raw.githubusercontent.com/codybrom/clairvoyance/main/skills/${skill.slug}/SKILL.md`;
+const lastUpdated = skill.lastUpdated
+  ? new Date(skill.lastUpdated).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  : null;
+
+const prevSkill =
+  allSkills[(currentIndex - 1 + allSkills.length) % allSkills.length];
+const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
+---
+
+<Layout
+  title={`${skill.title} — Clairvoyance`}
+  description={skill.description}
+  canonical={`https://clairvoyance.fyi/skills/${skill.slug}`}
+  type="article"
+  author="Cody Bromley"
+  modifiedTime={skill.lastUpdated ?? undefined}
+>
+  <article class="skill-page">
+    <nav class="skill-nav">
+      <a href="/" class="brand-link">
+        <CrystalBall width="20" height="20" />
+        <span>Clairvoyance</span>
+      </a>
+      <button class="copy-md-btn" data-url={rawMarkdownUrl}>
+        <Copy size={14} />
+        <span>Copy as Markdown</span>
+      </button>
+    </nav>
+
+    <div class="skill-header">
+      <span class="pillar-badge" style={`--pillar-hue: ${skill.pillarHue};`}>
+        {PillarIcon && <PillarIcon size={14} />}
+        {skill.pillar}
+      </span>
+      <h1 class="skill-title">{skill.title}</h1>
+      {lastUpdated && <span class="skill-updated">Updated {lastUpdated}</span>}
+    </div>
+
+    <div class="skill-content" set:html={htmlContent} />
+
+    <style is:inline>
+      .heading-link,
+      .heading-link:visited,
+      .heading-link:focus,
+      .heading-link:active {
+        color: inherit;
+        text-decoration: none;
+        border-bottom: none;
+        outline: none;
+      }
+      .heading-link:hover {
+        color: var(--gold);
+      }
+    </style>
+
+    <div class="skill-footer-links">
+      <a
+        href={`https://github.com/codybrom/clairvoyance/edit/main/skills/${skill.slug}/SKILL.md`}
+        class="footer-link"
+      >
+        <Pencil size={14} />
+        Edit on GitHub
+      </a>
+      <a href="/llms.txt" class="footer-link">
+        <FileText size={14} />
+        llms.txt
+      </a>
+      <span class="share-group">
+        <span class="share-label">Share:</span>
+        <a
+          href={`https://bsky.app/intent/compose?text=${encodeURIComponent(`${skill.title} — Clairvoyance skill for AI coding agents\nhttps://clairvoyance.fyi/skills/${skill.slug}`)}`}
+          class="share-link"
+          target="_blank"
+          rel="noopener">Bluesky</a
+        >
+        <span class="share-sep">·</span>
+        <a
+          href={`https://www.threads.net/intent/post?text=${encodeURIComponent(`${skill.title} — Clairvoyance skill for AI coding agents\nhttps://clairvoyance.fyi/skills/${skill.slug}`)}`}
+          class="share-link"
+          target="_blank"
+          rel="noopener">Threads</a
+        >
+        <span class="share-sep">·</span>
+        <a
+          href={`https://x.com/intent/tweet?text=${encodeURIComponent(`${skill.title} — Clairvoyance skill for AI coding agents`)}&url=${encodeURIComponent(`https://clairvoyance.fyi/skills/${skill.slug}`)}`}
+          class="share-link"
+          target="_blank"
+          rel="noopener">Twitter</a
+        >
+      </span>
+    </div>
+
+    <nav class="skill-pager">
+      <a href={`/skills/${prevSkill.slug}`} class="pager-link pager-prev">
+        <ChevronLeft size={16} />
+        <span>
+          <small>Previous</small>
+          {prevSkill.title}
+        </span>
+      </a>
+      <a href={`/skills/${nextSkill.slug}`} class="pager-link pager-next">
+        <span>
+          <small>Next</small>
+          {nextSkill.title}
+        </span>
+        <ChevronRight size={16} />
+      </a>
+    </nav>
+  </article>
+
+  <footer class="skill-page-footer">
+    <a href="https://github.com/codybrom/clairvoyance" class="footer-star-btn">
+      <Star size={16} />
+      Star Clairvoyance on GitHub
+    </a>
+    <p>
+      <a href="https://github.com/codybrom/clairvoyance">Clairvoyance</a> · <a
+        href="https://github.com/codybrom/clairvoyance/blob/main/LICENSE"
+        >MIT License</a
+      > · © 2026
+      <a href="https://github.com/codybrom">Cody Bromley</a>
+    </p>
+  </footer>
+</Layout>
+
+<script>
+  const btn = document.querySelector<HTMLButtonElement>(".copy-md-btn");
+  btn?.addEventListener("click", async () => {
+    const url = btn.dataset.url;
+    if (!url) return;
+    try {
+      const res = await fetch(url);
+      const text = await res.text();
+      await navigator.clipboard.writeText(text);
+      const label = btn.querySelector("span");
+      if (label) {
+        const orig = label.textContent;
+        label.textContent = "Copied!";
+        setTimeout(() => (label.textContent = orig), 1800);
+      }
+    } catch {
+      // fallback: open raw URL
+      window.open(url, "_blank");
+    }
+  });
+</script>
+
+<style>
+  .skill-page {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 2rem clamp(1.5rem, 5vw, 3rem) 4rem;
+    background: oklch(0.17 0.05 290);
+    border-left: 1px solid oklch(1 0 0 / 0.03);
+    border-right: 1px solid oklch(1 0 0 / 0.03);
+    min-height: 100vh;
+  }
+
+  .skill-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.5rem 0 2.5rem;
+    border-bottom: 1px solid oklch(1 0 0 / 0.06);
+    margin-bottom: 2.5rem;
+  }
+
+  .brand-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: none;
+    transition: opacity 0.2s;
+
+    & :global(svg) {
+      width: 36px;
+      height: 36px;
+      filter: drop-shadow(0 0 12px oklch(0.75 0.12 75 / 0.3));
+    }
+
+    & span {
+      font-family: var(--font-display);
+      font-size: 1.7rem;
+      color: var(--text);
+    }
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  .skill-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 2rem;
+  }
+
+  .skill-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(2rem, 5vw, 2.8rem);
+    line-height: 1.15;
+  }
+
+  .pillar-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-code);
+    font-size: 0.75rem;
+    color: oklch(0.7 0.1 var(--pillar-hue));
+    letter-spacing: 0.05em;
+    width: fit-content;
+  }
+
+  .skill-updated {
+    font-family: var(--font-code);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 0.03em;
+  }
+
+  .copy-md-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: auto;
+    background: oklch(0.75 0.12 75 / 0.08);
+    border: 1px solid oklch(0.75 0.12 75 / 0.15);
+    color: var(--gold-dim);
+    font-family: var(--font-code);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 0.45rem 0.85rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition:
+      background 0.2s,
+      color 0.2s,
+      border-color 0.2s;
+
+    &:hover {
+      background: oklch(0.75 0.12 75 / 0.15);
+      color: var(--gold);
+      border-color: oklch(0.75 0.12 75 / 0.3);
+    }
+  }
+
+  .skill-content :global(.skill-description) {
+    margin-bottom: 2.5rem;
+    padding: 1.25rem 1.5rem;
+    background: transparent;
+    border: none;
+    border-left: 3px solid oklch(0.6 0.08 75 / 0.4);
+    padding-right: 0;
+  }
+
+  .skill-content :global(.skill-description-label) {
+    display: block;
+    font-family: var(--font-code);
+    font-size: 0.7rem;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+
+  .skill-content :global(.skill-description p) {
+    font-family: var(--font-code);
+    font-weight: 300;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: oklch(0.65 0.03 290);
+    margin: 0;
+  }
+
+  .skill-content :global(.skill-link) {
+    font-family: var(--font-code);
+    font-size: 0.85em;
+    color: var(--gold);
+    text-decoration: none;
+    padding: 0.1em 0.45em;
+    background: oklch(0.75 0.12 75 / 0.08);
+    border: 1px solid oklch(0.75 0.12 75 / 0.15);
+    border-radius: 4px;
+    transition:
+      background 0.2s,
+      border-color 0.2s;
+
+    &:hover {
+      background: oklch(0.75 0.12 75 / 0.15);
+      border-color: oklch(0.75 0.12 75 / 0.3);
+    }
+  }
+
+  .skill-content :global(.code-file-link) {
+    text-decoration: none;
+    border-bottom: 1px dashed oklch(0.75 0.12 75 / 0.3);
+    transition: border-color 0.2s;
+
+    &:hover {
+      border-bottom-color: var(--gold);
+    }
+  }
+
+  /* ═══════ MARKDOWN CONTENT ═══════ */
+
+  .skill-content :global(h2) {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.6rem;
+    margin-top: 3rem;
+    margin-bottom: 1rem;
+    color: var(--text);
+  }
+
+  .skill-content :global(h3) {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 1.15rem;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    color: var(--text);
+  }
+
+  .skill-content :global(h4) {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.85rem;
+  }
+
+  .skill-content :global(p) {
+    font-weight: 300;
+    font-size: 1rem;
+    line-height: 1.75;
+    color: var(--text);
+    margin-bottom: 1rem;
+  }
+
+  .skill-content :global(ul),
+  .skill-content :global(ol) {
+    margin: 0 0 1.25rem 1.25rem;
+    line-height: 1.7;
+    color: var(--text);
+    font-weight: 300;
+  }
+
+  .skill-content :global(li) {
+    margin-bottom: 0.35rem;
+  }
+
+  .skill-content :global(li > ul),
+  .skill-content :global(li > ol) {
+    margin-top: 0.35rem;
+    margin-bottom: 0;
+  }
+
+  .skill-content :global(strong) {
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .skill-content :global(em) {
+    font-style: italic;
+    color: var(--gold-dim);
+  }
+
+  .skill-content :global(code) {
+    font-family: var(--font-code);
+    font-size: 0.88em;
+    background: oklch(0.22 0.04 290);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    color: var(--lavender);
+  }
+
+  .skill-content :global(pre) {
+    background: oklch(0.18 0.04 290);
+    border: 1px solid oklch(1 0 0 / 0.06);
+    border-radius: var(--radius-sm);
+    padding: 1.25rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+
+  .skill-content :global(pre code) {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+
+  .skill-content :global(blockquote) {
+    border-left: 3px solid var(--gold-dim);
+    padding-left: 1.25rem;
+    margin: 1.5rem 0;
+    color: var(--text-mid);
+    font-style: italic;
+  }
+
+  .skill-content :global(blockquote cite) {
+    display: block;
+    font-style: normal;
+    font-size: 0.8rem;
+    color: oklch(0.7 0.06 75);
+    margin-top: 0.5rem;
+  }
+
+  .skill-content :global(hr) {
+    border: none;
+    border-top: 1px solid oklch(1 0 0 / 0.06);
+    margin: 2.5rem 0;
+  }
+
+  .skill-content :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+  }
+
+  .skill-content :global(th) {
+    text-align: left;
+    font-weight: 500;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 2px solid oklch(1 0 0 / 0.1);
+    color: var(--gold-dim);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .skill-content :global(td) {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid oklch(1 0 0 / 0.04);
+    font-weight: 300;
+    line-height: 1.6;
+  }
+
+  /* ═══════ FOOTER LINKS ═══════ */
+
+  .skill-footer-links {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-top: 3rem;
+    padding: 1.25rem 0;
+    border-top: 1px solid oklch(1 0 0 / 0.06);
+  }
+
+  .footer-link,
+  .share-label,
+  .share-sep,
+  .share-link {
+    font-family: var(--font-code);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    letter-spacing: 0.03em;
+    line-height: 1;
+  }
+
+  .footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-bottom: none;
+    transition: color 0.2s;
+
+    &:hover {
+      color: var(--gold);
+    }
+
+    & :global(svg) {
+      flex-shrink: 0;
+    }
+  }
+
+  .share-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+
+  .share-sep {
+    opacity: 0.4;
+  }
+
+  .share-link {
+    border-bottom: none;
+    transition: color 0.2s;
+
+    &:hover {
+      color: var(--gold);
+    }
+  }
+
+  /* ═══════ PREV / NEXT PAGER ═══════ */
+
+  .skill-pager {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid oklch(1 0 0 / 0.06);
+  }
+
+  .pager-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid oklch(1 0 0 / 0.08);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    border-bottom: 1px solid oklch(1 0 0 / 0.08);
+    transition:
+      border-color 0.2s,
+      background 0.2s;
+
+    &:hover {
+      border-color: oklch(0.75 0.12 75 / 0.3);
+      background: oklch(0.75 0.12 75 / 0.04);
+    }
+
+    & small {
+      display: block;
+      font-family: var(--font-code);
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.15rem;
+    }
+
+    & span {
+      font-size: 0.9rem;
+      color: var(--text);
+      font-weight: 400;
+    }
+  }
+
+  .pager-next {
+    text-align: right;
+    margin-left: auto;
+  }
+
+  @media (width <= 480px) {
+    .skill-pager {
+      flex-direction: column;
+    }
+    .pager-next {
+      text-align: left;
+    }
+  }
+
+  /* ═══════ PAGE FOOTER ═══════ */
+
+  .skill-page-footer {
+    max-width: 780px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 2.5rem clamp(1.5rem, 5vw, 3rem);
+    border-top: 1px solid oklch(1 0 0 / 0.03);
+
+    & p {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-weight: 300;
+    }
+
+    & p a {
+      color: var(--text-dim);
+      border-bottom: none;
+
+      &:hover {
+        color: var(--gold-dim);
+      }
+    }
+  }
+
+  .footer-star-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: 0.9rem;
+    color: var(--gold-dim);
+    padding: 0.65rem 1.25rem;
+    border: 1px solid oklch(0.75 0.12 75 / 0.2);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    transition:
+      border-color 0.3s,
+      color 0.3s,
+      background 0.3s;
+
+    &:hover {
+      color: var(--gold);
+      border-color: oklch(0.75 0.12 75 / 0.4);
+      background: oklch(0.75 0.12 75 / 0.06);
+    }
+  }
+</style>

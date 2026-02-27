@@ -2,16 +2,18 @@
 import Layout from "../layouts/Layout.astro";
 import Hero from "../components/Hero.astro";
 import Pillar from "../components/Pillar.astro";
+import SkillCard from "../components/SkillCard.astro";
 import ReplayViewer from "../components/ReplayViewer.astro";
 import { createHighlighter } from "shiki";
 import { Circle, Plus, Diamond, Star, Waves } from "@lucide/astro";
+import { getAllSkills, PILLARS } from "../utils/skills";
 
 // Load replay data
-import structure from "../data/replays/1-structure.json";
-import abstraction from "../data/replays/2-abstraction.json";
-import clarity from "../data/replays/3-clarity.json";
-import process from "../data/replays/4-process.json";
-import diagnostic from "../data/replays/5-diagnostic.json";
+import structure from "../data/1-structure.json";
+import abstraction from "../data/2-abstraction.json";
+import clarity from "../data/3-clarity.json";
+import process from "../data/4-process.json";
+import diagnostic from "../data/5-diagnostic.json";
 
 // Pre-highlight code with Shiki at build time
 const highlighter = await createHighlighter({
@@ -50,46 +52,12 @@ const replays = rawReplays.map((r) => {
   };
 });
 
-const pillars = [
-  {
-    icon: "Star",
-    name: "Structure",
-    skills: [
-      "deep-modules",
-      "module-boundaries",
-      "information-hiding",
-      "pull-complexity-down",
-    ],
-  },
-  {
-    icon: "Plus",
-    name: "Abstraction",
-    skills: ["general-vs-special", "error-design", "abstraction-quality"],
-  },
-  {
-    icon: "Circle",
-    name: "Clarity",
-    skills: ["naming-obviousness", "comments-docs"],
-  },
-  {
-    icon: "Diamond",
-    name: "Process",
-    skills: [
-      "strategic-mindset",
-      "design-it-twice",
-      "code-evolution",
-      "complexity-recognition",
-    ],
-  },
-  {
-    icon: "Waves",
-    name: "Diagnostic",
-    skills: ["red-flags"],
-  },
-];
+const pillars = PILLARS;
+
+const allSkills = getAllSkills();
 ---
 
-<Layout title="Clairvoyance — ESP for AI Coding">
+<Layout title="Clairvoyance: Software Design Skills for AI Agents">
   <Hero
     skillsShCommand="npx skills add codybrom/clairvoyance"
     claudeStep1="/plugin marketplace add codybrom/clairvoyance"
@@ -102,13 +70,36 @@ const pillars = [
     <p class="pillars-sub reveal">
       Your agent already knows how to code. Teach it how to
       <em>see</em>. Battle-tested philosophy on software design, grounded in
-      decades of real-world engineering experience.
+      decades of engineering experience.
     </p>
 
     <div class="pillar-row stagger">
       {
         pillars.map((p) => (
-          <Pillar icon={p.icon} name={p.name} skills={p.skills} />
+          <Pillar icon={p.icon} name={p.name} skills={p.skills} hue={p.hue} />
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- ═══════ SKILL CATALOG ═══════ -->
+  <section class="catalog" id="catalog">
+    <h2 class="reveal">Read the Tea Leaves</h2>
+    <p class="catalog-sub reveal">
+      Complexity hides all over your code. Each skill teaches your AI assistant
+      exactly where to look.
+    </p>
+    <div class="catalog-grid stagger">
+      {
+        allSkills.map((s) => (
+          <SkillCard
+            slug={s.slug}
+            title={s.title}
+            description={s.description}
+            pillarIcon={s.pillarIcon}
+            pillarName={s.pillar}
+            pillarHue={s.pillarHue}
+          />
         ))
       }
     </div>
@@ -129,25 +120,32 @@ const pillars = [
   <!-- ═══════ BOTTOM CTA ═══════ -->
   <section class="bottom">
     <div class="bottom-symbols">
-      <Circle size={18} />
-      <Plus size={18} />
-      <Diamond size={18} />
       <Star size={18} />
+      <Plus size={18} />
+      <Circle size={18} />
+      <Diamond size={18} />
       <Waves size={18} />
     </div>
     <h2 class="reveal">See through complexity</h2>
     <p class="bottom-text reveal">
-      Adapted in part from the teachings of John Ousterhout and his book <a href="https://web.stanford.edu/~ouster/cgi-bin/aposd.php"><em>A Philosophy of Software Design</em></a>. If you haven't read it, you should.
+      The principles behind Clairvoyance are inspired by the teachings of John
+      Ousterhout and his book <a
+        href="https://web.stanford.edu/~ouster/cgi-bin/aposd.php"
+        ><em>A Philosophy of Software Design</em></a
+      >. If you haven't read it, you really should.
     </p>
     <a href="https://github.com/codybrom/clairvoyance" class="cta-btn reveal">
-      View on GitHub
+      <Star size={16} />
+      Star on GitHub
     </a>
   </section>
 
   <footer>
     <p>
-      <a href="https://github.com/codybrom/clairvoyance">Clairvoyance</a> · MIT ·
-      © 2026
+      <a href="https://github.com/codybrom/clairvoyance">Clairvoyance</a> · <a
+        href="https://github.com/codybrom/clairvoyance/blob/main/LICENSE"
+        >MIT License</a
+      > · © 2026
       <a href="https://github.com/codybrom">Cody Bromley</a>
     </p>
   </footer>
@@ -231,6 +229,7 @@ const pillars = [
     @media (width <= 640px) {
       max-width: none;
       grid-template-columns: repeat(2, 1fr);
+      justify-items: stretch;
 
       & :global(:nth-child(1)),
       & :global(:nth-child(2)),
@@ -241,10 +240,46 @@ const pillars = [
 
       & :global(:nth-child(5)) {
         grid-column: 1 / -1;
-        max-width: 320px;
+        width: 100%;
+        max-width: calc(50% - 0.625rem);
         margin: 0 auto;
+        justify-self: auto;
       }
     }
+  }
+
+  /* ═══════ SKILL CATALOG ═══════ */
+
+  .catalog {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: clamp(2rem, 6vw, 4rem) clamp(1.5rem, 5vw, 3rem)
+      clamp(4rem, 10vw, 8rem);
+    text-align: center;
+  }
+
+  .catalog h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    margin-bottom: 1rem;
+  }
+
+  .catalog-sub {
+    font-weight: 200;
+    color: var(--text-mid);
+    font-size: 1.05rem;
+    max-width: 520px;
+    margin: 0 auto 3rem;
+    line-height: 1.65;
+  }
+
+  .catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+    text-align: left;
+    max-width: 1100px;
   }
 
   /* ═══════ BOTTOM CTA ═══════ */
@@ -298,7 +333,9 @@ const pillars = [
   }
 
   .cta-btn {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     background: var(--gold);
     color: var(--ink);
     font-family: var(--font-body);

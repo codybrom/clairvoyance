@@ -5,7 +5,7 @@
   "steps": [
     {
       "type": "user",
-      "text": "We need to store user preferences for our app \u2014 things like theme, language, notification settings."
+      "text": "We need to store user preferences for our app for things like theme, language and notification settings."
     },
     {
       "type": "assistant",

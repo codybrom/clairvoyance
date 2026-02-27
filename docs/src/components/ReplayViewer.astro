@@ -3,14 +3,13 @@ import {
   Play,
   Pause,
   RotateCcw,
-  SkipBack,
-  SkipForward,
   Circle,
   Plus,
   Diamond,
   Star,
   Waves,
 } from "@lucide/astro";
+import { PILLAR_HUES } from "../utils/skills";
 
 const tabIconMap: Record<string, any> = {
   "1-structure": Star,
@@ -18,6 +17,14 @@ const tabIconMap: Record<string, any> = {
   "3-clarity": Circle,
   "4-process": Diamond,
   "5-diagnostic": Waves,
+};
+
+const tabHueMap: Record<string, number> = {
+  "1-structure": PILLAR_HUES.Structure,
+  "2-abstraction": PILLAR_HUES.Abstraction,
+  "3-clarity": PILLAR_HUES.Clarity,
+  "4-process": PILLAR_HUES.Process,
+  "5-diagnostic": PILLAR_HUES.Diagnostic,
 };
 
 interface Props {
@@ -53,10 +60,12 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     {
       replays.map((r) => {
         const TabIcon = tabIconMap[r.demo];
+        const hue = tabHueMap[r.demo] ?? 75;
         return (
           <button
             class:list={["replay-tab", { active: r.demo === defaultDemo }]}
             data-demo={r.demo}
+            style={`--pillar-hue: ${hue};`}
           >
             <span class="tab-symbol">
               {TabIcon ? <TabIcon size={18} /> : r.symbol}
@@ -87,7 +96,10 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
 
       <!-- Code pane -->
       <div class="replay-code">
-        <div class="code-tab"><span class="code-filename"></span></div>
+        <div class="code-tab">
+          <span class="code-filename"></span><span class="code-diff-stats"
+          ></span>
+        </div>
         <pre class="code-content"></pre>
       </div>
     </div>
@@ -102,14 +114,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
       <div class="progress-track">
         <div class="progress-fill"></div>
       </div>
-      <div class="replay-controls">
-        <button class="step-btn step-back" aria-label="Previous step"
-          ><SkipBack size={14} /></button
-        >
-        <button class="step-btn step-fwd" aria-label="Next step"
-          ><SkipForward size={14} /></button
-        >
-      </div>
+      <button class="speed-btn" aria-label="Playback speed">1x</button>
     </div>
   </div>
 
@@ -134,6 +139,8 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     progressStart: number = 0;
     progressDuration: number = 0;
     generation: number = 0;
+    speed: number = 1;
+    speedBtn: HTMLElement;
 
     // Zener-style symbol groups — each is a morph sequence
     static symbolGroups = [
@@ -174,6 +181,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
       this.filenameEl = container.querySelector(".code-filename")!;
       this.fillEl = container.querySelector(".progress-fill")!;
       this.playpauseEl = container.querySelector(".replay-playpause")!;
+      this.speedBtn = container.querySelector(".speed-btn")!;
 
       // Pause playback when viewer scrolls mostly offscreen
       const visObs = new IntersectionObserver(
@@ -217,17 +225,14 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
         }
       });
 
-      // Step buttons
-      this.container
-        .querySelector(".step-back")
-        ?.addEventListener("click", () => {
-          if (!this.playing) this.stepBack();
-        });
-      this.container
-        .querySelector(".step-fwd")
-        ?.addEventListener("click", () => {
-          if (!this.playing) this.stepForward();
-        });
+      // Speed toggle
+      this.speedBtn.addEventListener("click", () => {
+        const speeds = [1, 2, 4];
+        const idx = (speeds.indexOf(this.speed) + 1) % speeds.length;
+        this.speed = speeds[idx];
+        this.speedBtn.textContent = `${this.speed}x`;
+        this.speedBtn.classList.toggle("is-fast", this.speed > 1);
+      });
 
       // Progress bar click
       this.container
@@ -266,6 +271,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
       this.chatEl.innerHTML = '<div class="chat-spacer"></div>';
       this.progressPausedAt = 0;
       this.fillEl.style.width = "0%";
+      this.container.querySelector(".code-diff-stats")!.innerHTML = "";
       this.progressDuration = this.estimateDuration();
 
       if (this.current.file) {
@@ -277,8 +283,9 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
           this.codeEl.innerHTML =
             '<span class="empty-file">No file open</span>';
         } else {
-          this.codeEl.innerHTML =
-            this.current.file.initialHtml || this.current.file.initial;
+          this.renderNumberedCode(
+            this.current.file.initialHtml || this.current.file.initial,
+          );
         }
         this.container.querySelector<HTMLElement>(
           ".replay-code",
@@ -288,6 +295,17 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
           ".replay-code",
         )!.style.display = "none";
       }
+    }
+
+    renderNumberedCode(html: string) {
+      const lines = this.splitHighlightedLines(html);
+      this.codeEl.innerHTML = "";
+      lines.forEach((line, i) => {
+        const el = document.createElement("div");
+        el.className = "code-line";
+        el.innerHTML = `<span class="line-num">${i + 1}</span>${line || " "}`;
+        this.codeEl.appendChild(el);
+      });
     }
 
     togglePlay() {
@@ -440,7 +458,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
       this.timer = window.setTimeout(() => {
         if (this.generation !== gen) return;
         this.advance();
-      }, delay);
+      }, delay / this.speed);
     }
 
     // User text: type character by character
@@ -464,7 +482,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
           this.charTimer = null;
           done();
         }
-      }, 30);
+      }, 30 / this.speed);
     }
 
     // Assistant: spinner while thinking, then prompt + text streams in
@@ -510,7 +528,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
               done();
             }
           }
-        }, 50);
+        }, 50 / this.speed);
       });
     }
 
@@ -556,7 +574,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
           this.scrollChat();
           done();
         }
-      }, 12);
+      }, 12 / this.speed);
     }
 
     addMessage(role: string): HTMLElement {
@@ -600,14 +618,14 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
         }
         frame = (frame + 1) % symbols.length;
         el.textContent = symbols[frame];
-      }, 150);
+      }, 150 / this.speed);
       const timeoutId = window.setTimeout(() => {
         clearInterval(intervalId);
         if (this.generation !== gen) return;
         el.textContent = "◆";
         el.classList.remove("is-spinning");
         done?.();
-      }, duration);
+      }, duration / this.speed);
       this.spinTimers.push(intervalId, timeoutId);
     }
 
@@ -623,17 +641,42 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
 
     addFinishLine() {
       const verbs = [
-        "Cooked",
+        "Bewitched",
         "Conjured",
         "Divined",
-        "Channeled",
-        "Manifested",
+        "Foretold",
+        "Ghostbusted",
+        "Hexed",
+        "Levitated",
+        "Ouija'd",
+        "Palmread",
+        "Prognosticated",
+        "Prophesied",
+        "Rune'd",
+        "Scried",
+        "Séanced",
+        "Babadooked",
+        "Deloreaned",
       ];
       const verb = verbs[Math.floor(Math.random() * verbs.length)];
-      const secs = 20 + Math.floor(Math.random() * 30);
+      const secs =
+        verb === "Deloreaned"
+          ? 88
+          : verb === "Babadooked"
+            ? 666
+            : 20 + Math.floor(Math.random() * 30);
       const el = document.createElement("div");
       el.className = "msg msg-finish";
-      el.innerHTML = `<span class="finish-star">★</span><span class="finish-text">${verb} for ${secs}s</span>`;
+      const taglines: Record<string, string> = {
+        Deloreaned: "Nice going, McFly!",
+        Babadooked: "Get ready to be Babashook!",
+      };
+      const tagline = taglines[verb] || "";
+      const display =
+        verb === "Ghostbusted"
+          ? "Ghostbusted for Ecto-1s"
+          : `${verb} for ${secs}s`;
+      el.innerHTML = `<span class="finish-star">★</span><span class="finish-text">${display}${tagline ? ` — ${tagline}` : ""}</span>`;
       this.chatEl.appendChild(el);
       this.scrollChat();
     }
@@ -658,25 +701,40 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
 
       let oldIdx = 0;
       let newIdx = 0;
+      let oldLineNum = 1;
+      let newLineNum = 1;
       diff.forEach((line) => {
         const lineEl = document.createElement("div");
         lineEl.className = `diff-line diff-${line.type}`;
         let highlighted: string;
+        let lineNum: string;
         if (line.type === "del") {
           highlighted = initialHtmlLines[oldIdx] || this.escapeHtml(line.text);
+          lineNum = String(oldLineNum);
           oldIdx++;
+          oldLineNum++;
         } else if (line.type === "add") {
           highlighted = finalHtmlLines[newIdx] || this.escapeHtml(line.text);
+          lineNum = String(newLineNum);
           newIdx++;
+          newLineNum++;
         } else {
-          // context line — advance both
           highlighted = finalHtmlLines[newIdx] || this.escapeHtml(line.text);
+          lineNum = String(newLineNum);
           oldIdx++;
           newIdx++;
+          oldLineNum++;
+          newLineNum++;
         }
-        lineEl.innerHTML = `<span class="diff-prefix">${line.prefix}</span> ${highlighted}`;
+        lineEl.innerHTML = `<span class="line-num">${lineNum}</span><span class="diff-prefix">${line.prefix}</span> ${highlighted}`;
         this.codeEl.appendChild(lineEl);
       });
+
+      // Update diff stats in the tab
+      const adds = diff.filter((l) => l.type === "add").length;
+      const dels = diff.filter((l) => l.type === "del").length;
+      const statsEl = this.container.querySelector(".code-diff-stats")!;
+      statsEl.innerHTML = `<span class="diff-adds">+${adds}</span> <span class="diff-dels">-${dels}</span>`;
 
       // Scroll code pane to first changed line (if not already visible)
       const firstChange = this.codeEl.querySelector(
@@ -862,8 +920,9 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
           this.codeEl.innerHTML =
             '<span class="empty-file">No file open</span>';
         } else {
-          this.codeEl.innerHTML =
-            this.current.file.initialHtml || this.current.file.initial;
+          this.renderNumberedCode(
+            this.current.file.initialHtml || this.current.file.initial,
+          );
         }
       }
       for (let i = 0; i <= target; i++) {
@@ -920,6 +979,12 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     gap: 0.5rem;
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
+
+    @media (width <= 600px) {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.35rem;
+    }
   }
 
   .replay-tab {
@@ -932,6 +997,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     border: 1px solid oklch(1 0 0 / 0.05);
     border-radius: var(--radius-sm);
     padding: 0.5rem 1rem;
+    min-width: 0;
     color: var(--text-dim);
     font-family: var(--font-body);
     font-size: 0.85rem;
@@ -940,14 +1006,23 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
       border-color 0.2s,
       color 0.2s;
 
+    @media (width <= 600px) {
+      flex-direction: column;
+      padding: 0.4rem 0.25rem;
+      font-size: 0.6rem;
+      gap: 0.15rem;
+    }
+
     &:hover {
-      border-color: oklch(0.75 0.12 75 / 0.2);
+      border-color: oklch(0.7 0.1 var(--pillar-hue) / 0.2);
       color: var(--text-mid);
     }
 
     &.active {
-      border-color: oklch(0.75 0.12 75 / 0.4);
-      color: var(--gold);
+      border-color: oklch(0.7 0.1 var(--pillar-hue) / 0.4);
+      color: oklch(0.7 0.1 var(--pillar-hue));
+      background: oklch(0.7 0.1 var(--pillar-hue) / 0.08);
+      box-shadow: 0 0 20px oklch(0.7 0.1 var(--pillar-hue) / 0.1);
     }
   }
 
@@ -1102,7 +1177,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     @media (width <= 900px) {
       border-right: none;
       border-bottom: 1px solid oklch(1 0 0 / 0.04);
-      height: 380px;
+      height: 300px;
     }
   }
 
@@ -1332,6 +1407,10 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     overflow: hidden;
     min-height: 0;
     position: relative;
+
+    @media (width <= 900px) {
+      height: 280px;
+    }
   }
 
   .code-tab {
@@ -1341,6 +1420,40 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     font-size: 0.7rem;
     color: var(--text-dim);
     background: oklch(0 0 0 / 0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .code-diff-stats {
+    margin-left: auto;
+    font-family: var(--font-code);
+    font-size: 0.65rem;
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  :global(.diff-adds) {
+    color: oklch(0.75 0.18 145);
+  }
+
+  :global(.diff-dels) {
+    color: oklch(0.7 0.18 25);
+  }
+
+  :global(.code-line),
+  :global(.diff-line) {
+    display: flex;
+  }
+
+  :global(.line-num) {
+    display: inline-block;
+    min-width: 2.5em;
+    text-align: right;
+    padding-right: 0.5em;
+    color: oklch(1 0 0 / 0.15);
+    user-select: none;
+    flex-shrink: 0;
   }
 
   .code-content {
@@ -1383,20 +1496,33 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     word-break: normal;
   }
 
+  :global(.diff-prefix) {
+    display: inline-block;
+    width: 1em;
+    text-align: center;
+    flex-shrink: 0;
+    margin-right: 0.5em;
+  }
+
   :global(.diff-ctx) {
     color: var(--text-dim);
   }
 
   :global(.diff-add) {
-    color: oklch(0.75 0.18 145);
     background: oklch(0.75 0.18 145 / 0.08);
   }
 
+  :global(.diff-add > .diff-prefix) {
+    color: oklch(0.75 0.18 145);
+  }
+
   :global(.diff-del) {
-    color: oklch(0.7 0.18 25);
     background: oklch(0.7 0.18 25 / 0.08);
-    text-decoration: line-through;
     opacity: 0.7;
+  }
+
+  :global(.diff-del > .diff-prefix) {
+    color: oklch(0.7 0.18 25);
   }
 
   :global(.code-content:has(.empty-file)) {
@@ -1443,29 +1569,28 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     width: 0%;
   }
 
-  .replay-controls {
-    display: flex;
-    gap: 0.3rem;
-  }
-
-  .step-btn {
+  .speed-btn {
     background: none;
-    border: none;
+    border: 1px solid oklch(1 0 0 / 0.08);
+    border-radius: var(--radius-sm);
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 0.75rem;
-    padding: 0.2rem;
-    transition: color 0.2s;
-    display: flex;
-    align-items: center;
+    font-family: var(--font-code);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    transition:
+      color 0.2s,
+      border-color 0.2s;
+    flex-shrink: 0;
 
     &:hover {
       color: var(--gold);
+      border-color: oklch(0.75 0.12 75 / 0.3);
     }
-  }
 
-  .is-playing .step-btn {
-    opacity: 0.3;
-    pointer-events: none;
+    &.is-fast {
+      color: var(--gold);
+      border-color: oklch(0.75 0.12 75 / 0.3);
+    }
   }
 </style>

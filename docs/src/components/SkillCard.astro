@@ -1,0 +1,118 @@
+---
+import { Circle, Plus, Diamond, Star, Waves } from "@lucide/astro";
+
+interface Props {
+  slug: string;
+  title: string;
+  description: string;
+  pillarIcon: string;
+  pillarName: string;
+  pillarHue: number;
+}
+
+const { slug, title, description, pillarIcon, pillarName, pillarHue } = Astro.props;
+
+const iconMap = { Circle, Plus, Diamond, Star, Waves } as Record<string, any>;
+const IconComponent = iconMap[pillarIcon];
+
+const shortDesc = description.split(/\.\s*Use when/i)[0] + ".";
+const hue = pillarHue;
+---
+
+<a
+  href={`/skills/${slug}`}
+  class="skill-card reveal"
+  style={`--pillar-hue: ${hue};`}
+>
+  <div class="skill-card-header">
+    <span class="skill-card-icon">
+      {IconComponent && <IconComponent size={14} />}
+    </span>
+    <span class="skill-card-pillar">{pillarName}</span>
+  </div>
+  <h3 class="skill-card-title">{title}</h3>
+  <p class="skill-card-desc">{shortDesc}</p>
+  <span class="skill-card-read">Read &rarr;</span>
+</a>
+
+<style>
+  .skill-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--card);
+    border: 1px solid oklch(0.5 0.04 var(--pillar-hue) / 0.15);
+    border-radius: var(--radius);
+    text-decoration: none;
+    transition:
+      border-color 0.3s,
+      translate 0.3s,
+      box-shadow 0.3s,
+      background 0.3s;
+
+    &:hover {
+      border-color: oklch(0.7 0.1 var(--pillar-hue) / 0.4);
+      translate: 0 -2px;
+      box-shadow: 0 6px 30px oklch(0.5 0.08 var(--pillar-hue) / 0.12);
+      background: oklch(0.22 0.02 var(--pillar-hue));
+    }
+
+    &:hover .skill-card-read {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+
+  .skill-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .skill-card-icon {
+    color: oklch(0.7 0.1 var(--pillar-hue));
+    display: flex;
+    align-items: center;
+  }
+
+  .skill-card-pillar {
+    font-family: var(--font-code);
+    font-size: 0.7rem;
+    color: oklch(0.7 0.1 var(--pillar-hue));
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .skill-card-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.2rem;
+    color: var(--text);
+    line-height: 1.25;
+  }
+
+  .skill-card-read {
+    font-family: var(--font-code);
+    font-size: 0.75rem;
+    color: oklch(0.75 0.1 var(--pillar-hue));
+    letter-spacing: 0.05em;
+    margin-top: auto;
+    opacity: 0;
+    translate: 0 4px;
+    transition:
+      opacity 0.25s,
+      translate 0.25s;
+  }
+
+  .skill-card-desc {
+    font-size: 0.85rem;
+    font-weight: 300;
+    color: var(--text-mid);
+    line-height: 1.55;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

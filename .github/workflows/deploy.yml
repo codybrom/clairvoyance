@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - skills/**
       - docs/src/**
       - docs/public/**
       - docs/package.json
