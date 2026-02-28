@@ -20,7 +20,7 @@
         "url": "https://github.com/codybrom/clairvoyance.git"
       },
       "description": "ESP for AI Coding — Agent skills on the philosophy of software design, grounded in decades of engineering experience.",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "strict": true
     }
   ]
