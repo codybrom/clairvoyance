@@ -1,9 +1,17 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import CrystalBall from "../assets/crystal-ball.svg";
 ---
 
 <Layout title="Privacy Policy — Clairvoyance">
-  <section class="privacy">
+  <article class="privacy-page">
+    <nav class="privacy-nav">
+      <a href="/" class="brand-link">
+        <CrystalBall width="20" height="20" />
+        <span>Clairvoyance</span>
+      </a>
+    </nav>
+
     <h1>Privacy Policy</h1>
     <p class="updated">Last updated: February 27, 2026</p>
 
@@ -44,45 +52,81 @@ import Layout from "../layouts/Layout.astro";
         href="https://github.com/codybrom/clairvoyance">GitHub</a
       > or reach out to <a href="https://github.com/codybrom">Cody Bromley</a>.
     </p>
-  </section>
+  </article>
 </Layout>
 
 <style>
-  .privacy {
-    max-width: 680px;
+  .privacy-page {
+    max-width: 780px;
     margin: 0 auto;
-    padding: clamp(3rem, 8vw, 6rem) clamp(1.5rem, 5vw, 3rem);
+    padding: 2rem clamp(1.5rem, 5vw, 3rem) 4rem;
+    background: oklch(0.17 0.05 290);
+    border-left: 1px solid oklch(1 0 0 / 0.03);
+    border-right: 1px solid oklch(1 0 0 / 0.03);
+    min-height: 100vh;
+  }
+
+  .privacy-nav {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem 0 2.5rem;
+    border-bottom: 1px solid oklch(1 0 0 / 0.06);
+    margin-bottom: 2.5rem;
+  }
+
+  .brand-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: none;
+    color: var(--text);
+    transition: opacity 0.2s;
+
+    & :global(svg) {
+      width: 36px;
+      height: 36px;
+      filter: drop-shadow(0 0 12px oklch(0.75 0.12 75 / 0.3));
+    }
+
+    & span {
+      font-family: var(--font-display);
+      font-size: 1.7rem;
+    }
+
+    &:hover {
+      opacity: 0.8;
+    }
   }
 
   h1 {
     font-family: var(--font-display);
     font-weight: 400;
-    font-size: clamp(2rem, 5vw, 3rem);
+    font-size: clamp(2rem, 5vw, 2.8rem);
     margin-bottom: 0.5rem;
   }
 
   .updated {
-    font-size: 0.85rem;
+    font-family: var(--font-code);
+    font-size: 0.75rem;
     color: var(--text-dim);
-    margin-bottom: 3rem;
+    letter-spacing: 0.03em;
+    margin-bottom: 2.5rem;
   }
 
   h2 {
     font-family: var(--font-display);
     font-weight: 400;
-    font-size: 1.2rem;
-    margin-top: 2rem;
-    margin-bottom: 0.5rem;
+    font-size: 1.4rem;
+    margin-top: 2.5rem;
+    margin-bottom: 0.6rem;
+    color: var(--text);
   }
 
   p {
-    font-weight: 200;
+    font-weight: 300;
     font-size: 1rem;
-    color: var(--text-mid);
-    line-height: 1.7;
-  }
-
-  a {
-    color: var(--gold);
+    color: var(--text);
+    line-height: 1.75;
+    margin-bottom: 0.75rem;
   }
 </style>

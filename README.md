@@ -27,7 +27,7 @@ You can also invoke them directly. Use `/red-flags` to trigger a design smell sc
 /plugin install clairvoyance@clairvoyance-plugins
 ```
 
-### skills.sh
+### [skills.sh](https://skills.sh/codybrom/clairvoyance)
 
 ```bash
 npx skills add codybrom/clairvoyance --skill '*'

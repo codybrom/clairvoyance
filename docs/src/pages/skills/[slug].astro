@@ -89,7 +89,7 @@ const marked = new Marked({
           : ((text as any)?.raw?.replace(/<[^>]+>/g, "") ?? "");
       const linked = skillsBySlug.get(plain);
       if (linked) {
-        return `<a href="/skills/${plain}" class="skill-link">${linked.title}</a>`;
+        return `<a href="/skills/${plain}" class="skill-link" style="--skill-hue:${linked.pillarHue}" data-pillar-icon="${linked.pillarIcon}">${linked.title}</a>`;
       }
       return `<strong>${typeof text === "string" ? text : ((text as any)?.raw ?? text)}</strong>`;
     },
@@ -196,21 +196,24 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
           href={`https://bsky.app/intent/compose?text=${encodeURIComponent(`${skill.title} — Clairvoyance skill for AI coding agents\nhttps://clairvoyance.fyi/skills/${skill.slug}`)}`}
           class="share-link"
           target="_blank"
-          rel="noopener">Bluesky</a
+          rel="noopener noreferrer"
+          aria-label="Share on Bluesky (opens in new tab)">Bluesky</a
         >
         <span class="share-sep">·</span>
         <a
           href={`https://www.threads.net/intent/post?text=${encodeURIComponent(`${skill.title} — Clairvoyance skill for AI coding agents\nhttps://clairvoyance.fyi/skills/${skill.slug}`)}`}
           class="share-link"
           target="_blank"
-          rel="noopener">Threads</a
+          rel="noopener noreferrer"
+          aria-label="Share on Threads (opens in new tab)">Threads</a
         >
         <span class="share-sep">·</span>
         <a
           href={`https://x.com/intent/tweet?text=${encodeURIComponent(`${skill.title} — Clairvoyance skill for AI coding agents`)}&url=${encodeURIComponent(`https://clairvoyance.fyi/skills/${skill.slug}`)}`}
           class="share-link"
           target="_blank"
-          rel="noopener">Twitter</a
+          rel="noopener noreferrer"
+          aria-label="Share on Twitter (opens in new tab)">Twitter</a
         >
       </span>
     </div>
@@ -233,6 +236,14 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
     </nav>
   </article>
 
+  <div class="pillar-icon-sprites" aria-hidden="true">
+    <Star id="pillar-icon-Star" />
+    <Plus id="pillar-icon-Plus" />
+    <Circle id="pillar-icon-Circle" />
+    <Diamond id="pillar-icon-Diamond" />
+    <Waves id="pillar-icon-Waves" />
+  </div>
+
   <footer class="skill-page-footer">
     <a href="https://github.com/codybrom/clairvoyance" class="footer-star-btn">
       <Star size={16} />
@@ -250,6 +261,22 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
 </Layout>
 
 <script>
+  // Inject pillar icons into inline skill-link badges
+  document
+    .querySelectorAll<HTMLAnchorElement>(".skill-link[data-pillar-icon]")
+    .forEach((link) => {
+      const iconName = link.dataset.pillarIcon;
+      const src = document.getElementById(
+        `pillar-icon-${iconName}`,
+      ) as SVGElement | null;
+      if (!src) return;
+      const icon = src.cloneNode(true) as SVGElement;
+      icon.removeAttribute("id");
+      icon.setAttribute("class", "skill-link-icon");
+      icon.setAttribute("aria-hidden", "true");
+      link.prepend(icon);
+    });
+
   const btn = document.querySelector<HTMLButtonElement>(".copy-md-btn");
   btn?.addEventListener("click", async () => {
     const md = document.getElementById("skill-md")?.textContent;
@@ -329,7 +356,7 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
     gap: 0.4rem;
     font-family: var(--font-code);
     font-size: 0.75rem;
-    color: oklch(0.7 0.1 var(--pillar-hue));
+    color: oklch(0.78 0.1 var(--pillar-hue));
     letter-spacing: 0.05em;
     width: fit-content;
   }
@@ -348,7 +375,7 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
     margin-left: auto;
     background: oklch(0.75 0.12 75 / 0.08);
     border: 1px solid oklch(0.75 0.12 75 / 0.15);
-    color: var(--gold-dim);
+    color: var(--gold);
     font-family: var(--font-code);
     font-size: 0.75rem;
     letter-spacing: 0.05em;
@@ -380,7 +407,7 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
     display: block;
     font-family: var(--font-code);
     font-size: 0.7rem;
-    color: var(--gold-dim);
+    color: var(--gold);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 0.5rem;
@@ -391,27 +418,39 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
     font-weight: 300;
     font-size: 0.82rem;
     line-height: 1.7;
-    color: oklch(0.65 0.03 290);
+    color: var(--text-mid);
     margin: 0;
   }
 
   .skill-content :global(.skill-link) {
+    --skill-hue: 75;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
     font-family: var(--font-code);
-    font-size: 0.85em;
-    color: var(--gold);
+    font-size: 0.82em;
+    line-height: 1;
+    color: oklch(0.78 0.1 var(--skill-hue));
     text-decoration: none;
-    padding: 0.1em 0.45em;
-    background: oklch(0.75 0.12 75 / 0.08);
-    border: 1px solid oklch(0.75 0.12 75 / 0.15);
+    padding: 0.2em 0.5em 0.2em 0.35em;
+    background: oklch(0.5 0.08 var(--skill-hue) / 0.12);
+    border: 1px solid oklch(0.5 0.08 var(--skill-hue) / 0.25);
     border-radius: 4px;
+    vertical-align: -0.15em;
     transition:
       background 0.2s,
       border-color 0.2s;
 
     &:hover {
-      background: oklch(0.75 0.12 75 / 0.15);
-      border-color: oklch(0.75 0.12 75 / 0.3);
+      background: oklch(0.5 0.08 var(--skill-hue) / 0.2);
+      border-color: oklch(0.5 0.08 var(--skill-hue) / 0.4);
     }
+  }
+
+  .skill-content :global(.skill-link-icon) {
+    flex-shrink: 0;
+    width: 0.9em;
+    height: 0.9em;
   }
 
   .skill-content :global(.code-file-link) {
@@ -532,7 +571,7 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
     display: block;
     font-style: normal;
     font-size: 0.8rem;
-    color: oklch(0.7 0.06 75);
+    color: oklch(0.78 0.06 75);
     margin-top: 0.5rem;
   }
 
@@ -629,9 +668,9 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
   /* ═══════ PREV / NEXT PAGER ═══════ */
 
   .skill-pager {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
     padding-top: 1.25rem;
     border-top: 1px solid oklch(1 0 0 / 0.06);
   }
@@ -643,8 +682,9 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
     padding: 0.75rem 1rem;
     border: 1px solid oklch(1 0 0 / 0.08);
     border-radius: var(--radius-sm);
-    text-decoration: none;
     border-bottom: 1px solid oklch(1 0 0 / 0.08);
+    text-decoration: none;
+    min-width: 0;
     transition:
       border-color 0.2s,
       background 0.2s;
@@ -668,21 +708,40 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
       font-size: 0.9rem;
       color: var(--text);
       font-weight: 400;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    & :global(svg) {
+      flex-shrink: 0;
     }
   }
 
   .pager-next {
     text-align: right;
-    margin-left: auto;
+    justify-content: flex-end;
   }
 
   @media (width <= 480px) {
-    .skill-pager {
-      flex-direction: column;
+    .skill-footer-links {
+      justify-content: center;
     }
-    .pager-next {
-      text-align: left;
+    .share-group {
+      display: flex;
+      width: 100%;
+      margin-left: 0;
+      justify-content: center;
     }
+  }
+
+  .pillar-icon-sprites {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
   }
 
   /* ═══════ PAGE FOOTER ═══════ */
@@ -696,16 +755,16 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
 
     & p {
       font-size: 0.75rem;
-      color: var(--text-dim);
+      color: var(--text-mid);
       font-weight: 300;
     }
 
     & p a {
-      color: var(--text-dim);
+      color: var(--text-mid);
       border-bottom: none;
 
       &:hover {
-        color: var(--gold-dim);
+        color: var(--gold);
       }
     }
   }
@@ -717,7 +776,7 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
     font-family: var(--font-body);
     font-weight: 400;
     font-size: 0.9rem;
-    color: var(--gold-dim);
+    color: var(--gold);
     padding: 0.65rem 1.25rem;
     border: 1px solid oklch(0.75 0.12 75 / 0.2);
     border-radius: 8px;

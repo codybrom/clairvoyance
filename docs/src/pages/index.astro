@@ -65,11 +65,11 @@ const allSkills = getAllSkills();
   />
 
   <!-- ═══════ FIVE PILLARS ═══════ -->
-  <section class="pillars">
-    <h2 class="reveal">Extrasensory Perspective</h2>
+  <section class="pillars" aria-labelledby="pillars-heading">
+    <h2 id="pillars-heading" class="reveal">Extrasensory Perspective</h2>
     <p class="pillars-sub reveal">
       Your agent already knows how to code. Teach it how to
-      <em>see</em>. Battle-tested philosophy on software design, grounded in
+      <em>sense</em>. Battle-tested philosophy on software design, grounded in
       decades of engineering experience.
     </p>
 
@@ -83,8 +83,8 @@ const allSkills = getAllSkills();
   </section>
 
   <!-- ═══════ SKILL CATALOG ═══════ -->
-  <section class="catalog" id="catalog">
-    <h2 class="reveal">Read the Tea Leaves</h2>
+  <section class="catalog" id="catalog" aria-labelledby="catalog-heading">
+    <h2 id="catalog-heading" class="reveal">Read the Tea Leaves</h2>
     <p class="catalog-sub reveal">
       Complexity hides all over your code. Each skill teaches your AI assistant
       exactly where to look.
@@ -109,8 +109,8 @@ const allSkills = getAllSkills();
   </section>
 
   <!-- ═══════ SESSION REPLAY ═══════ -->
-  <section class="proof">
-    <h2 class="reveal">See It in Action</h2>
+  <section class="proof" aria-labelledby="proof-heading">
+    <h2 id="proof-heading" class="reveal">See It in Action</h2>
     <p class="proof-intro reveal">
       Check out how Clairvoyance skills activate in real coding sessions. Your
       agent sees the design problem, applies the right principle and rewrites
@@ -121,7 +121,7 @@ const allSkills = getAllSkills();
   </section>
 
   <!-- ═══════ BOTTOM CTA ═══════ -->
-  <section class="bottom">
+  <section class="bottom" aria-labelledby="bottom-heading">
     <div class="bottom-symbols">
       <Star size={18} />
       <Plus size={18} />
@@ -129,7 +129,7 @@ const allSkills = getAllSkills();
       <Diamond size={18} />
       <Waves size={18} />
     </div>
-    <h2 class="reveal">See through complexity</h2>
+    <h2 id="bottom-heading" class="reveal">See through complexity</h2>
     <p class="bottom-text reveal">
       The principles behind Clairvoyance are inspired by the teachings of John
       Ousterhout and his book <a
@@ -145,7 +145,7 @@ const allSkills = getAllSkills();
 
   <footer>
     <p>
-      <a href="https://github.com/codybrom/clairvoyance">Clairvoyance</a> · <a
+      <a href="https://github.com/codybrom/clairvoyance">GitHub</a> · <a
         href="/skills">All Skills</a
       > · <a href="/privacy">Privacy</a> · <a
         href="https://github.com/codybrom/clairvoyance/blob/main/LICENSE"
@@ -406,16 +406,16 @@ const allSkills = getAllSkills();
 
     & p {
       font-size: 0.75rem;
-      color: var(--text-dim);
+      color: var(--text-mid);
       font-weight: 300;
     }
 
     & a {
-      color: var(--text-dim);
+      color: var(--text-mid);
       border-bottom: none;
 
       &:hover {
-        color: var(--gold-dim);
+        color: var(--gold);
       }
     }
   }

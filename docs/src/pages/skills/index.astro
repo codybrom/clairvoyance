@@ -3,7 +3,14 @@ import Layout from "../../layouts/Layout.astro";
 import SkillCard from "../../components/SkillCard.astro";
 import CrystalBall from "../../assets/crystal-ball.svg";
 import { getAllSkills, getSkillsByPillar } from "../../utils/skills";
-import { Circle, Plus, Diamond, Star, Waves, HelpCircle } from "@lucide/astro";
+import {
+  Circle,
+  Plus,
+  Diamond,
+  Star,
+  Waves,
+  CircleQuestionMark,
+} from "@lucide/astro";
 
 const pillarGroups = getSkillsByPillar();
 const allSkills = getAllSkills();
@@ -30,16 +37,21 @@ const iconMap = { Circle, Plus, Diamond, Star, Waves } as Record<string, any>;
     </p>
 
     <button class="quiz-trigger" id="open-quiz">
-      <HelpCircle size={16} />
+      <CircleQuestionMark size={16} />
       Which skill do I need?
     </button>
 
     {
       pillarGroups.map((group) => {
         const Icon = iconMap[group.icon];
+        const sectionId = `pillar-${group.name.toLowerCase()}`;
         return (
-          <section class="pillar-group">
-            <h2 class="pillar-heading" style={`--pillar-hue: ${group.hue};`}>
+          <section class="pillar-group" aria-labelledby={sectionId}>
+            <h2
+              class="pillar-heading"
+              id={sectionId}
+              style={`--pillar-hue: ${group.hue};`}
+            >
               {Icon && <Icon size={18} />}
               {group.name}
             </h2>
@@ -874,16 +886,16 @@ const iconMap = { Circle, Plus, Diamond, Star, Waves } as Record<string, any>;
 
     & p {
       font-size: 0.75rem;
-      color: var(--text-dim);
+      color: var(--text-mid);
       font-weight: 300;
     }
 
     & p a {
-      color: var(--text-dim);
+      color: var(--text-mid);
       border-bottom: none;
 
       &:hover {
-        color: var(--gold-dim);
+        color: var(--gold);
       }
     }
   }

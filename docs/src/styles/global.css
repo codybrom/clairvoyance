@@ -11,8 +11,8 @@
 
   --lavender: oklch(0.73 0.08 290);
   --text: oklch(0.88 0.02 290);
-  --text-mid: oklch(0.6 0.03 290);
-  --text-dim: oklch(0.4 0.03 290);
+  --text-mid: oklch(0.82 0.03 290);
+  --text-dim: oklch(0.76 0.03 290);
 
   --green: oklch(0.78 0.14 155);
   --red: oklch(0.68 0.14 20);
@@ -36,6 +36,25 @@
 
 html {
   scroll-behavior: smooth;
+  font-size: 18px;
+}
+
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  background: var(--gold);
+  color: var(--ink);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  z-index: 9999;
+
+  &:focus {
+    top: 1rem;
+  }
 }
 
 body {
@@ -51,12 +70,12 @@ body {
     inset: 0;
     z-index: -1;
     background: url("/grain.png") repeat;
-    opacity: 1;
+    opacity: 0.4;
   }
 }
 
 a {
-  color: var(--gold-dim);
+  color: var(--gold);
   text-decoration: none;
   border-bottom: 1px solid color-mix(in oklch, var(--gold) 25%, transparent);
   transition:

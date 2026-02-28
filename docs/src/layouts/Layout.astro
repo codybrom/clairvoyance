@@ -34,6 +34,8 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png" />
     <link
       rel="alternate"
       type="text/plain"
@@ -78,7 +80,10 @@ const {
     <Font cssVariable="--font-sans" preload />
   </head>
   <body>
-    <slot />
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <main id="main-content">
+      <slot />
+    </main>
 
     <script>
       const obs = new IntersectionObserver(

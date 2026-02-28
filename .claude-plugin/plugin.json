@@ -15,7 +15,5 @@
     "software-philosophy",
     "code-quality",
     "design-review"
-  ],
-  "agents": "./agents/",
-  "hooks": "./hooks/hooks.json"
+  ]
 }

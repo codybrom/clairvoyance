@@ -10,8 +10,8 @@ interface Props {
 const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
 ---
 
-<header class="hero">
-  <div class="orb" role="img" aria-label="Crystal ball">
+<div class="hero">
+  <div class="orb" aria-hidden="true">
     <CrystalBall width="80" height="80" />
   </div>
   <h1>Clairvoyance</h1>
@@ -56,7 +56,7 @@ const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
       >
     </p>
   </div>
-</header>
+</div>
 
 <script>
   document.querySelectorAll<HTMLDivElement>(".install-box").forEach((box) => {
@@ -179,7 +179,7 @@ const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
     font-size: 0.7rem;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: var(--gold-dim);
+    color: var(--gold);
     margin: 0;
 
     &.spaced {
@@ -201,7 +201,7 @@ const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
     margin: 0.75rem 0 0;
 
     & a {
-      color: var(--gold-dim);
+      color: var(--gold);
       border-bottom: 1px solid oklch(0.75 0.12 75 / 0.2);
 
       &:hover {
@@ -268,7 +268,7 @@ const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
   .copy-btn {
     background: oklch(0.75 0.12 75 / 0.1);
     border: none;
-    color: var(--gold-dim);
+    color: var(--gold);
     font-family: var(--font-code);
     font-size: 0.75rem;
     letter-spacing: 0.08em;

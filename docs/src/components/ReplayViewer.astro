@@ -106,7 +106,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
 
     <!-- Progress bar -->
     <div class="replay-progress">
-      <button class="replay-playpause" aria-label="Play/Pause">
+      <button class="replay-playpause" aria-label="Play">
         <span class="play-icon"><Play size={14} /></span>
         <span class="pause-icon"><Pause size={14} /></span>
         <span class="rewatch-icon"><RotateCcw size={14} /> Rewatch</span>
@@ -266,6 +266,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
       this.stop();
       this.finished = false;
       this.container.classList.remove("is-finished");
+      this.playpauseEl.setAttribute("aria-label", "Play");
       this.current = this.replays[demo];
       this.stepIndex = -1;
       this.chatEl.innerHTML = '<div class="chat-spacer"></div>';
@@ -318,6 +319,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     play() {
       this.playing = true;
       this.container.classList.add("is-playing");
+      this.playpauseEl.setAttribute("aria-label", "Pause");
       // Set start time: resume from paused position, or start fresh
       this.progressStart = performance.now() - this.progressPausedAt;
       this.progressPausedAt = 0;
@@ -378,6 +380,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     pause() {
       this.playing = false;
       this.container.classList.remove("is-playing");
+      this.playpauseEl.setAttribute("aria-label", "Play");
       this.progressPausedAt = performance.now() - this.progressStart;
       this.clearTimers();
     }
@@ -386,6 +389,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     stop() {
       this.playing = false;
       this.container.classList.remove("is-playing");
+      this.playpauseEl.setAttribute("aria-label", "Play");
       this.generation++;
       this.clearTimers();
     }
@@ -416,6 +420,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
         this.fillEl.style.width = "100%";
         this.finished = true;
         this.container.classList.add("is-finished");
+        this.playpauseEl.setAttribute("aria-label", "Rewatch");
         return;
       }
 
@@ -896,6 +901,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
         this.addFinishLine();
         this.finished = true;
         this.container.classList.add("is-finished");
+        this.playpauseEl.setAttribute("aria-label", "Rewatch");
         this.scrollChat();
       } else if (was) {
         this.play();
@@ -906,6 +912,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
       if (this.finished) {
         this.finished = false;
         this.container.classList.remove("is-finished");
+        this.playpauseEl.setAttribute("aria-label", "Play");
       }
     }
 
@@ -998,7 +1005,7 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     border-radius: var(--radius-sm);
     padding: 0.5rem 1rem;
     min-width: 0;
-    color: var(--text-dim);
+    color: oklch(0.78 0.03 290);
     font-family: var(--font-body);
     font-size: 0.85rem;
     cursor: pointer;
@@ -1019,10 +1026,10 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     }
 
     &.active {
-      border-color: oklch(0.7 0.1 var(--pillar-hue) / 0.4);
-      color: oklch(0.7 0.1 var(--pillar-hue));
-      background: oklch(0.7 0.1 var(--pillar-hue) / 0.08);
-      box-shadow: 0 0 20px oklch(0.7 0.1 var(--pillar-hue) / 0.1);
+      border-color: oklch(0.78 0.1 var(--pillar-hue) / 0.4);
+      color: oklch(0.78 0.1 var(--pillar-hue));
+      background: oklch(0.78 0.1 var(--pillar-hue) / 0.08);
+      box-shadow: 0 0 20px oklch(0.78 0.1 var(--pillar-hue) / 0.1);
     }
   }
 
@@ -1092,9 +1099,12 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     color: var(--text-dim);
     transition: color 0.2s;
     padding: 0.3rem 0.5rem;
+    min-width: 44px;
+    min-height: 44px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
+    justify-content: center;
 
     &:hover {
       color: var(--gold);
@@ -1573,11 +1583,16 @@ const { replays, defaultDemo = "3-clarity" } = Astro.props;
     background: none;
     border: 1px solid oklch(1 0 0 / 0.08);
     border-radius: var(--radius-sm);
-    color: var(--text-dim);
+    color: oklch(0.78 0.03 290);
     cursor: pointer;
     font-family: var(--font-code);
     font-size: 0.7rem;
     padding: 0.2rem 0.5rem;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition:
       color 0.2s,
       border-color 0.2s;
