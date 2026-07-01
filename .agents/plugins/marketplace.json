@@ -1,0 +1,20 @@
+{
+  "name": "clairvoyance",
+  "interface": {
+    "displayName": "Clairvoyance"
+  },
+  "plugins": [
+    {
+      "name": "clairvoyance",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

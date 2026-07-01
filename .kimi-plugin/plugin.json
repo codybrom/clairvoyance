@@ -1,0 +1,25 @@
+{
+  "name": "clairvoyance",
+  "version": "1.2.0",
+  "description": "ESP for AI Coding — Agent skills on the philosophy of software design, grounded in decades of engineering experience.",
+  "author": {
+    "name": "Cody Bromley",
+    "email": "esp@clairvoyance.fyi"
+  },
+  "homepage": "https://clairvoyance.fyi",
+  "repository": "https://github.com/codybrom/clairvoyance",
+  "license": "MIT",
+  "keywords": [
+    "software-design-patterns",
+    "software-philosophy",
+    "code-quality",
+    "design-review"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Clairvoyance",
+    "shortDescription": "ESP for AI Coding — Agent skills on the philosophy of software design",
+    "developerName": "Cody Bromley",
+    "websiteURL": "https://clairvoyance.fyi"
+  }
+}
