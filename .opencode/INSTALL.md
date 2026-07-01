@@ -33,7 +33,7 @@ the most recently scanned source wins.
 
 ```json
 {
-  "plugin": ["clairvoyance@git+https://github.com/codybrom/clairvoyance.git#v1.1.2"]
+  "plugin": ["clairvoyance@git+https://github.com/codybrom/clairvoyance.git#v1.2.0"]
 }
 ```
 
@@ -59,7 +59,7 @@ OpenCode installs Clairvoyance through a git-backed package spec and reuses
 the cached install on every subsequent restart — it does not re-fetch just
 because you restarted. To pick up a new Clairvoyance release:
 
-- If you pinned a tag (`#v1.1.2`), bump it in `opencode.json` and restart.
+- If you pinned a tag (`#v1.2.0`), bump it in `opencode.json` and restart.
 - If you didn't pin a tag, restarting still won't notice new commits on its
   own. Force a refresh by clearing the cached package directory under
   OpenCode's cache folder (look for a directory containing "clairvoyance" under
