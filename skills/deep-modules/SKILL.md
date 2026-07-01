@@ -23,7 +23,7 @@ Evaluate whether modules provide powerful functionality through simple interface
 
 ### The Depth Principle
 
-Every module gives functionality and costs knowledge (in the form of an interface). Deep modules give a lot and ask for very little, delivering the highest return on interface cost.
+Every module gives functionality and costs knowledge (in the form of an interface). Deep modules give a lot and ask for very little, delivering the highest return on interface cost. This is the same interface-vs-implementation-cost asymmetry **pull-complexity-down**'s "Core Asymmetry" applies to caller burden — here it's applied to depth.
 
 The deepest possible module can even have no interface at all. Garbage collection is the classic example: it does enormously complex work that callers never think about.
 
@@ -67,9 +67,7 @@ One of the most common errors modern developers make is over-decomposing: splitt
 
 ### The Defaults Principle
 
-If nearly every user of a class needs a behavior, that behavior belongs inside the class by default, not in a separate wrapper. Merge related shallow classes into fewer, deeper ones. A class with 500 lines and 3 public methods is better than 5 classes with 100 lines and 15 total public methods. The question is never "is this class too large?" but "does this split reduce the total cognitive load on callers?"
-
-Some modules are unavoidably shallow, like how a linked list class hides very few details behind its interface. These are still useful, but they don't provide much leverage against complexity. Don't mistake "shallow and acceptable" for "deep enough."
+For the underlying principle, see general-vs-special's "Defaults as a Depth Tool" section.
 
 ### Decorator Alternatives
 

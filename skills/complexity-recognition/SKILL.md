@@ -11,7 +11,7 @@ When invoked with $ARGUMENTS, focus the analysis on the specified file or module
 
 > "Complexity is anything related to the structure of a software system that makes it hard to understand and modify the system." — John Ousterhout, _A Philosophy of Software Design_
 
-Complexity is relative to the task: the same codebase can feel simple for one operation and painful for another. The writer of the code is often the worst judge of its complexity. If reviewers find it complex, it is. Diagnose it using three symptoms, two root causes, and the fundamental formula.
+Complexity is relative to the task: the same codebase can feel simple for one operation and painful for another. The writer of the code is often the worst judge of its complexity. If other collaborators (human or agent) find it complex, it is. Diagnose it using three symptoms, two root causes, and the fundamental formula.
 
 ## When to Apply
 
@@ -32,8 +32,6 @@ Each part's complexity weighted by how often developers work with it.
 - Encapsulating complexity where it won't be encountered is nearly as valuable as eliminating it
 
 > "Complexity is more apparent to readers than writers." — John Ousterhout, _A Philosophy of Software Design_
-
-If colleagues find your code complex, it is complex.
 
 A gnarly subsystem that nobody modifies contributes almost nothing. A moderately messy module that every feature passes through dominates the total. A "simple" change to a high-traffic module matters more than a large refactor of something rarely touched.
 
@@ -87,4 +85,4 @@ When you find complexity, you have two options:
 5. **Trace root causes**: Dependency or obscurity?
 6. **Recommend**: Eliminate the complexity, or encapsulate it in a deep module
 
-Red flag signals for complexity are cataloged in **red-flags** (Repetition, Overexposure, Information Leakage, Non-obvious Code).
+Unlike other lenses, no individual red-flags signal routes here directly — complexity-recognition is the entry point when red-flags itself doesn't pinpoint a specific named flag (see red-flags' own "Not for diagnosing why code feels complex" disambiguation).

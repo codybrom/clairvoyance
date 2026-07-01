@@ -38,7 +38,7 @@ The most common form. One module writes data (to disk, network, database) and an
 
 ### The Change Propagation Test
 
-Pick any internal implementation detail in a module. Ask: _:if I changed this, what else would break?"_ If the answer includes another module, and the connection isn't visible in any interface, that's back-door leakage.
+Pick any internal implementation detail in a module. Ask: _"If I changed this, what else would break?"_ If the answer includes another module, and the connection isn't visible in any interface, that's back-door leakage.
 
 ### The Grep Test
 

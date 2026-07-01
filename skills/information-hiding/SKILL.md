@@ -1,6 +1,6 @@
 ---
 name: information-hiding
-description: Checks for information leakage across module boundaries. Use when the user asks to check information hiding, when modules seem to change together, when implementation details leak across boundaries, or when structure follows execution order rather than knowledge ownership. Detects temporal decomposition and false encapsulation.
+description: Checks for information leakage across module boundaries. Use when the user asks to check information hiding, when modules seem to change together, when implementation details leak across boundaries, or when structure follows execution order rather than knowledge ownership. Detects temporal decomposition and false encapsulation. Not for deciding whether two modules should be merged or split (use module-boundaries) or checking whether a getter/setter interface is over-specialized for one caller (use general-vs-special).
 argument-hint: "[file or module path]"
 allowed-tools: Read, Grep
 ---
@@ -45,7 +45,7 @@ Signs of back-door leakage:
 
 - Changing an internal data structure breaks a seemingly unrelated module
 - Two modules must be updated in lockstep but have no direct API dependency
-- Shared assumptions about file formats, message ordering, or naming conventions that exist only in developers' heads
+- Shared assumptions about file formats, message ordering, or naming conventions that exist nowhere in the code or docs an agent could load into context
 - Tests that break in module B when module A's internals change
 
 Not all dependencies are eliminable. Transforming a hidden dependency into an obvious one is often more valuable than trying to remove it. At least then the next developer knows to look.
@@ -65,6 +65,8 @@ Marking a field `private` and providing getters/setters does not actually hide i
 ### Partial Hiding Has Value
 
 Information hiding is not all-or-nothing. If a feature is only needed by a few users and accessed through separate methods not visible in common use cases, it is mostly hidden, creating fewer dependencies than information visible to every user. Design for the common case to be simple. Rare cases can require extra methods.
+
+Test: is this information needed by most callers, or only a rare subset? If rare, push it into a separate method instead of forcing it into the primary interface or fully hiding it.
 
 ### Hiding Within a Class
 

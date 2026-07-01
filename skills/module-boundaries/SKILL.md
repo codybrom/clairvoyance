@@ -93,4 +93,4 @@ A well-placed boundary fully encloses a design decision. If two modules share kn
 5. **Check boundary criterion**: Boundaries drawn around knowledge ownership?
 6. **Recommend adjustments**: Specific merges, splits, or restructurings
 
-Red flag signals for module boundaries are cataloged in **red-flags** (Conjoined Methods, Information Leakage, Shallow Module, Special-General Mixture).
+Red flag signals for module boundaries are cataloged in **red-flags** (Conjoined Methods).

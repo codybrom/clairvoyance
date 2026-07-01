@@ -1,6 +1,6 @@
 ---
 name: naming-obviousness
-description: Reviews naming quality and code obviousness. Use when the user asks to check naming, when names feel vague or imprecise, when something is hard to name (a design signal, not a vocabulary problem), or when code behavior isn't obvious on first read. Applies the isolation test, scope-length principle, and consistency audit.
+description: Reviews naming quality and code obviousness. Use when the user asks to check naming, when names feel vague or imprecise, when something is hard to name (a design signal, not a vocabulary problem), or when code behavior isn't obvious on first read. Applies the isolation test, scope-length principle, and consistency audit. Not for comment quality or documentation practices (use comments-docs).
 argument-hint: "[file or module path]"
 allowed-tools: Read, Grep
 ---
@@ -92,7 +92,7 @@ Four recurring patterns that break obviousness:
 
 #### Three Strategies (in order)
 
-Reduce information needed (deep modules, information hiding), leverage what readers already know (good names, conventions), present information explicitly (comments).
+Reduce information needed (deep modules, information hiding), leverage what readers already know (conventions, expectations), present information explicitly (good names, comments).
 
 ## Review Process
 
@@ -100,7 +100,7 @@ Reduce information needed (deep modules, information hiding), leverage what read
 2. **Check scope-length fit**: Wide-scope names precise? Narrow-scope names brief?
 3. **Run consistency audit**: Same concept = same name? Same name = same concept?
 4. **Apply hard-to-name diagnostic**: Hard to choose? Investigate the design.
-5. **Assess obviousness**: Can a newcomer understand each function without reading its implementation?
+5. **Assess obviousness**: Can a first-time reader understand each function without reading its implementation?
 6. **Recommend**: Specific renames tied to the isolation test
 
 Red flag signals for naming and obviousness are cataloged in **red-flags** (Vague Name, Hard to Pick Name, Non-obvious Code).

@@ -1,6 +1,6 @@
 ---
 name: red-flags
-description: Scans code against 17 named design smells and produces a structured diagnostic report. Use when reviewing a PR for design quality, evaluating unfamiliar code against a comprehensive checklist or when the user asks for a red flags scan. Not for diagnosing why code feels complex (use complexity-recognition) or evaluating whether a PR maintains design trajectory (use code-evolution).
+description: Scans code against 17 design smells (14 from the book's named Red Flags, extended with 3 process-stage signals) and produces a structured diagnostic report. Use when reviewing a PR for design quality, evaluating unfamiliar code against a comprehensive checklist or when the user asks for a red flags scan. Not for diagnosing why code feels complex (use complexity-recognition) or evaluating whether a PR maintains design trajectory (use code-evolution).
 argument-hint: "[file or directory]"
 allowed-tools: Read, Grep
 ---
@@ -26,7 +26,7 @@ A red flag is a signal, not a diagnosis. It tells you something is wrong but not
 
 Interface isn't much simpler than implementation.
 
-- **Check:** → **deep-modules**
+- **Check:** → **deep-modules**, **error-design**
   - Could a caller skip this module and do the work directly?
 - **Signals:**
   - More public methods than meaningful internal state
@@ -89,7 +89,7 @@ When a design decision leaks across module boundaries, changing that decision of
 
 API forces callers to handle things they almost never need.
 
-- **Check:** → **general-vs-special**, **pull-complexity-down**
+- **Check:** → **general-vs-special**, **pull-complexity-down**, **information-hiding**, **error-design**
   - Must callers configure or know about rarely-used features to use common ones?
 - **Signals:**
   - Getter/setter pairs exposing internal representation

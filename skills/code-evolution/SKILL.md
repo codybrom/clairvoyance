@@ -48,7 +48,7 @@ The design of a mature system is determined more by changes made during its evol
 
 #### The Middle Path
 
-When the ideal refactoring takes three months and you have two hours, the strategic question isn't "can I afford to refactor?" It's "what's the best I can do given my constraints?" That question often surfaces an approach nearly as clean as the ideal, achievable in days, that the smallest-change mindset would never find because it anchors on the current code.
+When the ideal refactoring would require touching far more of the codebase than the current task budget allows, the question isn't "can I afford the full redesign?" It's "what's the best I can do within this change's scope?" That question often surfaces an approach nearly as clean as the ideal, achievable within the current diff, that the smallest-change mindset would never find because it anchors on the current code.
 
 ### The "Smallest Possible Change" Trap
 
@@ -98,4 +98,4 @@ Five maintenance rules:
 5. **Assess debt trajectory**: Is the modification reducing or increasing technical debt?
 6. **Recommend**: Specific improvements to make the change feel designed-in
 
-Red flag signals for code evolution are cataloged in **red-flags** (Special-General Mixture, Repetition, Tactical Momentum, Non-obvious Code).
+Red flag signals for code evolution are cataloged in **red-flags** (Repetition, Tactical Momentum).

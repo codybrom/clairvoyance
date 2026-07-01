@@ -1,6 +1,6 @@
 ---
 name: pull-complexity-down
-description: Checks whether complexity is pushed to callers or absorbed by implementations. Use when callers must do significant setup, handle errors the module could resolve or configure things they don't understand. This skill focuses specifically on the direction complexity flows. Not for evaluating overall module depth (use deep-modules) or checking for knowledge leakage across boundaries (use information-hiding).
+description: Checks whether complexity is pushed to callers or absorbed by implementations. Use when callers must do significant setup, handle errors the module could resolve or configure things they don't understand. This skill focuses specifically on the direction complexity flows. Not for evaluating overall module depth (use deep-modules), checking for knowledge leakage across boundaries (use information-hiding), or exception hierarchy and error-propagation strategy once an error must surface (use error-design).
 argument-hint: "[file or module path]"
 allowed-tools: Read, Grep
 ---
@@ -23,7 +23,7 @@ Evaluate whether complexity is absorbed into implementations or pushed up to cal
 
 ### The Core Asymmetry
 
-**One implementer, many callers. Complexity in the implementation is paid once. Complexity in the interface is paid by every caller.**
+**One implementer, many callers. Complexity in the implementation is paid once. Complexity in the interface is paid by every caller.** (The same asymmetry underlies **deep-modules**' "Depth Principle" — applied there to overall interface depth, applied here to which side of the interface should absorb a given piece of complexity.)
 
 When developers encounter a hard problem, the path of least resistance is to push it upward: throw an exception, add a configuration parameter, define an abstract policy. These moves feel like good engineering. But all you have done is distribute the decision to a larger number of people who typically have less context.
 
@@ -72,7 +72,7 @@ _Context objects_ and _decorator alternatives_ are tools for pulling complexity 
 5. **Evaluate decorators**: Shallow pass-through layer, or genuine abstraction?
 6. **Recommend simplification**: Propose specific interface reductions
 
-Red flag signals for complexity direction are cataloged in **red-flags** (Overexposure, Pass-Through Method).
+Red flag signals for complexity direction are cataloged in **red-flags** (Overexposure).
 
 ## References
 

@@ -1,6 +1,6 @@
 # Configuration Parameter Audit
 
-Every configuration parameter is a decision the developer chose not to make. This reference provides patterns for recognizing parameters that shouldn't exist and strategies for eliminating them.
+This reference catalogs the recurring shapes unnecessary configuration parameters take, plus strategies for eliminating each.
 
 ## Anti-Patterns
 
@@ -44,7 +44,7 @@ A parameter with a "safe" default and a "dangerous" alternative that's only usef
 
 ### Replace with Dynamic Computation
 
-The strongest move. Instead of asking "what retry interval do you want?", measure response times and compute the interval. The module becomes smarter and the interface becomes simpler.
+The strongest move. Instead of asking "what buffer size do you want?", observe actual throughput and size the buffer to match. The module becomes smarter and the interface becomes simpler.
 
 ### Replace with a Policy Object
 
