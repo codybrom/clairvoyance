@@ -2,8 +2,7 @@
 name: error-design
 description: Reviews error handling strategy and exception design. Use when the user asks to review error handling, when a module throws too many exceptions, or when callers must handle errors they shouldn't need to know about. Applies the "define errors out of existence" principle with a decision tree for exception strategies.
 argument-hint: "[file or module path]"
-metadata:
-  allowed-tools: Read, Grep
+allowed-tools: Read, Grep
 ---
 
 # Error Design Review Lens

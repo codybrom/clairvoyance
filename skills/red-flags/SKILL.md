@@ -2,8 +2,7 @@
 name: red-flags
 description: Scans code against 17 named design smells and produces a structured diagnostic report. Use when reviewing a PR for design quality, evaluating unfamiliar code against a comprehensive checklist or when the user asks for a red flags scan. Not for diagnosing why code feels complex (use complexity-recognition) or evaluating whether a PR maintains design trajectory (use code-evolution).
 argument-hint: "[file or directory]"
-metadata:
-  allowed-tools: Read, Grep
+allowed-tools: Read, Grep
 ---
 
 # Red Flags Diagnostic

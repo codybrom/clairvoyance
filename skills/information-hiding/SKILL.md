@@ -2,8 +2,7 @@
 name: information-hiding
 description: Checks for information leakage across module boundaries. Use when the user asks to check information hiding, when modules seem to change together, when implementation details leak across boundaries, or when structure follows execution order rather than knowledge ownership. Detects temporal decomposition and false encapsulation.
 argument-hint: "[file or module path]"
-metadata:
-  allowed-tools: Read, Grep
+allowed-tools: Read, Grep
 ---
 
 # Information Hiding Review Lens

@@ -2,8 +2,7 @@
 name: naming-obviousness
 description: Reviews naming quality and code obviousness. Use when the user asks to check naming, when names feel vague or imprecise, when something is hard to name (a design signal, not a vocabulary problem), or when code behavior isn't obvious on first read. Applies the isolation test, scope-length principle, and consistency audit.
 argument-hint: "[file or module path]"
-metadata:
-  allowed-tools: Read, Grep
+allowed-tools: Read, Grep
 ---
 
 # Naming & Obviousness Review Lens

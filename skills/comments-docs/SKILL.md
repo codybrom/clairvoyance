@@ -2,8 +2,7 @@
 name: comments-docs
 description: Reviews comment quality and documentation practices. Use when the user asks to review comments or documentation, when comments just repeat the code, when something is hard to describe in a sentence, or when writing documentation before code to surface design problems. Evaluates the four comment types, comments-first workflow, and comment rot.
 argument-hint: "[file or module path]"
-metadata:
-  allowed-tools: Read, Grep
+allowed-tools: Read, Grep
 ---
 
 # Comments & Documentation Review Lens

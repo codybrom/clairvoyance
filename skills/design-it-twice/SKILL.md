@@ -2,10 +2,7 @@
 name: design-it-twice
 description: Generates and compares design alternatives before committing. Use when the user asks to design something twice, before committing to any significant design. Applies to classes, modules, APIs and architectural approaches. Ensures at least two fundamentally different alternatives were considered and compared on concrete criteria before choosing.
 argument-hint: "[description of the design problem]"
-metadata:
-  allowed-tools: Read, Grep
-  context: fork
-  agent: clean-room-alternative
+allowed-tools: Read, Grep, Task
 ---
 
 # Design It Twice

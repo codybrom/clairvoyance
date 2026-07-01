@@ -2,8 +2,7 @@
 name: abstraction-quality
 description: Evaluates whether abstractions genuinely provide a fundamentally different way of thinking or are structurally shallow. Use when adjacent layers feel redundant, when decorator/wrapper patterns add boilerplate without depth or when an abstraction feels leaky. Not for measuring a single module's interface-to-implementation ratio (use deep-modules) or checking for information leakage across boundaries (use information-hiding).
 argument-hint: "[file or module path]"
-metadata:
-  allowed-tools: Read, Grep
+allowed-tools: Read, Grep
 ---
 
 # Abstraction Quality Review Lens

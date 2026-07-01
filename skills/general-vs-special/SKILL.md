@@ -2,8 +2,7 @@
 name: general-vs-special
 description: Evaluates whether interfaces are appropriately general-purpose. Use when the user asks to check interface generality, when a module has if-branches or parameters serving only one caller, when getters/setters expose internal representation, or when an interface is over-specialized. Checks general-purpose design, special-general mixture, and defaults.
 argument-hint: "[file or module path]"
-metadata:
-  allowed-tools: Read, Grep
+allowed-tools: Read, Grep
 ---
 
 # General vs. Special-Purpose Review Lens

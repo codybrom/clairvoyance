@@ -2,8 +2,7 @@
 name: pull-complexity-down
 description: Checks whether complexity is pushed to callers or absorbed by implementations. Use when callers must do significant setup, handle errors the module could resolve or configure things they don't understand. This skill focuses specifically on the direction complexity flows. Not for evaluating overall module depth (use deep-modules) or checking for knowledge leakage across boundaries (use information-hiding).
 argument-hint: "[file or module path]"
-metadata:
-  allowed-tools: Read, Grep
+allowed-tools: Read, Grep
 ---
 
 # Pull Complexity Downwards Review Lens
