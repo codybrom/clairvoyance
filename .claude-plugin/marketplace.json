@@ -1,5 +1,5 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "clairvoyance-plugins",
   "owner": {
     "name": "Cody Bromley",
@@ -8,17 +8,12 @@
   },
   "metadata": {
     "description": "Official Clairvoyance plugin marketplace",
-    "version": "1.0.0",
-    "homepage": "https://clairvoyance.fyi",
-    "repository": "https://github.com/codybrom/clairvoyance"
+    "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "clairvoyance",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/codybrom/clairvoyance.git"
-      },
+      "source": "./",
       "description": "ESP for AI Coding — Agent skills on the philosophy of software design, grounded in decades of engineering experience.",
       "version": "1.1.2",
       "strict": true
