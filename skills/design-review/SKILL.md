@@ -66,3 +66,9 @@ Rank findings in this order:
 3. **Canary flags**: Hard to Pick Name, Hard to Describe, Non-obvious Code, No Alternatives Considered. These are the cheapest signals. Catch them and the structural flags never materialize.
 4. **Structural issues**: Shallow modules, pass-through methods, classitis. These require refactoring but affect a bounded area.
 5. **Surface issues**: Naming and documentation problems. Important but lowest cost to fix and lowest risk if deferred.
+
+## Reviewing at Scale
+
+The funnel above is written for one target reviewed in-conversation. When the target is an entire codebase, a large PR spanning many files, or the user asks for a "thorough" or "comprehensive" review, running it once per file in a single conversation burns context fast and serializes work that has no reason to be serial.
+
+If Dynamic Workflows are available in this session (the user said "workflow," used the `ultracode` keyword, or `/effort ultracode` is set), build one instead of running the funnel manually file by file. See [references/workflow-builder.md](references/workflow-builder.md) for how to map these five phases onto a workflow script — what fans out, what needs a barrier, and where to add adversarial verification. If workflows aren't available, fall back to running the funnel per file or module in sequence, same as a single-target review.
