@@ -1,0 +1,25 @@
+{
+  "name": "clairvoyance",
+  "version": "1.2.0",
+  "description": "ESP for AI Coding — Agent skills on the philosophy of software design, grounded in decades of engineering experience.",
+  "type": "module",
+  "main": ".opencode/plugins/clairvoyance.js",
+  "license": "MIT",
+  "homepage": "https://clairvoyance.fyi",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codybrom/clairvoyance.git"
+  },
+  "author": {
+    "name": "Cody Bromley",
+    "email": "esp@clairvoyance.fyi"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "skills",
+    "claude-code",
+    "software-design",
+    "code-review"
+  ]
+}

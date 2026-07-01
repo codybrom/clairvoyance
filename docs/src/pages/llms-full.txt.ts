@@ -11,7 +11,7 @@ export const GET: APIRoute = () => {
     "",
     "Good software isn't written. It's designed. Clairvoyance is a collection of software design skills for AI coding agents. Each skill is a lens grounded in decades of engineering experience to helps your agent see through complexity and write code with intent.",
     "",
-    "Clairvoyance works with Claude Code, Codex, OpenCode, and any agent platform that supports skills.",
+    "Clairvoyance works with Claude Code, Codex, Cursor, OpenCode, Gemini CLI, and any agent platform that supports the Agent Skills open standard.",
     "",
     "Created by Cody Bromley. Inspired by *A Philosophy of Software Design* by John K. Ousterhout. Licensed under the MIT License (https://github.com/codybrom/clairvoyance/blob/main/LICENSE).",
     "",

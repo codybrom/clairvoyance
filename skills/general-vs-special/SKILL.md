@@ -1,9 +1,8 @@
 ---
 name: general-vs-special
-description: Evaluates whether interfaces are appropriately general-purpose. Use when the user asks to check interface generality, when a module has if-branches or parameters serving only one caller, when getters/setters expose internal representation, or when an interface is over-specialized. Checks general-purpose design, special-general mixture, and defaults.
+description: Evaluates whether interfaces are appropriately general-purpose. Use when the user asks to check interface generality, when a module has if-branches or parameters serving only one caller, when getters/setters expose internal representation, or when an interface is over-specialized. Checks general-purpose design, special-general mixture, and defaults. Not for general information-leakage across module boundaries (use information-hiding) or for auditing configuration-parameter necessity (use pull-complexity-down).
 argument-hint: "[file or module path]"
-metadata:
-  allowed-tools: Read, Grep
+allowed-tools: Read, Grep
 ---
 
 # General vs. Special-Purpose Review Lens
@@ -51,9 +50,7 @@ Special cases tend to show up as extra `if` statements. Instead of adding more o
 
 ### Getters/Setters as Representation Leakage
 
-**Declaring a field `private` then providing `getFoo`/`setFoo` does not constitute information hiding.** The variable's existence, type, and name are fully visible. Callers depend on the representation.
-
-Before writing a getter or setter: should callers know about this property at all? A `rename()` method absorbs related logic and hides the representation. The goal is for the module to do work, not expose data.
+Before writing a getter or setter, ask the gatekeeping question: should callers know about this property at all? A `rename()` method absorbs related logic and hides the representation; the goal is for the module to do work, not expose data. For the fuller audit of why `private` plus getter/setter doesn't hide anything, see **information-hiding**.
 
 ### Defaults as a Depth Tool
 

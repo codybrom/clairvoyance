@@ -2,8 +2,7 @@
 name: design-review
 description: Orchestrates a structured design review by running existing skills in a diagnostic funnel, from complexity triage through structural, interface, and surface checks to a full red-flags sweep. Use when reviewing a file, module or PR for overall design quality and you want a comprehensive, prioritized assessment rather than a single-lens check. Not for applying one specific lens (use that skill directly) or for evolutionary analysis of how code changed over time (use code-evolution).
 argument-hint: "[file, module, or PR to review]"
-metadata:
-  allowed-tools: Read, Grep
+allowed-tools: Read, Grep
 ---
 
 # Design Review Orchestrator
@@ -67,3 +66,9 @@ Rank findings in this order:
 3. **Canary flags**: Hard to Pick Name, Hard to Describe, Non-obvious Code, No Alternatives Considered. These are the cheapest signals. Catch them and the structural flags never materialize.
 4. **Structural issues**: Shallow modules, pass-through methods, classitis. These require refactoring but affect a bounded area.
 5. **Surface issues**: Naming and documentation problems. Important but lowest cost to fix and lowest risk if deferred.
+
+## Reviewing at Scale
+
+The funnel above is written for one target reviewed in-conversation. When the target is an entire codebase, a large PR spanning many files, or the user asks for a "thorough" or "comprehensive" review, running it once per file in a single conversation burns context fast and serializes work that has no reason to be serial.
+
+If Dynamic Workflows are available in this session (the user said "workflow," used the `ultracode` keyword, or `/effort ultracode` is set), build one instead of running the funnel manually file by file. See [references/workflow-builder.md](references/workflow-builder.md) for how to map these five phases onto a workflow script — what fans out, what needs a barrier, and where to add adversarial verification. If workflows aren't available, fall back to running the funnel per file or module in sequence, same as a single-target review.

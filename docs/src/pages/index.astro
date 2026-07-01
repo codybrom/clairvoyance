@@ -5,7 +5,7 @@ import Pillar from "../components/Pillar.astro";
 import SkillCard from "../components/SkillCard.astro";
 import ReplayViewer from "../components/ReplayViewer.astro";
 import { createHighlighter } from "shiki";
-import { Circle, Plus, Diamond, Star, Waves } from "@lucide/astro";
+import { Circle, Plus, Diamond, Star, WavesHorizontal as Waves } from "@lucide/astro";
 import { getAllSkills, PILLARS } from "../utils/skills";
 
 // Load replay data
@@ -68,9 +68,9 @@ const allSkills = getAllSkills();
   <section class="pillars" aria-labelledby="pillars-heading">
     <h2 id="pillars-heading" class="reveal">Extrasensory Perspective</h2>
     <p class="pillars-sub reveal">
-      Your agent already knows how to code. Teach it how to
-      <em>sense</em>. Battle-tested philosophy on software design, grounded in
-      decades of engineering experience.
+      Your agent already knows how to code. Teach it how to <em>sense</em>.
+      Battle-tested philosophy on software design, grounded in decades of engineering
+      experience.
     </p>
 
     <div class="pillar-row stagger">
@@ -150,8 +150,7 @@ const allSkills = getAllSkills();
       > · <a href="/privacy">Privacy</a> · <a
         href="https://github.com/codybrom/clairvoyance/blob/main/LICENSE"
         >MIT License</a
-      > · © 2026
-      <a href="https://github.com/codybrom">Cody Bromley</a>
+      > · © 2026 <a href="https://github.com/codybrom">Cody Bromley</a>
     </p>
   </footer>
 </Layout>

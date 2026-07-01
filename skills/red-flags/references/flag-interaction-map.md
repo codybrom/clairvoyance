@@ -30,7 +30,7 @@ Pull complexity down. Absorb the leaked knowledge into the module. Replace expos
 
 _Vague Name_ + _Hard to Pick Name_ + _Hard to Describe_ + _Non-obvious Code_
 
-The entity is doing too much or conflating two concepts. Naming difficulty is design feedback, not a vocabulary problem. Look for names that use "And" or "Or" (implicitly or explicitly), long interface comments with many qualifications, or repeated naming attempts that all feel wrong. The entity needs redesign, not renaming. Apply **module-boundaries** to find where to split, or **design-it-twice** to find a better abstraction.
+The entity is doing too much or conflating two concepts. Naming difficulty is design feedback, not a vocabulary problem. Look for names that use "And" or "Or" (implicitly or explicitly), long interface comments with many qualifications, or repeated naming attempts that all feel wrong. The entity needs redesign, not renaming. Apply **naming-obviousness** to diagnose the conflated concepts, and **comments-docs** where the difficulty surfaces as an unwritable interface comment.
 
 ### The Tactical Debt Loop
 
@@ -42,4 +42,4 @@ Each change copies an existing pattern without questioning whether it still fits
 
 _Catch-and-Ignore_ + _Overexposure_ + _Shallow Module_
 
-The interface throws more exceptions than callers can meaningfully handle, so they catch and ignore. Look for catch blocks that log and re-throw or silently return defaults, method signatures with three or more exception types, or error handling code that is longer than the happy path. Apply the **error-design** decision tree: define errors out of existence first, mask what can be handled internally, aggregate what remains. The goal is zero exceptions on the common path.
+The interface throws more exceptions than callers can meaningfully handle, so they catch and ignore. Look for catch blocks that log and re-throw or silently return defaults, method signatures with three or more exception types, or error handling code that is longer than the happy path. Because Overexposure and Shallow Module also point to **general-vs-special**, **pull-complexity-down**, **deep-modules**, and **information-hiding**, the exception sprawl is often a symptom of those broader interface and boundary problems, not just an error-handling defect. Apply the **error-design** decision tree first: define errors out of existence, mask what can be handled internally, aggregate what remains. The goal is zero exceptions on the common path. Then check whether the underlying interface still needs narrowing.

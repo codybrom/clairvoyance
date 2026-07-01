@@ -1,0 +1,5 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "clairvoyance",
+  "description": "ESP for AI Coding — Agent skills on the philosophy of software design, grounded in decades of engineering experience."
+}

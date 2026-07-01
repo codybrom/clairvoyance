@@ -68,7 +68,16 @@ const PILLARS = [
   },
 ];
 
-const SKILLS_DIR = path.resolve(import.meta.dirname, "../../../skills");
+// Astro bundles this module to a different depth in dev vs. build, so a fixed
+// ../.. count breaks one of the two. Walk up until skills/ turns up instead.
+function findSkillsDir(dir: string): string {
+  while (!fs.existsSync(path.join(dir, "skills")) && path.dirname(dir) !== dir) {
+    dir = path.dirname(dir);
+  }
+  return path.join(dir, "skills");
+}
+
+const SKILLS_DIR = findSkillsDir(import.meta.dirname);
 
 function findPillar(slug: string): { name: string; icon: string; hue: number } {
   for (const p of PILLARS) {

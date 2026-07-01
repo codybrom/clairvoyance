@@ -18,9 +18,11 @@ You can also invoke them directly. Use `/red-flags` to trigger a design smell sc
 
 ## Installation
 
-**Note:** Installation differs by platform. Claude Code has a built-in plugin marketplace. Codex and OpenCode require manual setup.
+Give your agent Clairvoyance: [Claude Code](#claude-code), [skills.sh](#skillssh), [Codex](#codex), [Cursor](#cursor), [OpenCode](#opencode), [Gemini CLI](#gemini-cli), [Antigravity](#antigravity), [Factory Droid](#factory-droid), [GitHub Copilot CLI](#github-copilot-cli), [Kimi Code](#kimi-code), [Pi](#pi).
 
-### Claude Code (via Plugin Marketplace)
+**Note:** Installation differs by platform. If you use more than one, install Clairvoyance separately for each.
+
+### Claude Code
 
 ```bash
 /plugin marketplace add codybrom/clairvoyance
@@ -35,23 +37,86 @@ npx skills add codybrom/clairvoyance --skill '*'
 
 ### Codex
 
-Tell Codex:
+Requires Codex CLI ≥ 0.142.0 (`codex --version`). The Codex App and CLI share the same config, so this also makes Clairvoyance visible in the App's Plugins panel.
 
-```txt
-Fetch and follow instructions from https://raw.githubusercontent.com/codybrom/clairvoyance/refs/heads/main/.codex/INSTALL.md
+```bash
+codex plugin marketplace add codybrom/clairvoyance
+codex plugin add clairvoyance@clairvoyance
 ```
 
-See [.codex/INSTALL.md](.codex/INSTALL.md) for detailed steps.
+Older Codex versions only get the 16 skills, via a manual symlink — see [.codex/INSTALL.md](.codex/INSTALL.md) for that fallback and full troubleshooting.
+
+### Cursor
+
+Cursor doesn't yet have a one-line "install from a GitHub URL" flow for unlisted plugins, so clone (or symlink) the repo into Cursor's local plugins folder and restart:
+
+```bash
+git clone https://github.com/codybrom/clairvoyance.git ~/.cursor/plugins/local/clairvoyance
+```
+
+Then check the **Customize** panel in the sidebar to confirm Clairvoyance and its 16 skills are listed.
 
 ### OpenCode
 
-Tell OpenCode:
+Add Clairvoyance to the `plugin` array in your `opencode.json` (global or project-level):
 
-```txt
-Fetch and follow instructions from https://raw.githubusercontent.com/codybrom/clairvoyance/refs/heads/main/.opencode/INSTALL.md
+```json
+{
+  "plugin": ["clairvoyance@git+https://github.com/codybrom/clairvoyance.git"]
+}
 ```
 
-See [.opencode/INSTALL.md](.opencode/INSTALL.md) for detailed steps.
+Restart OpenCode — no symlinks or manual skill paths needed. See [.opencode/INSTALL.md](.opencode/INSTALL.md) for version pinning, troubleshooting, and migrating off the old symlink-based install.
+
+### Gemini CLI
+
+Requires Gemini CLI ≥ 0.26.0 and an account Gemini CLI currently serves (Code Assist Standard/Enterprise, Google Cloud, or a paid API key — see [.gemini/INSTALL.md](.gemini/INSTALL.md) for details).
+
+```bash
+gemini extensions install https://github.com/codybrom/clairvoyance.git
+```
+
+Restart Gemini CLI to load the extension.
+
+### Antigravity
+
+```bash
+agy plugin install https://github.com/codybrom/clairvoyance
+```
+
+### Factory Droid
+
+Droid translates Claude Code plugin format automatically — no Clairvoyance-specific files needed.
+
+```bash
+droid plugin marketplace add https://github.com/codybrom/clairvoyance
+droid plugin install clairvoyance@clairvoyance-plugins
+```
+
+### GitHub Copilot CLI
+
+```bash
+copilot plugin marketplace add codybrom/clairvoyance
+copilot plugin install clairvoyance@clairvoyance-plugins
+```
+
+### Kimi Code
+
+In Kimi Code's plugin manager (`/plugins`), choose **Custom**, or run directly:
+
+```text
+/plugins install https://github.com/codybrom/clairvoyance
+```
+
+Kimi Code will show a third-party trust prompt since this isn't an officially curated source — confirm to proceed.
+
+### Pi
+
+```bash
+pi install git:github.com/codybrom/clairvoyance
+```
+
+Pi auto-discovers the `skills/` directory with no extra config.
 
 ### llms.txt
 
@@ -130,7 +195,15 @@ To contribute:
 
 - **Claude Code:** `/plugin update clairvoyance`
 - **skills.sh:** `npx skills update codybrom/clairvoyance`
-- **Codex / OpenCode:** Re-run the install instructions — these agents fetch the latest from `main` each time.
+- **Codex:** `codex plugin marketplace upgrade clairvoyance && codex plugin add clairvoyance@clairvoyance`
+- **Cursor:** `cd ~/.cursor/plugins/local/clairvoyance && git pull`, then restart
+- **OpenCode:** doesn't auto-refresh on restart unless you pinned a tag — see [.opencode/INSTALL.md](.opencode/INSTALL.md#updating)
+- **Gemini CLI:** `gemini extensions update clairvoyance`
+- **Antigravity:** re-run `agy plugin install https://github.com/codybrom/clairvoyance`
+- **Factory Droid:** `droid plugin marketplace update clairvoyance-plugins && droid plugin update clairvoyance@clairvoyance-plugins`
+- **GitHub Copilot CLI:** `copilot plugin update clairvoyance`
+- **Kimi Code:** re-run the install command from the Custom tab
+- **Pi:** `pi update --extensions` (re-run install with a new ref if you pinned one)
 - **llms.txt:** Always up to date at [clairvoyance.fyi/llms-full.txt](https://clairvoyance.fyi/llms-full.txt).
 
 ## License

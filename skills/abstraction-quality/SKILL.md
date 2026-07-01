@@ -2,8 +2,7 @@
 name: abstraction-quality
 description: Evaluates whether abstractions genuinely provide a fundamentally different way of thinking or are structurally shallow. Use when adjacent layers feel redundant, when decorator/wrapper patterns add boilerplate without depth or when an abstraction feels leaky. Not for measuring a single module's interface-to-implementation ratio (use deep-modules) or checking for information leakage across boundaries (use information-hiding).
 argument-hint: "[file or module path]"
-metadata:
-  allowed-tools: Read, Grep
+allowed-tools: Read, Grep
 ---
 
 # Abstraction Quality Review Lens
@@ -42,22 +41,13 @@ Check: compare the interface of each layer. Are they at different conceptual lev
 
 **Decorators are structurally committed to shallowness.** A decorator that adds one behavior to a class with twenty methods has nineteen pass-throughs and one meaningful method.
 
-Four alternatives before creating a decorator:
-
-1. Add the functionality directly to the underlying class
-2. Merge with the use case
-3. Merge with an existing decorator
-4. Implement as a standalone class
+For the full decorator-alternatives checklist, see deep-modules' "Decorator Alternatives" section.
 
 Ask whether the new functionality really needs to wrap the existing functionality. If not, implement it independently.
 
 ### Resolving False Abstractions
 
-When a false abstraction is detected:
-
-1. **Redistribute**: Move functionality between layers so each has a distinct, coherent responsibility
-2. **Merge**: Combine adjacent layers into one deeper layer
-3. **Expose**: Remove the abstraction. Let callers use the underlying layer directly
+See deep-modules' "Pass-Through Method Audit" fixes (Expose, Redistribute, Merge) for the full remedy taxonomy.
 
 ## Review Process
 

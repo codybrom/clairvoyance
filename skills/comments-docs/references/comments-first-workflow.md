@@ -30,7 +30,6 @@ Comments are a **complexity canary**. If you notice any of these while writing, 
 
 > "If the interface comment must describe all the major features of the implementation, then the method is shallow." — John Ousterhout, _A Philosophy of Software Design_
 
-- Comment is long and complicated → interface is too complex
 - Variable needs a long comment to fully describe → wrong variable decomposition
 
 ### Less rework, fewer tokens

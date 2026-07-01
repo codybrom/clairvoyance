@@ -1,11 +1,9 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "clairvoyance",
   "version": "1.2.0",
   "description": "ESP for AI Coding — Agent skills on the philosophy of software design, grounded in decades of engineering experience.",
   "author": {
     "name": "Cody Bromley",
-    "url": "https://github.com/codybrom",
     "email": "esp@clairvoyance.fyi"
   },
   "homepage": "https://clairvoyance.fyi",
@@ -16,5 +14,12 @@
     "software-philosophy",
     "code-quality",
     "design-review"
-  ]
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Clairvoyance",
+    "shortDescription": "ESP for AI Coding — Agent skills on the philosophy of software design",
+    "developerName": "Cody Bromley",
+    "websiteURL": "https://clairvoyance.fyi"
+  }
 }

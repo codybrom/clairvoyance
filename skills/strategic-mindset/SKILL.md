@@ -1,9 +1,8 @@
 ---
 name: strategic-mindset
-description: Assesses whether code reflects strategic or tactical thinking. Use when the user asks to evaluate design investment, when code was written under time pressure, when a developer consistently produces working code that degrades the system, or when assessing whether a codebase invests in design. Checks the 10-20% investment rule and tactical tornado patterns.
+description: Assesses whether code reflects strategic or tactical thinking. Use when the user asks to evaluate design investment, when code was written under time pressure, when a developer consistently produces working code that degrades the system, or when assessing whether a codebase invests in design. Checks the 10-20% investment rule and tactical tornado patterns. Not for evaluating whether a specific change or diff looks designed-in or bolted-on (use code-evolution).
 argument-hint: "[file, module, or codebase area]"
-metadata:
-  allowed-tools: Read, Grep
+allowed-tools: Read, Grep
 ---
 
 # Strategic Mindset Review Lens
@@ -36,7 +35,7 @@ Produce a great design that also happens to work. Two modes:
 - **Proactive**: Explore alternatives before implementing. Write documentation before code to surface interface problems early.
 - **Reactive**: When you discover a design problem, fix it.
 
-**Test:** When you finish this change, does the system look as if it was always designed this way? Is the system easier or harder for the next developer to work with?
+See code-evolution's "Designed This Way" test for the full three-question procedure (what would this look like designed from scratch; does the modification match that; what's the minimum restructuring to close the gap).
 
 ### The Unit of Development Should Be an Abstraction
 
@@ -45,7 +44,7 @@ Working in abstraction-sized chunks lets you consider trade-offs and arrive at g
 ### The 10-20% Investment Rule
 
 - Not all upfront. Spread across the project
-- Not separate "refactoring sprints." Woven into every task
+- Not a separate refactoring pass or cleanup session — woven into every task.
 - Each task should leave the system slightly better than it found it
 
 Crossover point estimated at 6-18 months, after which design quality saves more time than investments cost. (Ousterhout calls this "just my opinion" with "no data to back it up.")
@@ -85,4 +84,4 @@ This doesn't mean over-engineer. It means: do the simple, clean thing instead of
 4. **Project forward**: If the next 10 changes follow this pattern, what happens?
 5. **Recommend**: Specific investments with estimated effort
 
-Red flag signals for strategic mindset are cataloged in **red-flags** (Tactical Momentum, Repetition).
+Red flag signals for strategic mindset are cataloged in **red-flags** (Tactical Momentum).

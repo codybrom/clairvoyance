@@ -1,9 +1,8 @@
 ---
 name: comments-docs
-description: Reviews comment quality and documentation practices. Use when the user asks to review comments or documentation, when comments just repeat the code, when something is hard to describe in a sentence, or when writing documentation before code to surface design problems. Evaluates the four comment types, comments-first workflow, and comment rot.
+description: Reviews comment quality and documentation practices. Use when the user asks to review comments or documentation, when comments just repeat the code, when something is hard to describe in a sentence, or when writing documentation before code to surface design problems. Evaluates the four comment types, comments-first workflow, and comment rot. Not for naming or code obviousness (use naming-obviousness).
 argument-hint: "[file or module path]"
-metadata:
-  allowed-tools: Read, Grep
+allowed-tools: Read, Grep
 ---
 
 # Comments & Documentation Review Lens
@@ -63,7 +62,7 @@ Rephrasing an entity name doesn't cut it. A comment about `fetchUserProfile` tha
 
 ### Comments-First Workflow
 
-Write interface comments before method bodies. If a comment is hard to write, the abstraction is wrong, and you find out before writing the implementation. Comments written after-the-fact produce worse results. Your memory of your intent has faded and you end up justifying the code you wrote instead of capturing why you wrote it.
+Write interface comments before method bodies. If a comment is hard to write, the abstraction is wrong, and you find out before writing the implementation. Comments written after-the-fact produce worse results: design intent has scrolled out of the context window, and a finished implementation contaminates your perspective, so you end up restating the code instead of capturing why you wrote it.
 
 1. **Class interface comment**: purpose and abstraction, before anything else
 2. **Public method comments + signatures**: bodies empty. Iterate until structure feels right
@@ -75,7 +74,7 @@ See the [full workflow](references/comments-first-workflow.md) for the complexit
 ### The Four Excuses
 
 - **"Good code is self-documenting."** A signature gives you types and parameter names. It does not tell you when to call the method, what the return value means, or why the method exists. That information lives in comments. When readers must study an implementation to use it, a module offers no real abstraction.
-- **"I don't have time."** Comments add at most 10% to typing time. Reframed: "I don't have time to design."
+- **"I don't have time."** Comments are a small fraction of total output — well under 10% of the tokens spent on a task. Reframed: "I don't have time to design."
 - **"Comments get out of date."** Manageable with discipline at the point of change and code review.
 - **"All comments I've seen are worthless."** Solvable with technique, not intention.
 
@@ -85,7 +84,7 @@ Robert Martin argues in _Clean Code_ that comments are failures and signs that t
 
 Method names work for simple operations. `extractSubstring` is better than a comment above a five-line block. But names can hit a ceiling. A name can say _what_ a method does but it won't say _why_, describe the preconditions or explain non-obvious constraints. A name alone cannot carry that, but a comment can. Taken to the extreme, method extraction encourages splitting code into infinite small methods, which can increase complexity rather than reduce it.
 
-The issue ends up being cultural. If a team thinks comments are "junk" or fail to be "real documentation", then they avoid creating them and useful design context goes unrecorded. The best place for design context is right next to the code it describes, not in a separate document that the reader may never find or even know to look for.
+The issue is a default bias, not a hard rule: treating comments as "junk" causes them to be skipped, and useful design context goes unrecorded for every collaborator — human or agent — who reads the code later. The best place for design context is right next to the code it describes, not in a separate document that the reader may never find or even know to look for.
 
 ## Review Process
 
@@ -94,9 +93,10 @@ The issue ends up being cultural. If a team thinks comments are "junk" or fail t
 3. **Check for missing interface comments**: All public interfaces documented? Both intuition and precision?
 4. **Evaluate hard-to-describe**: Long or convoluted comments? Investigate the design.
 5. **Check cross-module docs**: Dependencies documented? Canonical location?
-6. **Recommend**: Delete noise, add missing interface comments, flag hard-to-describe as design problems
+6. **Check for comment rot**: Does each comment's claims still match the code and behavior it describes? Flag mismatches.
+7. **Recommend**: Delete noise, add missing interface comments, flag hard-to-describe as design problems
 
-Red flag signals for comments are cataloged in **red-flags** (Comment Repeats Code, Implementation Documentation Contaminates Interface, Hard to Describe, Information Leakage).
+Red flag signals for comments are cataloged in **red-flags** (Comment Repeats Code, Implementation Documentation Contaminates Interface, Hard to Describe).
 
 ## References
 

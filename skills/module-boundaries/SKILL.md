@@ -2,8 +2,7 @@
 name: module-boundaries
 description: Evaluates where module boundaries are drawn and whether modules should be merged or split. Use when deciding whether to combine or separate two specific modules, when two modules seem tightly coupled, or when a change to one module forces changes to another. Not for evaluating depth within a single module (use deep-modules) or quality of an abstraction layer (use abstraction-quality).
 argument-hint: "[file or module path]"
-metadata:
-  allowed-tools: Read, Grep
+allowed-tools: Read, Grep
 ---
 
 # Module Boundaries Review Lens
@@ -94,4 +93,4 @@ A well-placed boundary fully encloses a design decision. If two modules share kn
 5. **Check boundary criterion**: Boundaries drawn around knowledge ownership?
 6. **Recommend adjustments**: Specific merges, splits, or restructurings
 
-Red flag signals for module boundaries are cataloged in **red-flags** (Conjoined Methods, Information Leakage, Shallow Module, Special-General Mixture).
+Red flag signals for module boundaries are cataloged in **red-flags** (Conjoined Methods).

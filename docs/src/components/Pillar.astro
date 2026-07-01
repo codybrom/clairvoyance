@@ -1,5 +1,5 @@
 ---
-import { Circle, Plus, Diamond, Star, Waves } from "@lucide/astro";
+import { Circle, Plus, Diamond, Star, WavesHorizontal as Waves } from "@lucide/astro";
 
 interface Props {
   icon: string;
@@ -32,8 +32,7 @@ function formatSkill(slug: string): string {
       {skills.map((s) => <li>{formatSkill(s)}</li>)}
     </ul>
     <div class="pillar-count">
-      {skills.length}
-      {skills.length === 1 ? "skill" : "skills"}
+      {skills.length} {skills.length === 1 ? "skill" : "skills"}
     </div>
   </div>
 </div>

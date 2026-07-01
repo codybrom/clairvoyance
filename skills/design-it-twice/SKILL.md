@@ -1,18 +1,15 @@
 ---
 name: design-it-twice
-description: Generates and compares design alternatives before committing. Use when the user asks to design something twice, before committing to any significant design. Applies to classes, modules, APIs and architectural approaches. Ensures at least two fundamentally different alternatives were considered and compared on concrete criteria before choosing.
+description: Generates and compares design alternatives before committing. Use when the user asks to design something twice, before committing to any significant design. Applies to classes, modules, APIs and architectural approaches. Ensures at least two fundamentally different alternatives were considered and compared on concrete criteria before choosing. Not for assessing whether existing code reflects strategic vs. tactical investment (use strategic-mindset) or whether a specific change degrades design over time (use code-evolution).
 argument-hint: "[description of the design problem]"
-metadata:
-  allowed-tools: Read, Grep
-  context: fork
-  agent: clean-room-alternative
+allowed-tools: Read, Grep, Task
 ---
 
 # Design It Twice
 
-When invoked with $ARGUMENTS, treat the argument as the design problem to explore. Do not assume a solution. Start from the problem statement and generate at least two fundamentally different approaches independently. If a design already exists in the conversation or codebase, do not anchor to it. Produce a clean, blind second attempt, then compare all approaches on concrete criteria.
+When invoked with $ARGUMENTS, treat the argument as the design problem to explore. Do not assume a solution. Start from the problem statement and generate at least two fundamentally different approaches independently. If a design already exists in the conversation or codebase, dispatch the `clean-room-alternative` agent (see Isolation Mode below) rather than trying to produce a second attempt yourself — a design already sitting in your context contaminates anything you write next, no matter how deliberately you try to ignore it. Then compare all approaches on concrete criteria.
 
-**This skill has two modes.** Before a design exists, use it to generate and compare alternatives. After a design exists, use it to produce an independent second attempt that isn't anchored to the first. Either way, the first idea is unlikely to produce the best design, not because the designer isn't smart, but because the problems are genuinely hard.
+**This skill has two modes.** Before a design exists, use it to generate and compare alternatives directly. After a design exists, dispatch the isolated agent described below to produce an independent second attempt that isn't anchored to the first. Either way, the first idea is unlikely to produce the best design, not because the designer isn't smart, but because the problems are genuinely hard.
 
 ## When to Apply
 
@@ -50,9 +47,11 @@ Use for interfaces first, then again for implementation (where simplicity and pe
 
 When you only have one design, its strengths are invisible and its weaknesses look like inherent constraints. A second design breaks that illusion by making trade-offs visible. Documenting the alternatives you considered also prevents future maintainers from revisiting rejected or failed approaches.
 
+Recording rejected alternatives and why they were rejected — in the design doc, commit message, or PR description — means a future agent invocation (which starts with an empty context window) gets the comparison for free instead of re-deriving it from scratch.
+
 ### The Smart People Trap
 
-Smart engineers resist this because early success taught them their first idea is good enough. **But as problems get harder, that habit becomes a ceiling.**
+The first design generated anchors everything after it — once a finished design sits in context, it contaminates the comparison the same way a finished implementation contaminates a rewrite. Pushing past that anchor is what produces the stronger second design.
 
 > "It isn't that you aren't smart; it's that the problems are really hard!" — John Ousterhout, _A Philosophy of Software Design_
 
@@ -84,13 +83,9 @@ After the agent returns its design, compare both approaches using the criteria i
 
 If your runtime does not support agents, use the design pre-mortem technique from `references/pre-mortem-fallback.md` to force a structurally different alternative without clean-room isolation.
 
-## Team-Level Application
-
-In design documents and RFCs, requiring an "alternatives considered" section forces the same discipline organizationally. Writing down _why_ you wouldn't take an alternative clarifies the reasoning behind the choice you did make.
-
 ## Time Cost
 
-For a class-level decision: an hour or two. Days or weeks will be spent implementing. 2-5% of implementation cost with disproportionate return.
+Sketching and comparing two alternatives costs a small fraction of the tokens a full implementation consumes — and far less than the tokens spent debugging, then re-implementing, a flawed first design. The ratio holds: exploration is on the order of a few percent of implementation cost, with disproportionate return.
 
 ## Review Process
 
