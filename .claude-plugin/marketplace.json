@@ -15,7 +15,7 @@
       "name": "clairvoyance",
       "source": "./",
       "description": "ESP for AI Coding — Agent skills on the philosophy of software design, grounded in decades of engineering experience.",
-      "version": "1.1.2",
+      "version": "1.2.0",
       "strict": true
     }
   ]
