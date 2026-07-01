@@ -32,8 +32,7 @@ function formatSkill(slug: string): string {
       {skills.map((s) => <li>{formatSkill(s)}</li>)}
     </ul>
     <div class="pillar-count">
-      {skills.length}
-      {skills.length === 1 ? "skill" : "skills"}
+      {skills.length} {skills.length === 1 ? "skill" : "skills"}
     </div>
   </div>
 </div>

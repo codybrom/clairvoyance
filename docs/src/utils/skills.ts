@@ -68,7 +68,7 @@ const PILLARS = [
   },
 ];
 
-const SKILLS_DIR = path.resolve(import.meta.dirname, "../../../skills");
+const SKILLS_DIR = path.resolve(process.cwd(), "../skills");
 
 function findPillar(slug: string): { name: string; icon: string; hue: number } {
   for (const p of PILLARS) {
