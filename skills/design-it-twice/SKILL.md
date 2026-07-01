@@ -7,9 +7,9 @@ allowed-tools: Read, Grep, Task
 
 # Design It Twice
 
-When invoked with $ARGUMENTS, treat the argument as the design problem to explore. Do not assume a solution. Start from the problem statement and generate at least two fundamentally different approaches independently. If a design already exists in the conversation or codebase, do not anchor to it. Produce a clean, blind second attempt, then compare all approaches on concrete criteria.
+When invoked with $ARGUMENTS, treat the argument as the design problem to explore. Do not assume a solution. Start from the problem statement and generate at least two fundamentally different approaches independently. If a design already exists in the conversation or codebase, dispatch the `clean-room-alternative` agent (see Isolation Mode below) rather than trying to produce a second attempt yourself — a design already sitting in your context contaminates anything you write next, no matter how deliberately you try to ignore it. Then compare all approaches on concrete criteria.
 
-**This skill has two modes.** Before a design exists, use it to generate and compare alternatives. After a design exists, use it to produce an independent second attempt that isn't anchored to the first. Either way, the first idea is unlikely to produce the best design, not because the designer isn't smart, but because the problems are genuinely hard.
+**This skill has two modes.** Before a design exists, use it to generate and compare alternatives directly. After a design exists, dispatch the isolated agent described below to produce an independent second attempt that isn't anchored to the first. Either way, the first idea is unlikely to produce the best design, not because the designer isn't smart, but because the problems are genuinely hard.
 
 ## When to Apply
 
