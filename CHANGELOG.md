@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.3.0 (unreleased)
+## 1.3.0 — 2026-07-22
 
 ### Removed
 
