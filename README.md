@@ -14,7 +14,7 @@ Skills activate automatically and push your agent to ask questions like:
 - *Can this method be understood without reading another one in a different file?*
 - *Is error handling pushing work onto callers that the module could handle itself?*
 
-You can also invoke them directly. Use `/red-flags` to trigger a design smell scan, `/deep-modules` to check interface depth and `/design-it-twice` to compare alternatives before committing.
+You can also invoke them directly. Use `/clairvoyance:red-flags` to trigger a design smell scan, `/clairvoyance:deep-modules` to check interface depth and `/clairvoyance:design-it-twice` to compare alternatives before committing. (On platforms that install the skills without the plugin namespace, such as skills.sh, drop the `clairvoyance:` prefix.)
 
 ## Installation
 
@@ -205,6 +205,8 @@ To contribute:
 - **Kimi Code:** re-run the install command from the Custom tab
 - **Pi:** `pi update --extensions` (re-run install with a new ref if you pinned one)
 - **llms.txt:** Always up to date at [clairvoyance.fyi/llms-full.txt](https://clairvoyance.fyi/llms-full.txt).
+
+See [CHANGELOG.md](CHANGELOG.md) or the [GitHub releases](https://github.com/codybrom/clairvoyance/releases) for what changed in each version.
 
 ## License
 
