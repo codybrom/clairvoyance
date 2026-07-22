@@ -1,6 +1,6 @@
 ---
 name: deep-modules
-description: Measures module depth, whether the interface is simple relative to the implementation behind it. Use when a module's interface has too many parameters or methods, when there are too many small classes each doing too little or when methods just forward calls to other methods. Not for evaluating whether adjacent layers provide different abstractions (use abstraction-quality) or deciding whether to merge/split specific modules (use module-boundaries).
+description: "Measures module depth: whether the interface is simple relative to the implementation behind it. Use when an interface has too many parameters or methods, many small classes each do too little, or methods just forward calls. Not for whether adjacent layers provide different abstractions (use abstraction-quality) or merging/splitting modules (use module-boundaries)."
 argument-hint: "[file or module path]"
 allowed-tools: Read, Grep
 ---

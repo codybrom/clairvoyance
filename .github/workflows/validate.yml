@@ -1,0 +1,46 @@
+name: Validate plugin
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "skills/**"
+      - "agents/**"
+      - ".claude-plugin/**"
+      - "*-plugin/**"
+      - ".agents/**"
+      - "gemini-extension.json"
+      - "package.json"
+      - "scripts/**"
+      - ".github/workflows/validate.yml"
+  pull_request:
+    paths:
+      - "skills/**"
+      - "agents/**"
+      - ".claude-plugin/**"
+      - "*-plugin/**"
+      - ".agents/**"
+      - "gemini-extension.json"
+      - "package.json"
+      - "scripts/**"
+      - ".github/workflows/validate.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Validate plugin and marketplace manifests (strict)
+        run: claude plugin validate . --strict
+
+      - name: Check skill and agent frontmatter consistency
+        run: scripts/check-skills.sh
+
+      - name: Check version sync across manifests
+        run: scripts/bump-version.sh --check

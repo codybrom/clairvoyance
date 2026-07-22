@@ -1,6 +1,6 @@
 ---
 name: error-design
-description: Reviews error handling strategy and exception design. Use when the user asks to review error handling, when a module throws too many exceptions, or when callers must handle errors they shouldn't need to know about. Applies the "define errors out of existence" principle with a decision tree for exception strategies. Not for general interface complexity like configuration parameters or decorator boilerplate (use pull-complexity-down); use error-design specifically for exception/error-condition strategy.
+description: "Reviews error handling and exception design, applying the \"define errors out of existence\" principle. Use when reviewing error handling, when a module throws too many exceptions, or when callers must handle errors they shouldn't need to know about. Not for general caller-burden complexity (use pull-complexity-down); this skill is specifically for exception and error-condition strategy."
 argument-hint: "[file or module path]"
 allowed-tools: Read, Grep
 ---

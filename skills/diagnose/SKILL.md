@@ -1,6 +1,6 @@
 ---
 name: diagnose
-description: Routes a vague symptom or complaint to the most relevant Clairvoyance skill via a decision tree. Use when someone describes a problem but doesn't know which skill to reach for. Not for running a comprehensive review (use design-review) or scanning a checklist (use red-flags).
+description: "Routes a vague symptom or complaint to the most relevant Clairvoyance skill via a decision tree. Use when someone describes a problem but doesn't know which skill to reach for. Not for a comprehensive review (use design-review) or a checklist scan (use red-flags)."
 argument-hint: "[description of the symptom or problem]"
 allowed-tools: Read, Grep
 ---

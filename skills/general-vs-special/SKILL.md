@@ -1,6 +1,6 @@
 ---
 name: general-vs-special
-description: Evaluates whether interfaces are appropriately general-purpose. Use when the user asks to check interface generality, when a module has if-branches or parameters serving only one caller, when getters/setters expose internal representation, or when an interface is over-specialized. Checks general-purpose design, special-general mixture, and defaults. Not for general information-leakage across module boundaries (use information-hiding) or for auditing configuration-parameter necessity (use pull-complexity-down).
+description: "Evaluates whether interfaces are appropriately general-purpose. Use when checking interface generality, when if-branches or parameters serve only one caller, or when getters/setters expose internal representation. Not for information leakage across boundaries (use information-hiding) or auditing configuration parameters (use pull-complexity-down)."
 argument-hint: "[file or module path]"
 allowed-tools: Read, Grep
 ---
