@@ -41,32 +41,31 @@ The code for each case is inlined in its prompt. The prompts don't hint at the s
 
 ## Baseline
 
-This is v1.3.0, full run of 2026-09-19 at commit `97dedce` (10 cases × 3 runs × 2 arms, Opus agent, Sonnet judge, `-j 4`; 76 minutes, $15.85). The skill files at that commit are identical to `b55f118`, so this baseline holds for the merge commit too.
+This is v1.3.0, full run of 2026-09-19 at commit `ad561ff` (10 cases × 3 runs × 2 arms, Opus agent, Sonnet judge, `-j 4`; 18 minutes, $20.89).
 
 | Case | With | Without | Δ | Skill fired (with) |
 |---|---|---|---|---|
-| 01-scan-orders | 1.00 | 0.86 | +0.14 | 3/3 |
+| 01-scan-orders | 1.00 | 0.79 | +0.21 | 3/3 |
 | 02-inherited-billing | 1.00 | 0.93 | +0.07 | 3/3 |
-| 03-diff-review | 0.86 | 0.26 | +0.60 | 3/3 |
-| 04-pasted-ts | 1.00 | 0.76 | +0.24 | 3/3 |
-| 05-checklist-cache | 1.00 | 0.73 | +0.27 | 3/3 |
+| 03-diff-review | 0.93 | 0.79 | +0.14 | 3/3 |
+| 04-pasted-ts | 1.00 | 0.79 | +0.21 | 3/3 |
+| 05-checklist-cache | 1.00 | 0.70 | +0.30 | 3/3 |
 | 06-neg-keyerror | 1.00 | 1.00 | 0.00 | 0/3 (correct) |
-| 07-units-leak | 1.00 | 0.80 | +0.20 | 3/3 |
-| 08-buried-passthrough | 0.36 | 0.18 | +0.18 | **0/3** |
-| 09-layered-function | 0.91 | 0.61 | +0.30 | **0/3** |
-| 10-caller-retries | 1.00 | 1.00 | 0.00 | 3/3 |
-| **Mean** | | | **+0.20** | |
+| 07-units-leak | 1.00 | 1.00 | 0.00 | 3/3 |
+| 08-buried-passthrough | 0.91 | 0.12 | **+0.79** | 3/3 |
+| 09-layered-function | 1.00 | 0.64 | +0.36 | 3/3 |
+| 10-caller-retries | 0.97 | 0.91 | +0.06 | 3/3 |
+| **Mean** | | | **+0.22** | |
 
-Previous baseline (commit `55e986a`, before the trigger fixes in #10) had a mean Δ of +0.13, with 03 at +0.12 and 08 at −0.12.
+Every should-fire case now fires 3/3, and the negative case still fires nothing. Two earlier baselines for comparison: mean Δ +0.13 at `55e986a` (before #10), +0.20 at `97dedce` (after #10, before #9).
 
 How to read it:
 
 - **Where the uplift comes from.** Plain Opus catches most of the individual planted smells. The gap is mostly `root-cause`: with the plugin, the answer ties its findings to a shared design cause far more often.
-- **Case 03 is fixed.** "Review this diff before I merge" now fires 3/3 after `code-evolution` took ownership of diff review (#4). Its Δ went from +0.12 to +0.60.
-- **Cases 08 and 09 are the remaining trigger gap (#9).** "Anything off in this user service?" and "Take a look at `compute_price`" fire nothing. 09 regressed from 1/3 to 0/3 when the #10 wording made the red-flags triggers more explicit-ask shaped.
-- **09 scores well anyway** (0.91 with, 0.61 without, at 0/3 fired). The skill descriptions appear to steer the answer just by sitting in context. Treat its Δ as evidence about context, not about the skill body.
-- **08 is where quality is actually lost.** Both arms go bug-hunting and miss the planted pass-throughs.
-- A single run on one case can swing by about ±0.1. Compare means across full runs. If Δ jumps sharply with no plugin change behind it, spot-check the answers by hand before trusting it.
+- **08 is where #9 paid off.** "Anything off in this user service?" went from 0/3 fired and Δ +0.18 to 3/3 and Δ **+0.79**, the largest in the suite. Without the plugin both arms used to go bug-hunting and miss the planted pass-throughs; now only the no-plugin arm does (0.12).
+- **09 was already scoring well before it fired.** It sat at 0.91 with 0/3 fired, because the skill descriptions steer the answer just by sitting in context. Now it fires 3/3 and scores 1.00.
+- **The with-arm is at or above 0.91 on all ten cases.** Remaining Δ movement is mostly the no-plugin arm bouncing, not the plugin regressing: 03 fell from +0.60 to +0.14 only because its without-arm jumped 0.26 → 0.79, while its with-arm rose 0.86 → 0.93. Same story on 07. The suite is close to its measurement ceiling; harder cases would buy more signal than re-reading these deltas.
+- A single run on one case can swing by about ±0.1. Compare means across full runs.
 
 ## When to re-run
 

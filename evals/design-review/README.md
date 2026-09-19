@@ -36,27 +36,28 @@ claude plugin eval . --eval-dir evals/design-review --ablation with-without --ju
 
 ## Baseline
 
-This is v1.3.0, full run of 2026-09-19 at commit `97dedce` (6 cases × 3 runs × 2 arms, Opus agent, Sonnet judge, `-j 4`; 38 minutes, $7.91). The skill files at that commit are identical to `b55f118`, so this baseline holds for the merge commit too. Hallucinated code is rare and isn't scored; spot-check by hand.
+This is v1.3.0, full run of 2026-09-19 at commit `ad561ff` (6 cases × 3 runs × 2 arms, Opus agent, Sonnet judge, `-j 4`; 9 minutes, $8.48).
 
-| Case | With | Without | Δ | Skill fired (with) |
+| Case | With | Without | Δ | design-review fired |
 |---|---|---|---|---|
 | 01-orders-module | 1.00 | 0.83 | +0.17 | 3/3 |
 | 02-pr-diff | 1.00 | 1.00 | 0.00 | 3/3 |
-| 03-cluster | 0.67 | 0.50 | +0.17 | 3/3 |
-| 04-clean-go | 0.50 | 0.50 | 0.00 | 3/3 |
-| 05-clean-py | 0.83 | 0.67 | +0.17 | 3/3 |
+| 03-cluster | 0.67 | 0.67 | 0.00 | 3/3 |
+| 04-clean-go | 1.00 | 0.50 | **+0.50** | 3/3 |
+| 05-clean-py | 0.50 | 0.67 | −0.17 | **2/3** |
 | 06-neg-rename | 1.00 | 1.00 | 0.00 | 0/3 (correct) |
 | **Mean** | | | **+0.08** | |
 
-Previous baseline (recomputed from an earlier run, before the trigger fixes in #10) had a mean Δ of +0.11, with 03 and 04 both at +0.33.
+Earlier baselines: +0.11 before #10, +0.08 after #10. The mean has been flat while individual cases swing, so read the cases, not the mean.
 
 How to read it:
 
-- **This suite did not gain from #10, and 04 lost its uplift.** `04-clean-go` sits at 0.50 in both arms, down from 1.00 / 0.67. The with-arm regression is the one to chase: the #10 edit narrowed the description to "comprehensive or prioritized design assessment" and pushed plain diff review to `code-evolution`, which may have cost the padding restraint that 04 grades. One 3-run delta is inside the ±0.1 noise band, so confirm with a re-run before acting on it.
-- **The uplift is now spread thin** (+0.17 on three cases) rather than concentrated in 03 and 04.
+- **04-clean-go's earlier regression was noise.** It read 0.50/0.50 in the post-#10 run and recovered to 1.00/0.50 here with no change behind it. A single 3-run case delta on this suite can swing a full 0.50; do not act on one.
+- **05-clean-py is a real misroute, not noise.** A traced re-run (1 case, 3 runs, $1.58) came back 0.83/0.83, Δ 0.00, but the traces show why the number moves: in 1 of 3 runs `red-flags` fires instead of `design-review` on "Review the design of slugify.py", pads the clean file, and scores 0.50. The other two fire `design-review` and score 1.00. The #9 exclusion has since been narrowed to key on a missing review goal rather than on "a single file or function", which should stop the steal — **unvalidated as of this baseline**.
+- **Note what `skill-fired` measures here.** This suite's grader carries `input_match: design-review`, so the column above counts *this* skill, not any skill. The `red-flags` suite's grader has no `input_match` and counts any skill call. The two columns are not comparable.
 - **02 has no headroom.** Plain Opus already puts a clear boundary leak above naming nits.
-- **The skill fires reliably** on explicit "design review / design assessment" phrasing, and correctly stays out of the rename case. It is not a candidate owner for the open-ended "anything off?" prompts in #9 — see `evals/red-flags/README.md`.
+- **03-cluster is the standing weak case.** `shared-cause-headline` fails 3/3 in both arms: neither arm leads with the shared cause.
 
 ## When to re-run
 
-Re-run after any change to `skills/design-review/SKILL.md` or to the lens skills it orchestrates. When the numbers move, update the table above.
+Re-run after any change to `skills/design-review/SKILL.md`, to the lens skills it orchestrates, or to `skills/red-flags/SKILL.md`, which competes for the same single-file prompts. When the numbers move, update the table above.
