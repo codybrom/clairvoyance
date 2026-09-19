@@ -3,7 +3,7 @@
 Measures whether `design-it-twice` produces two genuinely different designs, compared and then picked, compared with the same model without the plugin.
 
 ```bash
-claude plugin eval . --ablation with-without --judge-model sonnet
+claude plugin eval . --eval-dir evals/design-it-twice --ablation with-without --judge-model sonnet
 ```
 
 The headline number is Δ: the with-plugin score minus the without-plugin score.
