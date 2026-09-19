@@ -12,7 +12,7 @@ claude plugin eval . --eval-dir evals/red-flags --ablation with-without --judge-
 - Add `--case '05-*'` to run a single case. Only `*` wildcards work; bracket and brace patterns don't.
 - Add `-j 4` to run up to 4 runs at once. They share your rate limit.
 - Every case pins the agent to `model: opus`. Keep the judge on a different model (`sonnet`) so it never grades its own model's answers.
-- A full run (10 cases × 3 runs × 2 arms) takes about 29 minutes with `-j 4`. The baseline run cost **about $42** of API-equivalent tokens, $31 of it judging, mostly from a `no-phantom-code` grader that sent the whole transcript to the judge. That grader has since been removed. Expect roughly $20–25 per run, but that isn't measured yet. On a claude.ai login, this comes out of your subscription usage.
+- A full run (10 cases × 3 runs × 2 arms) costs **about $16** of API-equivalent tokens, $4 of it judging. An earlier run cost $42, $31 of it judging, because a `no-phantom-code` grader sent the whole transcript to the judge; that grader has been removed. On a claude.ai login, this comes out of your subscription usage.
 
 ## Cases
 
@@ -41,29 +41,31 @@ The code for each case is inlined in its prompt. The prompts don't hint at the s
 
 ## Baseline
 
-This is v1.3.0, full run of 2026-09-19 at commit `55e986a` (10 cases × 3 runs × 2 arms, Opus agent, Sonnet judge, `-j 4`). The scores are recomputed from that run's per-grader results using the current graders: `no-phantom-code` was removed from every case, and `root-cause` was removed from 07, which plants only one issue.
+This is v1.3.0, full run of 2026-09-19 at commit `97dedce` (10 cases × 3 runs × 2 arms, Opus agent, Sonnet judge, `-j 4`; 76 minutes, $15.85). The skill files at that commit are identical to `b55f118`, so this baseline holds for the merge commit too.
 
 | Case | With | Without | Δ | Skill fired (with) |
 |---|---|---|---|---|
 | 01-scan-orders | 1.00 | 0.86 | +0.14 | 3/3 |
-| 02-inherited-billing | 1.00 | 1.00 | 0.00 | 3/3 |
-| 03-diff-review | 0.83 | 0.71 | +0.12 | **0/3** |
-| 04-pasted-ts | 0.95 | 0.71 | +0.24 | 3/3 |
-| 05-checklist-cache | 1.00 | 0.82 | +0.18 | 3/3 |
+| 02-inherited-billing | 1.00 | 0.93 | +0.07 | 3/3 |
+| 03-diff-review | 0.86 | 0.26 | +0.60 | 3/3 |
+| 04-pasted-ts | 1.00 | 0.76 | +0.24 | 3/3 |
+| 05-checklist-cache | 1.00 | 0.73 | +0.27 | 3/3 |
 | 06-neg-keyerror | 1.00 | 1.00 | 0.00 | 0/3 (correct) |
 | 07-units-leak | 1.00 | 0.80 | +0.20 | 3/3 |
-| 08-buried-passthrough | 0.15 | 0.27 | −0.12 | **0/3** |
-| 09-layered-function | 0.73 | 0.45 | +0.27 | 1/3 |
-| 10-caller-retries | 1.00 | 0.79 | +0.21 | 3/3 |
-| **Mean** | | | **+0.13** | |
+| 08-buried-passthrough | 0.36 | 0.18 | +0.18 | **0/3** |
+| 09-layered-function | 0.91 | 0.61 | +0.30 | **0/3** |
+| 10-caller-retries | 1.00 | 1.00 | 0.00 | 3/3 |
+| **Mean** | | | **+0.20** | |
 
-Leaving out 03 and 08, where no skill fires, the mean Δ is **+0.16**.
+Previous baseline (commit `55e986a`, before the trigger fixes in #10) had a mean Δ of +0.13, with 03 at +0.12 and 08 at −0.12.
 
 How to read it:
 
 - **Where the uplift comes from.** Plain Opus catches most of the individual planted smells. The gap is mostly `root-cause`: with the plugin, the answer ties its findings to a shared design cause far more often.
-- **Cases 03 and 08 are trigger gaps (#4).** "Review this diff before I merge" and "Anything off in this user service?" fire no skill, so their Δ is noise. On 08 both arms go bug-hunting and miss the planted pass-throughs.
-- **Case 09 shows uplift even though the skill fired in only 1 of 3 runs.** Treat it as weak evidence until the trigger improves.
+- **Case 03 is fixed.** "Review this diff before I merge" now fires 3/3 after `code-evolution` took ownership of diff review (#4). Its Δ went from +0.12 to +0.60.
+- **Cases 08 and 09 are the remaining trigger gap (#9).** "Anything off in this user service?" and "Take a look at `compute_price`" fire nothing. 09 regressed from 1/3 to 0/3 when the #10 wording made the red-flags triggers more explicit-ask shaped.
+- **09 scores well anyway** (0.91 with, 0.61 without, at 0/3 fired). The skill descriptions appear to steer the answer just by sitting in context. Treat its Δ as evidence about context, not about the skill body.
+- **08 is where quality is actually lost.** Both arms go bug-hunting and miss the planted pass-throughs.
 - A single run on one case can swing by about ±0.1. Compare means across full runs. If Δ jumps sharply with no plugin change behind it, spot-check the answers by hand before trusting it.
 
 ## When to re-run

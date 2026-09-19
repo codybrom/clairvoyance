@@ -1,6 +1,6 @@
 ---
 max_turns: 10
-timeout_seconds: 600
+timeout_seconds: 300
 allowed_tools: [Read, Grep, Skill]
 model: opus
 runs: 3
