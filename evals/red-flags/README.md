@@ -12,7 +12,7 @@ claude plugin eval . --eval-dir evals/red-flags --ablation with-without --judge-
 - Add `--case '05-*'` to run a single case. Only `*` wildcards work; bracket and brace patterns don't.
 - Add `-j 4` to run up to 4 runs at once. They share your rate limit.
 - Every case pins the agent to `model: opus`. Keep the judge on a different model (`sonnet`) so it never grades its own model's answers.
-- A full run (10 cases × 3 runs × 2 arms) uses about $16 of API-equivalent tokens and takes about 70 minutes, or about 25 minutes with `-j 4`. On a claude.ai login, this comes out of your subscription usage.
+- A full run (10 cases × 3 runs × 2 arms) took about 29 minutes with `-j 4` and used **about $42** of API-equivalent tokens. About $31 of that was judging: `no-phantom-code` sends the judge the whole transcript. On a claude.ai login, this comes out of your subscription usage.
 
 ## Cases
 
@@ -41,36 +41,30 @@ The code for each case is inlined in its prompt. The prompts don't hint at the s
 
 ## Baseline
 
-This is v1.3.0, full run of 2026-09-19 (3 runs × 2 arms, Opus agent, Sonnet judge):
+This is v1.3.0, full run of 2026-09-19 at commit `55e986a` (10 cases × 3 runs × 2 arms, Opus agent, Sonnet judge, `-j 4`). Case 07 was re-scored from the same run without `root-cause`, which was removed afterwards because 07 plants only one issue.
 
 | Case | With | Without | Δ | Skill fired (with) |
 |---|---|---|---|---|
-| 01-scan-orders | 1.00 | 0.91 | +0.09 | 3/3 |
-| 02-inherited-billing | 1.00 | 0.93 | +0.07 | 3/3 |
-| 03-diff-review | 0.73 | 0.67 | +0.07 | **0/3** |
-| 04-pasted-ts | 0.93 | 0.82 | +0.11 | 2/3 |
-| 05-checklist-cache | 0.97 | 0.83 | +0.14 | 3/3 |
+| 01-scan-orders | 1.00 | 0.87 | +0.13 | 3/3 |
+| 02-inherited-billing | 1.00 | 1.00 | 0.00 | 3/3 |
+| 03-diff-review | 0.84 | 0.73 | +0.11 | **0/3** |
+| 04-pasted-ts | 0.96 | 0.73 | +0.22 | 3/3 |
+| 05-checklist-cache | 1.00 | 0.83 | +0.17 | 3/3 |
 | 06-neg-keyerror | 1.00 | 1.00 | 0.00 | 0/3 (correct) |
-| **Mean** | | | **+0.08** | |
+| 07-units-leak | 1.00 | 0.83 | +0.17 | 3/3 |
+| 08-buried-passthrough | 0.22 | 0.33 | −0.11 | **0/3** |
+| 09-layered-function | 0.75 | 0.50 | +0.25 | 1/3 |
+| 10-caller-retries | 1.00 | 0.81 | +0.19 | 3/3 |
+| **Mean** | | | **+0.11** | |
+
+Leaving out 03 and 08, where no skill fires, the mean Δ is **+0.14**.
 
 How to read it:
 
-- **Where the uplift comes from.** Plain Opus catches most of the individual planted smells. The gap is `root-cause`: with the plugin, the answer ties its findings to a shared design cause almost every time; without it, about half the time.
-- **Case 03 is noise.** No Clairvoyance skill fires on "review this diff before I merge" (#4), so its Δ says nothing about the plugin.
-- **Case 04's one with-arm miss** happened in the run where the skill didn't fire. Trigger reliability on "Does this look well-designed?" is part of what this case measures.
-- **Case 05 was re-run after the baseline.** `no-phantom-code` was tightened to make the judge classify each unknown name before giving a verdict. After that change it passed 6/6, and the case scored with 1.00, without 0.83, Δ +0.17.
-- A single run on one case can swing by about ±0.1. Compare means across full runs, not single pilots. If Δ jumps sharply with no plugin change behind it, spot-check the answers by hand before trusting it.
-
-### Cases 07–10 (added later, single-run pilot)
-
-| Case | With | Without | Skill fired (with) |
-|---|---|---|---|
-| 07-units-leak | 1.00 | 0.67 | yes |
-| 08-buried-passthrough | 0.25 | 0.25 | **no** |
-| 09-layered-function | 1.00 | 1.00 | no |
-| 10-caller-retries | 1.00 | 1.00 | yes |
-
-Case 08 is a second trigger gap (#4). "Anything off in this user service?" fires nothing, and both arms go bug-hunting and miss the pass-throughs. Cases 09 and 10 have no headroom against plain Opus on a single run. Treat them as controls until a full run says otherwise. These numbers become part of the main table on the next full run.
+- **Where the uplift comes from.** Plain Opus catches most of the individual planted smells. The gap is mostly `root-cause`: with the plugin, the answer ties its findings to a shared design cause far more often.
+- **Cases 03 and 08 are trigger gaps (#4).** "Review this diff before I merge" and "Anything off in this user service?" fire no skill, so their Δ is noise. On 08 both arms go bug-hunting and miss the planted pass-throughs.
+- **Case 09 shows uplift even though the skill fired in only 1 of 3 runs.** Treat it as weak evidence until the trigger improves.
+- A single run on one case can swing by about ±0.1. Compare means across full runs. If Δ jumps sharply with no plugin change behind it, spot-check the answers by hand before trusting it.
 
 ## When to re-run
 
