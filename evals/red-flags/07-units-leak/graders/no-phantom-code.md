@@ -1,9 +1,9 @@
 ---
 type: llm
-focus: last_message
+focus: trace
 weight: 0.33
 ---
-Decide whether the answer invents code that is not in the prompt.
+The trace contains the user prompt (with the provided code) and the assistant's final answer. Judge only the final answer. Decide whether it invents code that is not in the provided code.
 
 Step 1. List every identifier the answer mentions (functions, methods, types, fields, parameters, keys, files) that does NOT appear in the code provided in the prompt.
 
