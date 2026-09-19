@@ -9,9 +9,10 @@ claude plugin eval . --eval-dir evals/red-flags --ablation with-without --judge-
 ```
 
 - Add `--no-publish` to keep the report local. Reports go to `evals/red-flags/results/`, which is gitignored.
-- Add `--case '05-*'` to run a single case.
+- Add `--case '05-*'` to run a single case. Only `*` wildcards work; bracket and brace patterns don't.
+- Add `-j 4` to run up to 4 runs at once. They share your rate limit.
 - Every case pins the agent to `model: opus`. Keep the judge on a different model (`sonnet`) so it never grades its own model's answers.
-- A full run (6 cases × 3 runs × 2 arms) takes about 40 minutes and uses about $9–10 of API-equivalent tokens. On a claude.ai login, this comes out of your subscription usage.
+- A full run (10 cases × 3 runs × 2 arms) uses about $16 of API-equivalent tokens and takes about 70 minutes, or about 25 minutes with `-j 4`. On a claude.ai login, this comes out of your subscription usage.
 
 ## Cases
 
@@ -23,6 +24,10 @@ claude plugin eval . --eval-dir evals/red-flags --ablation with-without --judge-
 | `04-pasted-ts` | "Does this look well-designed?", TypeScript | shallow getter/setter class, comments restating code, vague names |
 | `05-checklist-cache` | "Check against a design smell checklist", Go | overexposed constructor, conjoined `Prepare`/`Commit` |
 | `06-neg-keyerror` | Bug fix: should **not** trigger a design review | none |
+| `07-units-leak` | Two-file scan | `backoff()` returns seconds, `client.py` treats it as ms: a unit the interface doesn't carry |
+| `08-buried-passthrough` | "Anything off in this user service?", about 150 lines | pass-through buried among real methods; caching decorator forwarding 5 of 6 methods |
+| `09-layered-function` | "Take a look at `compute_price`" | special cases piled into a general function; hard to describe |
+| `10-caller-retries` | Four call sites plus the client | identical retry loop at every caller; the client should absorb it |
 
 The code for each case is inlined in its prompt. The prompts don't hint at the smells, so the baseline has to find them on its own.
 
@@ -55,6 +60,17 @@ How to read it:
 - **Case 04's one with-arm miss** happened in the run where the skill didn't fire. Trigger reliability on "Does this look well-designed?" is part of what this case measures.
 - **Case 05 was re-run after the baseline.** `no-phantom-code` was tightened to make the judge classify each unknown name before giving a verdict. After that change it passed 6/6, and the case scored with 1.00, without 0.83, Δ +0.17.
 - A single run on one case can swing by about ±0.1. Compare means across full runs, not single pilots. If Δ jumps sharply with no plugin change behind it, spot-check the answers by hand before trusting it.
+
+### Cases 07–10 (added later, single-run pilot)
+
+| Case | With | Without | Skill fired (with) |
+|---|---|---|---|
+| 07-units-leak | 1.00 | 0.67 | yes |
+| 08-buried-passthrough | 0.25 | 0.25 | **no** |
+| 09-layered-function | 1.00 | 1.00 | no |
+| 10-caller-retries | 1.00 | 1.00 | yes |
+
+Case 08 is a second trigger gap (#4). "Anything off in this user service?" fires nothing, and both arms go bug-hunting and miss the pass-throughs. Cases 09 and 10 have no headroom against plain Opus on a single run. Treat them as controls until a full run says otherwise. These numbers become part of the main table on the next full run.
 
 ## When to re-run
 
