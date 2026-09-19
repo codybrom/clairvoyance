@@ -1,6 +1,6 @@
 ---
 name: code-evolution
-description: "Evaluates whether changes to existing code maintain or degrade design quality. Use when reviewing diffs, PRs, or recently modified files to judge whether each change looks designed-in or bolted-on. Not for scanning design smells (use red-flags) or assessing overall design investment (use strategic-mindset)."
+description: "Evaluates whether changes to existing code maintain or degrade design quality. Use when the user asks to review a diff or PR (for example before merging it), or asks about recently modified files, to judge whether each change looks designed-in or bolted-on. Not for scanning design smells (use red-flags) or assessing overall design investment (use strategic-mindset)."
 argument-hint: "[file, module, or PR]"
 allowed-tools: Read, Grep
 ---

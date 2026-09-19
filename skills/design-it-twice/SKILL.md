@@ -1,15 +1,15 @@
 ---
 name: design-it-twice
-description: "Generates and compares at least two fundamentally different design alternatives on concrete criteria before committing. Use when the user asks to design something twice, or before committing to any significant design of classes, modules, APIs, or architecture. Not for judging strategic vs. tactical investment in existing code (use strategic-mindset) or whether a change degrades design (use code-evolution)."
+description: "Generates and compares at least two fundamentally different design alternatives on concrete criteria before committing. Use when the user asks to design something twice, or before committing to any significant design of classes, modules, APIs, or architecture. Also use when asked how to structure or architect a feature, or when writing the design or alternatives section of an RFC, design doc, or ADR. Not for judging strategic vs. tactical investment in existing code (use strategic-mindset) or whether a change degrades design (use code-evolution)."
 argument-hint: "[description of the design problem]"
 allowed-tools: Read, Grep, Task
 ---
 
 # Design It Twice
 
-When invoked with $ARGUMENTS, treat the argument as the design problem to explore. Do not assume a solution. Start from the problem statement and generate at least two fundamentally different approaches independently. If a design already exists in the conversation or codebase, dispatch the `clean-room-alternative` agent (see Isolation Mode below) rather than trying to produce a second attempt yourself — a design already sitting in your context contaminates anything you write next, no matter how deliberately you try to ignore it. Then compare all approaches on concrete criteria.
+When invoked with $ARGUMENTS, treat the argument as the design problem to explore. Do not assume a solution. Start from the problem statement and generate at least two fundamentally different approaches independently. If the user or the codebase supplied a design, dispatch the `clean-room-alternative` agent (see Isolation Mode below) rather than trying to produce a second attempt yourself — a design already sitting in your context contaminates anything you write next, no matter how deliberately you try to ignore it. A design you drafted yourself while working on a fresh problem does not count as a supplied design: for a fresh problem, generate the alternatives directly. Then compare all approaches on concrete criteria.
 
-**This skill has two modes.** Before a design exists, use it to generate and compare alternatives directly. After a design exists, dispatch the isolated agent described below to produce an independent second attempt that isn't anchored to the first. Either way, the first idea is unlikely to produce the best design, not because the designer isn't smart, but because the problems are genuinely hard.
+**This skill has two modes.** For a fresh problem, where the user supplied no design, generate and compare alternatives directly, using the forcing technique below to push past your first idea. When the user or the codebase supplied a design, dispatch the isolated agent described below to produce an independent second attempt that isn't anchored to the first. Either way, the first idea is unlikely to produce the best design, not because the designer isn't smart, but because the problems are genuinely hard.
 
 ## When to Apply
 
@@ -30,14 +30,18 @@ When invoked with $ARGUMENTS, treat the argument as the design problem to explor
 
 1. **Generate at least two fundamentally different approaches**, not variations on one idea. If both share an interface shape, they're variations. Push until the second makes you uncomfortable.
 
-2. **Compare the designs on concrete criteria:**
+   **In a design doc or RFC**, this still applies. Develop at least two alternatives to the same depth (interface, state ownership, data flow) before the doc commits to one. A full design followed by an "Alternatives considered" list of one-paragraph rejections is a single design, not a comparison. Keep the side-by-side comparison in the doc so reviewers can see why the chosen design won.
+
+2. **Check for convergence.** If two designs match on interface shape, state ownership, and decomposition, they are one design. Do not present them as two. Apply the pre-mortem from `references/pre-mortem-fallback.md` to that design to force a structural departure, then compare the result against it.
+
+3. **Compare the designs on concrete criteria:**
    - **Caller ease-of-use**: Which requires less work from higher-level code? (primary criterion)
    - **Interface simplicity**: Which is easier to learn and use?
    - **Generality**: Which handles more use cases without special-casing?
    - **Implementation complexity**: Which is easier to get right?
    - **Performance characteristics**: Are there meaningful performance differences?
 
-3. **Choose or synthesize**: Comparing two weak designs may reveal a shared weakness that points at a third, stronger design neither suggested directly. **When no alternative is attractive,** use the problems you identified to drive a new design. If both alternatives force callers to do extra work, that's a signal the abstraction level is wrong.
+4. **Choose or synthesize**: Comparing two weak designs may reveal a shared weakness that points at a third, stronger design neither suggested directly. **When no alternative is attractive,** use the problems you identified to drive a new design. If both alternatives force callers to do extra work, that's a signal the abstraction level is wrong.
 
 ### Applies at Multiple Levels
 
@@ -59,7 +63,7 @@ Forcing technique: "Suppose you may not implement your first idea. What would be
 
 ## Isolation Mode
 
-When a design already exists in the conversation or codebase, the second alternative should be generated in a clean-room context. Use the `clean-room-alternative` agent to produce the second design in isolation.
+When the user or the codebase supplied a design, the second alternative should be generated in a clean-room context. Do not use isolation mode for a design you drafted yourself on a fresh problem. Use the `clean-room-alternative` agent to produce the second design in isolation.
 
 #### Dispatch the agent with
 
@@ -77,7 +81,7 @@ When a design already exists in the conversation or codebase, the second alterna
 - Conversation history containing the first design
 - Any indication of what approaches to avoid
 
-After the agent returns its design, compare both approaches using the criteria in "The Procedure" above. The value is in the comparison, not in either design alone.
+After the agent returns its design, check it for convergence (step 2 of "The Procedure"), then compare both approaches using the criteria there. The value is in the comparison, not in either design alone.
 
 ### Fallback (No Agent Available)
 

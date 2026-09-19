@@ -1,6 +1,6 @@
 ---
 name: clean-room-alternative
-description: Generates a design alternative in isolation, without seeing the first design. Used by the design-it-twice skill when a first design already exists in conversation.
+description: Generates a design alternative in isolation, without seeing the first design. Used by the design-it-twice skill when the user or the codebase supplied a first design.
 tools: Read, Grep, Glob
 model: opus
 ---

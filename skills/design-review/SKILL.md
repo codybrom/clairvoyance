@@ -1,6 +1,6 @@
 ---
 name: design-review
-description: "Orchestrates a structured design review, running the other skills as a diagnostic funnel from complexity triage to a full red-flags sweep. Use when reviewing a file, module, or PR for overall design quality and you want a comprehensive, prioritized assessment. Not for applying one specific lens (use that skill directly) or analyzing how code changed over time (use code-evolution)."
+description: "Orchestrates a structured design review, running the other skills as a diagnostic funnel from complexity triage to a full red-flags sweep. Use when the user asks for a comprehensive or prioritized design assessment of a file, module, or PR. Not for a plain diff review before merge or analyzing how code changed over time (use code-evolution), or applying one specific lens (use that skill directly)."
 argument-hint: "[file, module, or PR to review]"
 allowed-tools: Read, Grep
 ---
