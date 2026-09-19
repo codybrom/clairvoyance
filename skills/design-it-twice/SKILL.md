@@ -30,6 +30,8 @@ When invoked with $ARGUMENTS, treat the argument as the design problem to explor
 
 1. **Generate at least two fundamentally different approaches**, not variations on one idea. If both share an interface shape, they're variations. Push until the second makes you uncomfortable.
 
+   **In a design doc or RFC**, this still applies. Develop at least two alternatives to the same depth (interface, state ownership, data flow) before the doc commits to one. A full design followed by an "Alternatives considered" list of one-paragraph rejections is a single design, not a comparison. Keep the side-by-side comparison in the doc so reviewers can see why the chosen design won.
+
 2. **Check for convergence.** If two designs match on interface shape, state ownership, and decomposition, they are one design. Do not present them as two. Apply the pre-mortem from `references/pre-mortem-fallback.md` to that design to force a structural departure, then compare the result against it.
 
 3. **Compare the designs on concrete criteria:**
