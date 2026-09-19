@@ -5,10 +5,10 @@ Eval suite for the `red-flags` skill, run with `claude plugin eval`. Every case 
 ## Run
 
 ```bash
-claude plugin eval . --ablation with-without --judge-model sonnet
+claude plugin eval . --eval-dir evals/red-flags --ablation with-without --judge-model sonnet
 ```
 
-- Add `--no-publish` to keep the report local. Reports go to `evals/results/`, which is gitignored.
+- Add `--no-publish` to keep the report local. Reports go to `evals/red-flags/results/`, which is gitignored.
 - Add `--case '05-*'` to run a single case.
 - Every case pins the agent to `model: opus`. Keep the judge on a different model (`sonnet`) so it never grades its own model's answers.
 - A full run (6 cases × 3 runs × 2 arms) takes about 40 minutes and uses about $9–10 of API-equivalent tokens. On a claude.ai login, this comes out of your subscription usage.
