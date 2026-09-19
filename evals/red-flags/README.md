@@ -12,7 +12,7 @@ claude plugin eval . --eval-dir evals/red-flags --ablation with-without --judge-
 - Add `--case '05-*'` to run a single case. Only `*` wildcards work; bracket and brace patterns don't.
 - Add `-j 4` to run up to 4 runs at once. They share your rate limit.
 - Every case pins the agent to `model: opus`. Keep the judge on a different model (`sonnet`) so it never grades its own model's answers.
-- A full run (10 cases × 3 runs × 2 arms) took about 29 minutes with `-j 4` and used **about $42** of API-equivalent tokens. About $31 of that was judging: `no-phantom-code` sends the judge the whole transcript. On a claude.ai login, this comes out of your subscription usage.
+- A full run (10 cases × 3 runs × 2 arms) takes about 29 minutes with `-j 4`. The baseline run cost **about $42** of API-equivalent tokens, $31 of it judging, mostly from a `no-phantom-code` grader that sent the whole transcript to the judge. That grader has since been removed. Expect roughly $20–25 per run, but that isn't measured yet. On a claude.ai login, this comes out of your subscription usage.
 
 ## Cases
 
@@ -35,29 +35,29 @@ The code for each case is inlined in its prompt. The prompts don't hint at the s
 
 - **One grader per planted smell (weight 1).** Did the answer find it, in design terms?
 - **`root-cause` (weight 1).** Does the answer tie its findings to one shared design cause, rather than listing them as independent issues? This grader carries most of the uplift.
-- **`headline-not-generic`, `design-outweighs-generic`, `no-phantom-code` (weight 0.33 each).** These penalize generic review noise (style, types, tests, perf) and references to code that doesn't exist. Stretched or debatable flags aren't penalized.
+- **`headline-not-generic`, `design-outweighs-generic` (weight 0.33 each).** These penalize generic review noise (style, types, tests, perf). Stretched or debatable flags aren't penalized. Hallucinated code is rare and isn't scored; spot-check by hand.
 - **`skill-fired`.** A display-only trigger check. It's reported but never scored.
 - **Negative case:** a correct fix, no flag-report structure (regex), and the answer stays on the bug.
 
 ## Baseline
 
-This is v1.3.0, full run of 2026-09-19 at commit `55e986a` (10 cases × 3 runs × 2 arms, Opus agent, Sonnet judge, `-j 4`). Case 07 was re-scored from the same run without `root-cause`, which was removed afterwards because 07 plants only one issue.
+This is v1.3.0, full run of 2026-09-19 at commit `55e986a` (10 cases × 3 runs × 2 arms, Opus agent, Sonnet judge, `-j 4`). The scores are recomputed from that run's per-grader results using the current graders: `no-phantom-code` was removed from every case, and `root-cause` was removed from 07, which plants only one issue.
 
 | Case | With | Without | Δ | Skill fired (with) |
 |---|---|---|---|---|
-| 01-scan-orders | 1.00 | 0.87 | +0.13 | 3/3 |
+| 01-scan-orders | 1.00 | 0.86 | +0.14 | 3/3 |
 | 02-inherited-billing | 1.00 | 1.00 | 0.00 | 3/3 |
-| 03-diff-review | 0.84 | 0.73 | +0.11 | **0/3** |
-| 04-pasted-ts | 0.96 | 0.73 | +0.22 | 3/3 |
-| 05-checklist-cache | 1.00 | 0.83 | +0.17 | 3/3 |
+| 03-diff-review | 0.83 | 0.71 | +0.12 | **0/3** |
+| 04-pasted-ts | 0.95 | 0.71 | +0.24 | 3/3 |
+| 05-checklist-cache | 1.00 | 0.82 | +0.18 | 3/3 |
 | 06-neg-keyerror | 1.00 | 1.00 | 0.00 | 0/3 (correct) |
-| 07-units-leak | 1.00 | 0.83 | +0.17 | 3/3 |
-| 08-buried-passthrough | 0.22 | 0.33 | −0.11 | **0/3** |
-| 09-layered-function | 0.75 | 0.50 | +0.25 | 1/3 |
-| 10-caller-retries | 1.00 | 0.81 | +0.19 | 3/3 |
-| **Mean** | | | **+0.11** | |
+| 07-units-leak | 1.00 | 0.80 | +0.20 | 3/3 |
+| 08-buried-passthrough | 0.15 | 0.27 | −0.12 | **0/3** |
+| 09-layered-function | 0.73 | 0.45 | +0.27 | 1/3 |
+| 10-caller-retries | 1.00 | 0.79 | +0.21 | 3/3 |
+| **Mean** | | | **+0.13** | |
 
-Leaving out 03 and 08, where no skill fires, the mean Δ is **+0.14**.
+Leaving out 03 and 08, where no skill fires, the mean Δ is **+0.16**.
 
 How to read it:
 
