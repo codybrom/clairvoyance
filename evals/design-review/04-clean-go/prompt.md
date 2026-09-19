@@ -17,8 +17,8 @@ import (
 	"time"
 )
 
-// Limiter allows up to Burst events at once and refills at Rate events per
-// second. The zero value is not usable; construct one with New.
+// Limiter allows up to burst events at once and refills at ratePerSecond
+// events per second. The zero value is not usable; construct one with New.
 type Limiter struct {
 	mu     sync.Mutex
 	rate   float64
@@ -28,14 +28,23 @@ type Limiter struct {
 	now    func() time.Time
 }
 
-// New returns a Limiter that starts full.
+// New returns a Limiter that starts full. It panics if ratePerSecond is not
+// positive or burst is less than 1.
 func New(ratePerSecond float64, burst int) *Limiter {
+	return newWithClock(ratePerSecond, burst, time.Now)
+}
+
+// newWithClock is New with an injectable clock, for tests in this package.
+func newWithClock(ratePerSecond float64, burst int, now func() time.Time) *Limiter {
+	if !(ratePerSecond > 0) || burst < 1 {
+		panic("ratelimit: ratePerSecond must be > 0 and burst >= 1")
+	}
 	return &Limiter{
 		rate:   ratePerSecond,
 		burst:  float64(burst),
 		tokens: float64(burst),
-		last:   time.Now(),
-		now:    time.Now,
+		last:   now(),
+		now:    now,
 	}
 }
 
@@ -51,11 +60,13 @@ func (l *Limiter) Allow() bool {
 	return true
 }
 
-// refill adds the tokens earned since the last call, capped at burst.
+// refill adds the tokens earned since the last call, capped at burst. A clock
+// that moves backwards earns nothing.
 func (l *Limiter) refill() {
 	now := l.now()
-	elapsed := now.Sub(l.last).Seconds()
-	l.last = now
-	l.tokens = min(l.burst, l.tokens+elapsed*l.rate)
+	if elapsed := now.Sub(l.last).Seconds(); elapsed > 0 {
+		l.tokens = min(l.burst, l.tokens+elapsed*l.rate)
+		l.last = now
+	}
 }
 ```
