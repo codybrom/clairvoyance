@@ -1,6 +1,6 @@
 ---
 name: red-flags
-description: "Scans code against 17 design smells (the book's 14 named Red Flags plus 3 process-stage signals) and produces a structured diagnostic report. Use when the user asks for a red flags or design smell scan, asks to check code against a checklist, or is evaluating unfamiliar code. Not for a plain diff or PR review before merge, or whether a PR maintains design trajectory (use code-evolution for both), or diagnosing why code feels complex (use complexity-recognition)."
+description: "Scans code against 17 design smells (the book's 14 named Red Flags plus 3 process-stage signals) and produces a structured diagnostic report. Use when the user asks for a red flags or design smell scan, asks to check code against a checklist, is evaluating unfamiliar code, or asks open-endedly whether anything is off in a named or pasted file, class, or function, or asks you to look it over. Not for a specific bug, error, or failing test the user has already identified. Not for a plain diff or PR review before merge, or whether a PR maintains design trajectory (use code-evolution for both), or diagnosing why code feels complex (use complexity-recognition)."
 argument-hint: "[file or directory]"
 allowed-tools: Read, Grep
 ---
