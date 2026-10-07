@@ -15,7 +15,7 @@ export const TAGLINE =
   "ESP for AI Coding — Agent skills on the philosophy of software design, grounded in decades of engineering experience.";
 
 export const INTRO = [
-  "Good software isn't written. It's designed. Clairvoyance is a collection of software design skills for AI coding agents. Each skill is a lens grounded in decades of engineering experience to helps your agent see through complexity and write code with intent.",
+  "Good software isn't written. It's designed. Clairvoyance is a collection of software design skills for AI coding agents. Each skill is a lens grounded in decades of engineering experience to help your agent see through complexity and write code with intent.",
   "",
   "Clairvoyance works with Claude Code, Codex, Cursor, OpenCode, Gemini CLI, and any agent platform that supports the Agent Skills open standard.",
 ];

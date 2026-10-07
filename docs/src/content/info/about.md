@@ -13,7 +13,7 @@ The skills are inspired by John Ousterhout's book [*A Philosophy of Software Des
 
 ## How it works
 
-The skills are organized into five pillars: Structure, Abstraction, Clarity, Process and Diagnostics. Your AI agent can proactively apply them automatically when they're relevant or you can invoke them directly as needed. Every skill is a Markdown file that runs inside your agent's own session. Clairvoyance runs no servers and collects no data (see the [privacy policy](/privacy) for details).
+The skills are organized into five pillars: Structure, Abstraction, Clarity, Process and Diagnostic. Your AI agent can proactively apply them automatically when they're relevant or you can invoke them directly as needed. Every skill is a Markdown file that runs inside your agent's own session. Clairvoyance runs no servers and collects no data (see the [privacy policy](/privacy) for details).
 
 Browse the full catalog on the [skills page](/skills), or give an agent everything at once with [llms-full.txt](/llms-full.txt).
 
