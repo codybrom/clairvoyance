@@ -7,6 +7,7 @@ import ReplayViewer from "../components/ReplayViewer.astro";
 import { createHighlighter } from "shiki";
 import { Circle, Plus, Diamond, Star, WavesHorizontal as Waves } from "@lucide/astro";
 import { getAllSkills, PILLARS } from "../utils/skills";
+import { INSTALL, SITE_URL, SOFTWARE_APPLICATION } from "../utils/site";
 
 // Load replay data
 import structure from "../data/1-structure.json";
@@ -57,11 +58,15 @@ const pillars = PILLARS;
 const allSkills = getAllSkills();
 ---
 
-<Layout title="Clairvoyance: Software Design Skills for AI Agents">
+<Layout
+  title="Clairvoyance: Software Design Skills for AI Agents"
+  canonical={`${SITE_URL}/`}
+  jsonLd={SOFTWARE_APPLICATION}
+>
   <Hero
-    skillsShCommand="npx skills add codybrom/clairvoyance --skill '*'"
-    claudeStep1="/plugin marketplace add codybrom/clairvoyance"
-    claudeStep2="/plugin install clairvoyance@clairvoyance-plugins"
+    skillsShCommand={INSTALL.skillsSh}
+    claudeStep1={INSTALL.claudeStep1}
+    claudeStep2={INSTALL.claudeStep2}
   />
 
   <!-- ═══════ FIVE PILLARS ═══════ -->
@@ -147,7 +152,9 @@ const allSkills = getAllSkills();
     <p>
       <a href="https://github.com/codybrom/clairvoyance">GitHub</a> · <a
         href="/skills">All Skills</a
-      > · <a href="/privacy">Privacy</a> · <a
+      > · <a href="/about">About</a> · <a href="/contact">Contact</a> · <a
+        href="/privacy">Privacy</a
+      > · <a
         href="https://github.com/codybrom/clairvoyance/blob/main/LICENSE"
         >MIT License</a
       > · © 2026 <a href="https://github.com/codybrom">Cody Bromley</a>

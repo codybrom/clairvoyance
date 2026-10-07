@@ -11,6 +11,7 @@ interface Props {
   author?: string;
   publishedTime?: string;
   modifiedTime?: string;
+  jsonLd?: object;
 }
 
 const defaultDescription =
@@ -24,6 +25,7 @@ const {
   author,
   publishedTime,
   modifiedTime,
+  jsonLd,
 } = Astro.props;
 ---
 
@@ -69,6 +71,14 @@ const {
     {
       modifiedTime && (
         <meta property="article:modified_time" content={modifiedTime} />
+      )
+    }
+    {
+      jsonLd && (
+        <script
+          type="application/ld+json"
+          set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")}
+        />
       )
     }
     <meta name="twitter:card" content="summary_large_image" />

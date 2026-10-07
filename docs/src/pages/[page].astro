@@ -1,62 +1,38 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import CrystalBall from "../assets/crystal-ball.svg";
+import { getInfoPages, type InfoPage } from "../utils/info-pages";
+import { SITE_URL } from "../utils/site";
+
+export function getStaticPaths() {
+  return getInfoPages().map((page) => ({ params: { page: page.slug }, props: { page } }));
+}
+
+const { page } = Astro.props as { page: InfoPage };
 ---
 
-<Layout title="Privacy Policy — Clairvoyance">
-  <article class="privacy-page">
-    <nav class="privacy-nav">
+<Layout
+  title={`${page.title} — Clairvoyance`}
+  description={page.description}
+  canonical={`${SITE_URL}/${page.slug}`}
+>
+  <article class="info-page">
+    <nav class="info-nav">
       <a href="/" class="brand-link">
         <CrystalBall width="20" height="20" />
         <span>Clairvoyance</span>
       </a>
     </nav>
 
-    <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: February 27, 2026</p>
+    <h1>{page.title}</h1>
+    {page.updated && <p class="updated">Last updated: {page.updated}</p>}
 
-    <h2>What Clairvoyance does</h2>
-    <p>
-      Clairvoyance is a set of software design skills for AI coding agents. All
-      skills run locally inside your agent's session. Clairvoyance does not
-      operate any servers, APIs, or external services.
-    </p>
-
-    <h2>Data collection</h2>
-    <p>
-      Clairvoyance does not collect, transmit, or store any user data. No
-      telemetry, no analytics, no tracking. Your code never leaves your machine
-      through Clairvoyance.
-    </p>
-
-    <h2>Third-party services</h2>
-    <p>
-      Clairvoyance has no MCP servers and no dependencies on external services.
-      It consists of markdown skill and agent files that run entirely within
-      your agent session.
-    </p>
-
-    <h2>Cookies</h2>
-    <p>
-      This documentation site does not use cookies or any tracking technologies.
-    </p>
-
-    <h2>Changes</h2>
-    <p>
-      If this policy changes, the update will be reflected here with a new date.
-    </p>
-
-    <h2>Contact</h2>
-    <p>
-      Questions? Open an issue on <a
-        href="https://github.com/codybrom/clairvoyance">GitHub</a
-      > or reach out to <a href="https://github.com/codybrom">Cody Bromley</a>.
-    </p>
+    <Fragment set:html={page.html} />
   </article>
 </Layout>
 
 <style>
-  .privacy-page {
+  .info-page {
     max-width: 780px;
     margin: 0 auto;
     padding: 2rem clamp(1.5rem, 5vw, 3rem) 4rem;
@@ -66,7 +42,7 @@ import CrystalBall from "../assets/crystal-ball.svg";
     min-height: 100vh;
   }
 
-  .privacy-nav {
+  .info-nav {
     display: flex;
     align-items: center;
     padding: 1.5rem 0 2.5rem;
@@ -105,7 +81,7 @@ import CrystalBall from "../assets/crystal-ball.svg";
     margin-bottom: 0.5rem;
   }
 
-  .updated {
+  .info-page .updated {
     font-family: var(--font-code);
     font-size: 0.75rem;
     color: var(--text-dim);
@@ -113,7 +89,7 @@ import CrystalBall from "../assets/crystal-ball.svg";
     margin-bottom: 2.5rem;
   }
 
-  h2 {
+  .info-page :global(h2) {
     font-family: var(--font-display);
     font-weight: 400;
     font-size: 1.4rem;
@@ -122,11 +98,24 @@ import CrystalBall from "../assets/crystal-ball.svg";
     color: var(--text);
   }
 
-  p {
+  .info-page :global(p) {
     font-weight: 300;
     font-size: 1rem;
     color: var(--text);
     line-height: 1.75;
     margin-bottom: 0.75rem;
+  }
+
+  .info-page :global(ul) {
+    padding-left: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .info-page :global(li) {
+    font-weight: 300;
+    font-size: 1rem;
+    color: var(--text);
+    line-height: 1.75;
+    margin-bottom: 0.35rem;
   }
 </style>

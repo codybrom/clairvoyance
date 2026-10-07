@@ -1,0 +1,14 @@
+// Markdown content negotiation in front of the GitHub Pages origin.
+// See worker.js. Deploy with `npx wrangler deploy` from this directory.
+{
+  "name": "clairvoyance-edge",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "clairvoyance.fyi/*",
+      "zone_name": "clairvoyance.fyi"
+    }
+  ]
+}
