@@ -200,6 +200,15 @@ export function getAgents(): Agent[] {
     });
 }
 
+/**
+ * A skill description's first part, before its "Use when…" trigger clause,
+ * for one-line listings. Descriptions without that clause are kept whole.
+ */
+export function summaryOf(description: string): string {
+  const summary = description.split(/\.\s*Use when/i)[0].trim();
+  return summary.endsWith(".") ? summary : `${summary}.`;
+}
+
 export function getSkill(slug: string): Skill | undefined {
   return getAllSkills().find((s) => s.slug === slug);
 }

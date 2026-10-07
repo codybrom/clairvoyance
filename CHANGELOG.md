@@ -1,5 +1,51 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **MCP server** at `https://clairvoyance.fyi/mcp` for agents that can't
+  install plugins or skills. Each skill is a tool and a prompt with the same
+  name and description it has in the plugin, `fetchReference` serves skills'
+  `references/` files, and skills that dispatch an agent include its brief for
+  the caller to run as its own subagent. Requests carry only a skill or file
+  name, so the server never receives code, file paths or prompts. Opening the
+  URL in a browser shows a page about the server. See the README's MCP server
+  section.
+- **clairvoyance.fyi/install**: per-agent install instructions generated from
+  this README (so the two can't drift), one-click MCP installs for VS Code and
+  Cursor, and a "Set up with your agent" button that copies a prompt for the
+  agent to install Clairvoyance itself from `/agent-setup.md`.
+- **Agent discovery on clairvoyance.fyi**: Markdown versions of every page via
+  `Accept: text/markdown` (including a Markdown 404), an Agent Skills
+  discovery index at `/.well-known/agent-skills/index.json`, WebMCP tools,
+  `SoftwareApplication` JSON-LD, RFC 8288 `Link` headers, sitemap `lastmod`
+  dates, and About and Contact pages. A small Cloudflare Worker in front of
+  GitHub Pages (`docs/edge/`) handles negotiation and the MCP server.
+- `AGENTS.md`: layout, checks and conventions for agents working in this repo.
+- Eval suites for `design-it-twice`, `red-flags` and `design-review` in
+  `evals/`, run with `claude plugin eval`.
+
+### Changed
+
+- `code-evolution` now owns plain diff and PR review; `red-flags` and
+  `design-review` defer to it.
+- `design-it-twice` triggers on "how should I structure X" and on RFC, design
+  doc and ADR prompts, and requires alternatives of equal depth in design docs
+  and RFCs.
+- Gemini CLI is no longer listed as an install option, since it's been
+  retired. The extension manifest stays in the repo for now.
+- The privacy policy now covers the MCP server and exactly what it receives.
+
+### Fixed
+
+- `design-it-twice` uses clean-room isolation only for a design the user or
+  codebase supplied, and falls back to the pre-mortem when its alternatives
+  converge.
+- `red-flags` now triggers on open-ended whole-file review prompts.
+- Skill pages on clairvoyance.fyi showed the same "last modified" date for
+  every skill; each now shows its own.
+
 ## 1.3.0 — 2026-07-22
 
 ### Removed

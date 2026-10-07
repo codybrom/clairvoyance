@@ -29,8 +29,18 @@ export function handle(
   request: Request,
   fetchOrigin: FetchOrigin,
 ): Promise<Response> {
-  if (new URL(request.url).pathname === "/mcp")
+  const url = new URL(request.url);
+  if (url.pathname === "/mcp" || url.pathname === "/mcp/") {
+    // One URL for both audiences: a browser (or an agent asking for Markdown)
+    // gets the page about the server, served from /mcp/ without a redirect so
+    // the address stays copyable; MCP clients, which POST or GET an event
+    // stream, get the server.
+    const isRead = request.method === "GET" || request.method === "HEAD";
+    if (isRead && chooseRepresentation(request.headers.get("Accept")) !== "none") {
+      return negotiate(new Request(new URL("/mcp/", url), request), fetchOrigin);
+    }
     return handleMcp(request, fetchOrigin);
+  }
   return negotiate(request, fetchOrigin);
 }
 

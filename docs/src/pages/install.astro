@@ -4,10 +4,10 @@ import CrystalBall from "../assets/crystal-ball.svg";
 import AgentLogo from "../components/AgentLogo.astro";
 import AgentSetupButton from "../components/AgentSetupButton.astro";
 import { getInstallGuide, renderMarkdown } from "../utils/install";
-import { getAllSkills } from "../utils/skills";
+import { getAllSkills, summaryOf } from "../utils/skills";
 import { REPO_URL, SITE_URL } from "../utils/site";
-import { MCP_INSTALL, MCP_SUMMARY, MCP_URL } from "../utils/tools";
-import VSCodeLogo from "../assets/clients/vscode.svg";
+import McpInstall from "../components/McpInstall.astro";
+import { MCP_SUMMARY } from "../utils/tools";
 
 const guide = getInstallGuide();
 const skills = getAllSkills();
@@ -22,7 +22,6 @@ const noteHtml = renderMarkdown(
 );
 const updatingHtml = renderMarkdown(guide.updating);
 
-const summaryOf = (description: string) => description.split(/\.\s*Use when/i)[0] + ".";
 ---
 
 <Layout
@@ -101,27 +100,10 @@ const summaryOf = (description: string) => description.split(/\.\s*Use when/i)[0
 
     <section aria-labelledby="mcp-heading" class="mcp">
       <h2 id="mcp-heading" class="section-label">Or connect the MCP server</h2>
-      <p class="mcp-summary">{MCP_SUMMARY}</p>
-      <div class="mcp-buttons">
-        <a href={MCP_INSTALL.vscode} class="mcp-btn">
-          <VSCodeLogo class="agent-logo" aria-hidden="true" />
-          Add to VS Code
-        </a>
-        <a href={MCP_INSTALL.cursor} class="mcp-btn">
-          <AgentLogo id="cursor" />
-          Add to Cursor
-        </a>
-      </div>
-      <div class="prose mcp-commands">
-        <p>Claude Code:</p>
-        <pre><code>{MCP_INSTALL.claudeCode}</code></pre>
-        <p>Codex:</p>
-        <pre><code>{MCP_INSTALL.codex}</code></pre>
-        <p>
-          Any other client: add <code>{MCP_URL}</code> as a remote (HTTP) MCP server.
-          Each skill is a tool with its own name, plus <code>fetchReference</code> for skills' supporting files.
-        </p>
-      </div>
+      <p class="mcp-summary">
+        {MCP_SUMMARY} <a href="/mcp">More about the MCP server</a>
+      </p>
+      <McpInstall />
     </section>
 
     <section aria-labelledby="included-heading" class="included">
@@ -187,7 +169,7 @@ const summaryOf = (description: string) => description.split(/\.\s*Use when/i)[0
 
   // A copy button beside every code block in the instructions. The button sits
   // outside the <pre> so a long command scrolls without running under it.
-  document.querySelectorAll<HTMLPreElement>(".panel pre, .mcp-commands pre").forEach((pre) => {
+  document.querySelectorAll<HTMLPreElement>(".panel pre").forEach((pre) => {
     const block = document.createElement("div");
     block.className = "code-block";
     pre.replaceWith(block);
@@ -503,36 +485,6 @@ const summaryOf = (description: string) => description.split(/\.\s*Use when/i)[0
     line-height: 1.7;
     max-width: 640px;
     margin-bottom: 1.25rem;
-  }
-
-  .mcp-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .mcp-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    font-family: var(--font-body);
-    font-size: 0.95rem;
-    font-weight: 400;
-    color: var(--text);
-    background: var(--surface);
-    border: 1px solid oklch(0.75 0.12 75 / 0.25);
-    border-radius: 10px;
-    padding: 0.6rem 1.1rem;
-    transition:
-      border-color 0.2s,
-      background 0.2s;
-
-    &:hover {
-      color: var(--text);
-      border-color: oklch(0.75 0.12 75 / 0.5);
-      background: oklch(0.75 0.12 75 / 0.06);
-    }
   }
 
   .included {

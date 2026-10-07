@@ -1,0 +1,142 @@
+---
+// Ways to add the MCP server to a client: one-click buttons where the client
+// supports a deep link, commands with copy buttons elsewhere. Used on /install
+// and /mcp.
+import AgentLogo from "./AgentLogo.astro";
+import VSCodeLogo from "../assets/clients/vscode.svg";
+import { MCP_INSTALL, MCP_URL } from "../utils/tools";
+
+const commands = [
+  { label: "Claude Code", command: MCP_INSTALL.claudeCode },
+  { label: "Codex", command: MCP_INSTALL.codex },
+];
+---
+
+<div class="mcp-install">
+  <div class="mcp-buttons">
+    <a href={MCP_INSTALL.vscode} class="mcp-btn">
+      <VSCodeLogo class="agent-logo" aria-hidden="true" />
+      Add to VS Code
+    </a>
+    <a href={MCP_INSTALL.cursor} class="mcp-btn">
+      <AgentLogo id="cursor" />
+      Add to Cursor
+    </a>
+  </div>
+  {
+    commands.map(({ label, command }) => (
+      <>
+        <p class="mcp-label">{label}:</p>
+        <div class="mcp-code">
+          <pre><code>{command}</code></pre>
+          <button type="button" class="mcp-copy" data-copy={command}>Copy</button>
+        </div>
+      </>
+    ))
+  }
+  <p class="mcp-label">
+    Any other client: add <code>{MCP_URL}</code> as a remote (HTTP) MCP server.
+  </p>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>(".mcp-copy").forEach((button) => {
+    button.addEventListener("click", () => {
+      navigator.clipboard.writeText(button.dataset.copy ?? "");
+      button.textContent = "Copied";
+      setTimeout(() => (button.textContent = "Copy"), 1800);
+    });
+  });
+</script>
+
+<style>
+  .mcp-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .mcp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid oklch(0.75 0.12 75 / 0.25);
+    border-radius: 10px;
+    padding: 0.6rem 1.1rem;
+    transition:
+      border-color 0.2s,
+      background 0.2s;
+
+    &:hover {
+      color: var(--text);
+      border-color: oklch(0.75 0.12 75 / 0.5);
+      background: oklch(0.75 0.12 75 / 0.06);
+    }
+  }
+
+  .mcp-label {
+    font-weight: 300;
+    font-size: 0.95rem;
+    color: var(--text);
+    line-height: 1.7;
+    margin-bottom: 0.5rem;
+
+    & code {
+      font-family: var(--font-code);
+      font-size: 0.85em;
+      color: var(--lavender);
+    }
+  }
+
+  .mcp-code {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    background: var(--ink);
+    border: 1px solid oklch(0.75 0.12 75 / 0.12);
+    border-radius: 10px;
+    padding: 0.6rem 0.6rem 0.6rem 1.1rem;
+    margin-bottom: 1rem;
+
+    & pre {
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      padding: 0.3rem 0;
+      overflow-x: auto;
+    }
+
+    & code {
+      font-family: var(--font-code);
+      font-size: 0.85rem;
+      line-height: 1.7;
+      color: var(--lavender);
+      white-space: pre;
+    }
+  }
+
+  .mcp-copy {
+    flex-shrink: 0;
+    background: oklch(0.75 0.12 75 / 0.1);
+    border: none;
+    color: var(--gold);
+    font-family: var(--font-code);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.7rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+      background: oklch(0.75 0.12 75 / 0.2);
+    }
+  }
+</style>

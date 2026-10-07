@@ -1,0 +1,337 @@
+---
+// What a browser sees at /mcp: the edge Worker serves this page there for
+// GET requests that accept HTML, while MCP clients get the server itself.
+import Layout from "../layouts/Layout.astro";
+import CrystalBall from "../assets/crystal-ball.svg";
+import McpInstall from "../components/McpInstall.astro";
+import { getAllSkills, summaryOf } from "../utils/skills";
+import { MCP_PAGE, MCP_SUMMARY, MCP_URL, getToolManifest } from "../utils/tools";
+
+const { tools } = getToolManifest();
+const skillsBySlug = new Map(getAllSkills().map((s) => [s.slug, s]));
+---
+
+<Layout title="Clairvoyance MCP server" description={MCP_SUMMARY} canonical={MCP_URL}>
+  <div class="mcp-page">
+    <nav class="page-nav">
+      <a href="/" class="brand-link">
+        <CrystalBall width="20" height="20" />
+        <span>Clairvoyance</span>
+      </a>
+      <a href="/install" class="action-link">All install options</a>
+    </nav>
+
+    <header class="page-header">
+      <h1>Clairvoyance MCP server</h1>
+      <p class="lede">{MCP_SUMMARY}</p>
+      <div class="server-url">
+        <code>{MCP_URL}</code>
+        <button type="button" class="url-copy" data-copy={MCP_URL}>Copy</button>
+      </div>
+    </header>
+
+    <section aria-labelledby="add-heading">
+      <h2 id="add-heading" class="section-label">Add it to your client</h2>
+      <McpInstall />
+    </section>
+
+    <section aria-labelledby="tools-heading">
+      <h2 id="tools-heading" class="section-label">
+        Tools <span class="count">{tools.length}</span>
+      </h2>
+      <ul class="tool-list">
+        {
+          tools.map((tool) => {
+            const skill = skillsBySlug.get(tool.name);
+            return (
+              <li style={skill ? `--pillar-hue: ${skill.pillarHue};` : undefined}>
+                <details>
+                  <summary>
+                    <code class="tool-name">{tool.name}</code>
+                    {skill && <span class="badge">{skill.pillar}</span>}
+                    <span class="tool-summary">{summaryOf(tool.description)}</span>
+                  </summary>
+                  <p>{tool.description}</p>
+                  {skill && <a href={`/skills/${skill.slug}`}>Read the skill &rarr;</a>}
+                </details>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </section>
+
+    <section aria-labelledby="prompts-heading">
+      <h2 id="prompts-heading" class="section-label">Prompts</h2>
+      <p class="body">{MCP_PAGE.prompts}</p>
+    </section>
+
+    <section aria-labelledby="receives-heading">
+      <h2 id="receives-heading" class="section-label">What it receives</h2>
+      <p class="body">
+        {MCP_PAGE.receives} See the <a href="/privacy">privacy policy</a>.
+      </p>
+    </section>
+
+    <section aria-labelledby="plugin-heading">
+      <h2 id="plugin-heading" class="section-label">MCP or the plugin?</h2>
+      <p class="body">
+        {MCP_PAGE.versusPlugin} <a href="/install">Install the plugin</a>.
+      </p>
+    </section>
+
+    <section aria-labelledby="details-heading">
+      <h2 id="details-heading" class="section-label">Details</h2>
+      <p class="body">{MCP_PAGE.details}</p>
+    </section>
+  </div>
+</Layout>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>(".url-copy").forEach((button) => {
+    button.addEventListener("click", () => {
+      navigator.clipboard.writeText(button.dataset.copy ?? "");
+      button.textContent = "Copied";
+      setTimeout(() => (button.textContent = "Copy"), 1800);
+    });
+  });
+</script>
+
+<style>
+  .mcp-page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem clamp(1rem, 5vw, 3rem) 5rem;
+  }
+
+  .page-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1.5rem 0 2.5rem;
+    border-bottom: 1px solid oklch(1 0 0 / 0.06);
+    margin-bottom: 3rem;
+  }
+
+  .brand-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: none;
+    color: var(--text);
+    transition: opacity 0.2s;
+
+    & :global(svg) {
+      width: 36px;
+      height: 36px;
+      filter: drop-shadow(0 0 12px oklch(0.75 0.12 75 / 0.3));
+    }
+
+    & span {
+      font-family: var(--font-display);
+      font-size: 1.7rem;
+    }
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  .action-link {
+    font-family: var(--font-code);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    color: var(--gold);
+    border: 1px solid oklch(0.75 0.12 75 / 0.25);
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    transition:
+      background 0.2s,
+      border-color 0.2s;
+
+    &:hover {
+      background: oklch(0.75 0.12 75 / 0.06);
+      border-color: oklch(0.75 0.12 75 / 0.4);
+    }
+  }
+
+  .page-header {
+    margin-bottom: 3rem;
+
+    & h1 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(2.4rem, 6vw, 3.6rem);
+      line-height: 1.05;
+      margin-bottom: 0.9rem;
+    }
+  }
+
+  .lede {
+    font-weight: 200;
+    font-size: 1.1rem;
+    color: var(--text-mid);
+    line-height: 1.65;
+    max-width: 640px;
+    margin-bottom: 1.5rem;
+  }
+
+  .server-url {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 100%;
+    background: var(--ink);
+    border: 1px solid oklch(0.75 0.12 75 / 0.25);
+    border-radius: 10px;
+    padding: 0.5rem 0.5rem 0.5rem 1rem;
+
+    & code {
+      font-family: var(--font-code);
+      font-size: 0.95rem;
+      color: var(--lavender);
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+  }
+
+  .url-copy {
+    flex-shrink: 0;
+    background: oklch(0.75 0.12 75 / 0.1);
+    border: none;
+    color: var(--gold);
+    font-family: var(--font-code);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.7rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+
+    &:hover {
+      background: oklch(0.75 0.12 75 / 0.2);
+    }
+  }
+
+  section {
+    margin-bottom: 3rem;
+  }
+
+  .section-label {
+    font-family: var(--font-code);
+    font-weight: 400;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1rem;
+
+    & .count {
+      color: var(--text-dim);
+      margin-left: 0.5rem;
+    }
+  }
+
+  .body {
+    font-weight: 300;
+    font-size: 0.95rem;
+    color: var(--text);
+    line-height: 1.75;
+    max-width: 680px;
+  }
+
+  .tool-list {
+    list-style: none;
+    padding: 0;
+    border-top: 1px solid oklch(1 0 0 / 0.06);
+
+    & li {
+      border-bottom: 1px solid oklch(1 0 0 / 0.06);
+    }
+
+    & summary {
+      display: grid;
+      grid-template-columns: auto auto 1fr auto;
+      align-items: baseline;
+      gap: 0.4rem 0.75rem;
+      padding: 0.9rem 0.25rem;
+      cursor: pointer;
+      list-style: none;
+
+      &::-webkit-details-marker {
+        display: none;
+      }
+
+      &::after {
+        content: "▾";
+        grid-column: 4;
+        color: var(--text-dim);
+        transition: rotate 0.2s;
+      }
+
+      @media (width <= 640px) {
+        grid-template-columns: auto 1fr auto;
+
+        & .tool-summary {
+          grid-column: 1 / -1;
+          grid-row: 2;
+        }
+
+        &::after {
+          grid-column: 3;
+          grid-row: 1;
+        }
+      }
+    }
+
+    & details[open] summary::after {
+      rotate: 180deg;
+    }
+
+    & details > p,
+    & details > a {
+      margin: 0 0.25rem 0.75rem;
+      font-size: 0.9rem;
+      font-weight: 300;
+      line-height: 1.65;
+      color: var(--text-mid);
+    }
+
+    & details > a {
+      display: inline-block;
+      margin-bottom: 1.1rem;
+      font-family: var(--font-code);
+      font-size: 0.75rem;
+      color: oklch(0.8 0.1 var(--pillar-hue, 75));
+      border-bottom: none;
+    }
+  }
+
+  .tool-name {
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+
+  .badge {
+    font-family: var(--font-code);
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: oklch(0.82 0.1 var(--pillar-hue));
+    border: 1px solid oklch(0.7 0.1 var(--pillar-hue) / 0.35);
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+    white-space: nowrap;
+    justify-self: start;
+  }
+
+  .tool-summary {
+    font-size: 0.85rem;
+    font-weight: 300;
+    color: var(--text-mid);
+    line-height: 1.5;
+  }
+</style>

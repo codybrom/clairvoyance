@@ -5,9 +5,19 @@
 // way. Tools are read-only and fetch Markdown this site publishes; `path` may
 // contain `{argument}` placeholders. The version is the plugin's (kept in sync
 // across manifests by scripts/bump-version.sh).
-import type { ToolDefinition, ToolManifest } from "../../edge/mcp.ts";
+import {
+  SUPPORTED_VERSIONS,
+  type ToolDefinition,
+  type ToolManifest,
+} from "../../edge/mcp.ts";
 import pkg from "../../package.json";
-import { getAgents, getAllSkills, type Agent, type Skill } from "./skills";
+import {
+  getAgents,
+  getAllSkills,
+  summaryOf,
+  type Agent,
+  type Skill,
+} from "./skills";
 import { SITE_URL } from "./site";
 
 export const MCP_URL = `${SITE_URL}/mcp`;
@@ -25,6 +35,17 @@ export const MCP_INSTALL = {
 
 export const MCP_SUMMARY =
   "The MCP server gives any MCP client the same skills as the plugin, with no sign-in. Each skill is a tool with the same name and description it has in the plugin, and clients that support MCP prompts also offer each skill as a slash command.";
+
+// Prose for the /mcp page and its Markdown twin, written once for both.
+export const MCP_PAGE = {
+  prompts:
+    "Every skill is also an MCP prompt, so clients that support prompts offer it as a slash command. Claude Code, for example, lists them under the server's name, such as /mcp__clairvoyance__red-flags.",
+  receives:
+    "A request contains only the name of the skill, or of a skill's supporting file. The tools take no other input, so the server never receives your code, file paths or prompts. It doesn't store or log requests, and there are no accounts or cookies.",
+  versusPlugin:
+    "Where your agent supports plugins or skills, install those instead. The plugin also enforces each skill's allowed tools and runs the design-it-twice subagent itself; over MCP, the agent is given the subagent's brief and limits to follow.",
+  details: `Streamable HTTP with JSON responses: stateless, no sign-in, and no server-initiated stream. It speaks MCP ${SUPPORTED_VERSIONS.join(", ")}, and its tool and prompt definitions are published at ${SITE_URL}/tools.json.`,
+};
 
 /** The MCP section of install.md. */
 export function mcpInstallMarkdown(): string[] {
@@ -48,9 +69,6 @@ const NO_INPUT: ToolDefinition["inputSchema"] = {
   properties: {},
   additionalProperties: false,
 };
-
-const summaryOf = (description: string) =>
-  description.split(/\.\s*Use when/i)[0] + ".";
 
 export function getToolManifest(): ToolManifest {
   const skills = getAllSkills();

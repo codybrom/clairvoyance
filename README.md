@@ -115,6 +115,18 @@ Machine-readable skill index for LLM agents:
 - [clairvoyance.fyi/llms.txt](https://clairvoyance.fyi/llms.txt) — table of contents with descriptions
 - [clairvoyance.fyi/llms-full.txt](https://clairvoyance.fyi/llms-full.txt) — full content of all skills
 
+## MCP server
+
+If your agent can't install plugins or skills but can connect to MCP servers, use Clairvoyance's read-only MCP server at `https://clairvoyance.fyi/mcp` (Streamable HTTP, no sign-in). Each skill is a tool with the same name and description it has in the plugin, and clients that support MCP prompts also offer each skill as a slash command. A request names only the skill, so the server never receives your code, file paths or prompts.
+
+- **VS Code:** `code --add-mcp '{"name":"clairvoyance","type":"http","url":"https://clairvoyance.fyi/mcp"}'`
+- **Cursor:** add `"clairvoyance": { "url": "https://clairvoyance.fyi/mcp" }` under `"mcpServers"` in `~/.cursor/mcp.json`
+- **Claude Code:** `claude mcp add --transport http clairvoyance https://clairvoyance.fyi/mcp`
+- **Codex:** `codex mcp add clairvoyance --url https://clairvoyance.fyi/mcp`
+- **Anything else:** add `https://clairvoyance.fyi/mcp` as a remote (HTTP) MCP server.
+
+One-click buttons for VS Code and Cursor are on [clairvoyance.fyi/install](https://clairvoyance.fyi/install). Where your agent supports plugins or skills, install those instead: the plugin also enforces each skill's tool limits and runs the `design-it-twice` subagent itself.
+
 ## What's Inside
 
 ### Structure & Modules
@@ -193,6 +205,7 @@ To contribute:
 - **GitHub Copilot CLI:** `copilot plugin update clairvoyance`
 - **Kimi Code:** re-run the install command from the Custom tab
 - **Pi:** `pi update --extensions` (re-run install with a new ref if you pinned one)
+- **MCP server:** always serves the latest skills, so there's nothing to update.
 - **llms.txt:** Always up to date at [clairvoyance.fyi/llms-full.txt](https://clairvoyance.fyi/llms-full.txt).
 
 See [CHANGELOG.md](CHANGELOG.md) or the [GitHub releases](https://github.com/codybrom/clairvoyance/releases) for what changed in each version.

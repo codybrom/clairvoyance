@@ -57,7 +57,7 @@ interface JsonRpcRequest {
 type Outcome =
   { result: unknown } | { error: { code: number; message: string } };
 
-const SUPPORTED_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
+export const SUPPORTED_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",

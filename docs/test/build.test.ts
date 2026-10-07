@@ -815,6 +815,85 @@ test("install.md and llms.txt point agents at the MCP server", () => {
   assert.ok(read("llms.txt").includes(`(${MCP_URL})`));
 });
 
+test("the README documents the MCP server with the same commands the site generates", () => {
+  const readme = fs.readFileSync(path.join(ROOT, "..", "README.md"), "utf-8");
+  const section = readme.slice(
+    readme.indexOf("\n## MCP server\n"),
+    readme.indexOf("\n## ", readme.indexOf("\n## MCP server\n") + 1),
+  );
+  assert.ok(section.length > 100, "README has a top-level MCP server section");
+  const commands = [
+    ...frontmatter(read("install.md")).body.matchAll(
+      /^- (?:Claude Code|Codex): `([^`]+)`/gm,
+    ),
+    ...read("agent-setup.md").matchAll(
+      /^- (?:VS Code|Cursor): (?:add )?`([^`]+)`/gm,
+    ),
+  ].map((m) => m[1]);
+  assert.equal(commands.length, 4);
+  for (const command of commands) assert.ok(section.includes(command), command);
+  assert.ok(
+    !installPlatforms().some((p) => p.id === "mcp-server"),
+    "not parsed as an install platform",
+  );
+  assert.match(
+    frontmatter(read("install.md")).body,
+    /MCP server:.*nothing to update/i,
+    "Updating mentions it",
+  );
+});
+
+// ── /mcp page ──────────────────────────────────────────────────────
+
+test("/mcp has a page about the server listing every tool, with install options", () => {
+  const html = read("mcp/index.html").replace(/&amp;/g, "&");
+  assert.equal(canonicalOf(html), MCP_URL);
+  const { tools } = JSON.parse(read("tools.json"));
+  for (const tool of tools as { name: string }[]) {
+    assert.match(
+      html,
+      new RegExp(`<code class="tool-name"[^>]*>${tool.name}</code>`),
+      tool.name,
+    );
+  }
+  assert.match(html, /href="vscode:mcp\/install\?/);
+  assert.match(
+    html,
+    /href="cursor:\/\/anysphere\.cursor-deeplink\/mcp\/install\?/,
+  );
+  assert.ok(
+    html.includes(`claude mcp add --transport http clairvoyance ${MCP_URL}`),
+  );
+  assert.match(mainText(html), /only the name of the skill/);
+  assert.ok(
+    !/[^.]\.\.(?!\.)/.test(mainText(html)),
+    "no doubled periods in summaries",
+  );
+  assert.ok(html.includes('href="/privacy"'));
+});
+
+test("/mcp has a Markdown twin, and /install links to the page", () => {
+  const md = frontmatter(read("mcp.md"));
+  assert.equal(md.data.canonical, MCP_URL);
+  assert.ok(
+    md.body.includes(`claude mcp add --transport http clairvoyance ${MCP_URL}`),
+  );
+  assert.ok(read("install/index.html").includes('href="/mcp"'));
+});
+
+test("the Worker serves the /mcp page to browsers and its twin to agents", async () => {
+  const browser = await handle(
+    new Request(MCP_URL, { headers: { Accept: "text/html" } }),
+    pagesOrigin,
+  );
+  assert.equal(await browser.text(), read("mcp/index.html"));
+  const agent = await handle(
+    new Request(MCP_URL, { headers: { Accept: "text/markdown" } }),
+    pagesOrigin,
+  );
+  assert.equal(await agent.text(), read("mcp.md"));
+});
+
 // ── Sitemap ────────────────────────────────────────────────────────
 
 test("every sitemap entry has a lastmod, and skill pages use the skill's commit date", () => {

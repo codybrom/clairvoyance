@@ -84,6 +84,8 @@ const origin = () =>
     "/llms.txt": { body: "# Clairvoyance", type: "text/plain; charset=utf-8" },
     "/og.png": { body: "PNG", type: "image/png" },
     "/skills.md": md("# All Skills"),
+    "/mcp/": html("<h1>The Clairvoyance MCP server</h1>"),
+    "/mcp.md": md("# The Clairvoyance MCP server"),
     "/tools.json": {
       body: JSON.stringify({
         version: "9.9.9",
@@ -455,7 +457,7 @@ test("MCP malformed JSON is a parse error", async () => {
 
 test("MCP GET is 405 (no server-initiated stream) and OPTIONS allows browser clients", async () => {
   const { fetchOrigin } = origin();
-  const getRes = await handle(new Request(`${SITE}/mcp`), fetchOrigin);
+  const getRes = await handle(get("/mcp", "text/event-stream"), fetchOrigin);
   assert.equal(getRes.status, 405);
   assert.equal(getRes.headers.get("Allow"), "POST, OPTIONS");
   const preflight = await handle(
@@ -493,4 +495,40 @@ test("MCP prompts/get returns the prompt's Markdown as a user message", async ()
 test("MCP prompts/get on an unknown prompt is an invalid-params error", async () => {
   const { body } = await call("prompts/get", { name: "nope" });
   assert.equal(body.error.code, -32602);
+});
+
+// ── /mcp in a browser ──────────────────────────────────────────────
+
+test("a browser visiting /mcp gets the page about the server, at the same URL", async () => {
+  const { fetchOrigin, calls } = origin();
+  const res = await handle(get("/mcp", BROWSER_ACCEPT), fetchOrigin);
+  assert.equal(res.status, 200);
+  assert.equal(await res.text(), "<h1>The Clairvoyance MCP server</h1>");
+  assert.ok(varyIncludesAccept(res), "same URL, different representations");
+  assert.ok(calls.includes("/mcp/"));
+});
+
+test("an agent asking /mcp for Markdown gets the page's Markdown twin", async () => {
+  const { fetchOrigin } = origin();
+  const res = await handle(get("/mcp", "text/markdown"), fetchOrigin);
+  assert.equal(header(res, "Content-Type"), "text/markdown; charset=utf-8");
+  assert.equal(await res.text(), "# The Clairvoyance MCP server");
+});
+
+test("an MCP client's GET for an event stream still gets 405", async () => {
+  const { fetchOrigin, calls } = origin();
+  const res = await handle(get("/mcp", "text/event-stream"), fetchOrigin);
+  assert.equal(res.status, 405);
+  assert.deepEqual(calls, []);
+});
+
+test("/mcp/ with a trailing slash is the same MCP endpoint", async () => {
+  const { fetchOrigin } = origin();
+  const req = new Request(`${SITE}/mcp/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "ping" }),
+  });
+  const res = await handle(req, fetchOrigin);
+  assert.deepEqual((await res.json()).result, {});
 });
