@@ -6,7 +6,7 @@ import AgentSetupButton from "../components/AgentSetupButton.astro";
 import { getInstallGuide, renderMarkdown } from "../utils/install";
 import { getAllSkills } from "../utils/skills";
 import { REPO_URL, SITE_URL } from "../utils/site";
-import { MCP_INSTALL, MCP_SUMMARY, MCP_URL, getToolManifest } from "../utils/tools";
+import { MCP_INSTALL, MCP_SUMMARY, MCP_URL } from "../utils/tools";
 import VSCodeLogo from "../assets/clients/vscode.svg";
 
 const guide = getInstallGuide();
@@ -119,9 +119,7 @@ const summaryOf = (description: string) => description.split(/\.\s*Use when/i)[0
         <pre><code>{MCP_INSTALL.codex}</code></pre>
         <p>
           Any other client: add <code>{MCP_URL}</code> as a remote (HTTP) MCP server.
-          Its tools: {getToolManifest().tools.map((t, i) => (
-            <>{i > 0 && ", "}<code>{t.name}</code></>
-          ))}.
+          Each skill is a tool with its own name, plus <code>fetchReference</code> for skills' supporting files.
         </p>
       </div>
     </section>

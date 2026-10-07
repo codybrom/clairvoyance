@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import matter from "gray-matter";
 import { execFileSync } from "node:child_process";
 import { handle, negotiate } from "../edge/worker.ts";
 import { registerWebMcpTools, type ModelContext } from "../src/utils/webmcp.ts";
@@ -505,6 +506,26 @@ test("agent-setup.md gives Claude Code shell commands, not slash commands", () =
   );
 });
 
+test("agent-setup.md offers the MCP server as a fallback, with commands an agent can run", () => {
+  const md = read("agent-setup.md");
+  assert.match(
+    md,
+    /can't install plugins or skills.*MCP/i,
+    "the steps point at the fallback",
+  );
+  const section = md.slice(md.indexOf("## MCP server"));
+  assert.ok(md.includes("## MCP server"), "has an MCP section");
+  for (const expected of [
+    MCP_URL,
+    `claude mcp add --transport http clairvoyance ${MCP_URL}`,
+    `codex mcp add clairvoyance --url ${MCP_URL}`,
+    `code --add-mcp '{"name":"clairvoyance","type":"http","url":"${MCP_URL}"}'`,
+    `"clairvoyance": { "url": "${MCP_URL}" }`,
+  ]) {
+    assert.ok(section.includes(expected), expected);
+  }
+});
+
 test("the hero and /install offer the copy-prompt setup button", () => {
   for (const file of ["index.html", "install/index.html"]) {
     const html = read(file);
@@ -559,14 +580,205 @@ test("the MCP server reports the Claude Code plugin's version", async () => {
   assert.equal(result.serverInfo.version, plugin.version);
 });
 
-test("the MCP server's fetchSkill returns every skill's Markdown twin", async () => {
+// The skills' own frontmatter, which the plugin exposes to agents.
+const skillMeta = Object.fromEntries(
+  skillSlugs.map((slug) => {
+    const raw = fs.readFileSync(
+      path.join(SKILLS_DIR, slug, "SKILL.md"),
+      "utf-8",
+    );
+    return [
+      slug,
+      matter(raw).data as {
+        name: string;
+        description: string;
+        "argument-hint": string;
+      },
+    ];
+  }),
+);
+
+const referenceFiles = Object.fromEntries(
+  skillSlugs.map((slug) => {
+    const dir = path.join(SKILLS_DIR, slug, "references");
+    return [slug, fs.existsSync(dir) ? fs.readdirSync(dir).sort() : []];
+  }),
+);
+
+test("the MCP server offers each skill as a tool with the skill's own name and description, plus fetchReference", async () => {
+  const { result } = await mcp("tools/list", {});
+  const tools = result.tools as {
+    name: string;
+    description: string;
+    annotations: { readOnlyHint: boolean };
+  }[];
+  assert.deepEqual(
+    tools.map((t) => t.name).sort(),
+    [...skillSlugs, "fetchReference"].sort(),
+  );
   for (const slug of skillSlugs) {
-    const { result } = await mcp("tools/call", {
-      name: "fetchSkill",
-      arguments: { slug },
-    });
-    assert.equal(result.content[0].text, read(`skills/${slug}.md`), slug);
+    const tool = tools.find((t) => t.name === slug)!;
+    assert.equal(tool.description, skillMeta[slug].description, slug);
+    assert.equal(tool.annotations.readOnlyHint, true, slug);
   }
+});
+
+test("each skill tool returns the skill", async () => {
+  for (const slug of skillSlugs) {
+    const { result } = await mcp("tools/call", { name: slug, arguments: {} });
+    const text: string = result.content[0].text;
+    assert.equal(text, read(`tools/skills/${slug}.md`), slug);
+    const source = fs.readFileSync(
+      path.join(SKILLS_DIR, slug, "SKILL.md"),
+      "utf-8",
+    );
+    assert.ok(text.includes(source.match(/^#\s+.+$/m)![0]), `${slug} body`);
+  }
+});
+
+test("skill tools point at fetchReference for every supporting file", async () => {
+  for (const [slug, files] of Object.entries(referenceFiles)) {
+    const text = read(`tools/skills/${slug}.md`);
+    for (const file of files) {
+      assert.ok(
+        text.includes(`skill: "${slug}", file: "${file}"`),
+        `${slug} → ${file}`,
+      );
+    }
+  }
+});
+
+test("fetchReference returns each reference file verbatim", async () => {
+  for (const [slug, files] of Object.entries(referenceFiles)) {
+    for (const file of files) {
+      const { result } = await mcp("tools/call", {
+        name: "fetchReference",
+        arguments: { skill: slug, file },
+      });
+      const source = fs.readFileSync(
+        path.join(SKILLS_DIR, slug, "references", file),
+        "utf-8",
+      );
+      assert.equal(result.content[0].text, source, `${slug}/${file}`);
+    }
+  }
+});
+
+test("design-it-twice's tool hands the agent the clean-room-alternative brief to run as its own subagent", async () => {
+  const text = read("tools/skills/design-it-twice.md");
+  const agent = matter(
+    fs.readFileSync(
+      path.join(ROOT, "..", "agents", "clean-room-alternative.md"),
+      "utf-8",
+    ),
+  );
+  const brief = agent.content
+    .trim()
+    .replace(
+      /^(#+) /gm,
+      (_, h: string) => `${"#".repeat(Math.min(h.length + 2, 6))} `,
+    );
+  assert.ok(
+    text.includes(`### Brief\n\n${brief}`),
+    "brief included, headings nested under it",
+  );
+  assert.match(text, /start (a|one) subagent/i);
+  assert.ok(
+    text.includes(`limit it to these tools: ${agent.data.tools}`),
+    "tool limits come from the agent's frontmatter",
+  );
+  assert.ok(
+    text.includes(agent.data.model),
+    "model comes from the agent's frontmatter",
+  );
+  assert.ok(!text.includes("limit it to reading files"), "nothing hardcoded");
+  assert.ok(
+    text.includes("pre-mortem-fallback.md"),
+    "fallback when subagents aren't available",
+  );
+});
+
+test("the privacy policy covers the MCP server instead of denying it exists", () => {
+  const privacy = read("privacy.md");
+  assert.ok(privacy.includes(MCP_URL), "names the server");
+  assert.match(
+    privacy,
+    /only the name of the skill/,
+    "says what a request carries",
+  );
+  assert.ok(!privacy.includes("arguments"), "no free-text input to describe");
+  for (const claim of [
+    "has no MCP servers",
+    "does not operate any servers",
+    "Last updated: February 27, 2026",
+  ]) {
+    assert.ok(!privacy.includes(claim), claim);
+  }
+  assert.ok(!read("about.md").includes("runs no servers"), "About page agrees");
+});
+
+test("skill tools and prompts take no input, so a request carries only the skill's name", async () => {
+  const tools = (await mcp("tools/list", {})).result.tools;
+  const prompts = (await mcp("prompts/list", {})).result.prompts;
+  for (const slug of skillSlugs) {
+    const tool = tools.find((t: { name: string }) => t.name === slug);
+    assert.deepEqual(tool.inputSchema.properties, {}, `${slug} tool`);
+    const prompt = prompts.find((p: { name: string }) => p.name === slug);
+    assert.ok(!prompt.arguments?.length, `${slug} prompt`);
+  }
+});
+
+test("the MCP version of each skill fills $ARGUMENTS with its argument-hint at build time", () => {
+  for (const slug of skillSlugs) {
+    const text = read(`tools/skills/${slug}.md`);
+    assert.ok(!text.includes("$ARGUMENTS"), slug);
+    const hint = skillMeta[slug]["argument-hint"].replace(/^\[|\]$/g, "");
+    assert.ok(text.includes(`When invoked with a ${hint},`), slug);
+  }
+});
+
+test("the MCP server offers each skill as a prompt for slash-command clients", async () => {
+  const list = await mcp("prompts/list", {});
+  assert.deepEqual(
+    list.result.prompts.map((p: { name: string }) => p.name).sort(),
+    [...skillSlugs].sort(),
+  );
+  const got = await mcp("prompts/get", { name: "red-flags", arguments: {} });
+  const message = got.result.messages[0];
+  assert.equal(message.role, "user");
+  assert.equal(message.content.text, read("tools/skills/red-flags.md"));
+});
+
+test("the MCP server's instructions list every skill and don't send agents elsewhere to install", async () => {
+  const { result } = await mcp("initialize", {
+    protocolVersion: "2025-11-25",
+    capabilities: {},
+  });
+  for (const slug of skillSlugs)
+    assert.ok(result.instructions.includes(slug), slug);
+  assert.doesNotMatch(result.instructions, /install/i);
+  assert.deepEqual(result.capabilities, { tools: {}, prompts: {} });
+});
+
+test("skill pages' Markdown twins link reference files by absolute URL", () => {
+  for (const [slug, files] of Object.entries(referenceFiles)) {
+    const md = read(`skills/${slug}.md`);
+    assert.ok(
+      !md.includes("](references/"),
+      `${slug} has no relative reference links`,
+    );
+    for (const file of files) {
+      assert.ok(
+        fs.existsSync(path.join(DIST, "skills", slug, "references", file)),
+        `${slug}/${file} published`,
+      );
+    }
+  }
+  assert.ok(
+    read("skills/comments-docs.md").includes(
+      `](${SITE}/skills/comments-docs/references/comments-first-workflow.md)`,
+    ),
+  );
 });
 
 test("/install offers one-click MCP installs for VS Code and Cursor, and CLI commands", () => {
@@ -759,51 +971,47 @@ test("pages load the WebMCP script", () => {
   }
 });
 
-test("WebMCP registers read-only tools from the manifest via document.modelContext", async () => {
+test("WebMCP registers the same tools as the MCP server via document.modelContext", async () => {
   const tools = await loadWebMcp();
-  assert.deepEqual(tools.map((t) => t.name).sort(), [
-    "fetchSkill",
-    "getInstallInstructions",
-    "listSkills",
-  ]);
+  assert.deepEqual(
+    tools.map((t) => t.name).sort(),
+    [...skillSlugs, "fetchReference"].sort(),
+  );
   for (const tool of tools) {
-    assert.ok(tool.description.length > 20, tool.name);
     assert.equal(tool.inputSchema.type, "object", tool.name);
     assert.equal(tool.annotations.readOnlyHint, true, tool.name);
+  }
+  for (const slug of skillSlugs) {
+    assert.equal(
+      tools.find((t) => t.name === slug)!.description,
+      skillMeta[slug].description,
+      slug,
+    );
   }
 });
 
 test("WebMCP falls back to navigator.modelContext", async () => {
   const tools = await loadWebMcp({ api: "navigator" });
-  assert.equal(tools.length, 3);
+  assert.equal(tools.length, skillSlugs.length + 1);
 });
 
-test("WebMCP fetchSkill accepts exactly the published skills and returns each one", async () => {
-  const fetchSkill = (await loadWebMcp()).find((t) => t.name === "fetchSkill")!;
-  assert.deepEqual(
-    [...(fetchSkill.inputSchema.properties.slug.enum ?? [])].sort(),
-    [...skillSlugs].sort(),
-  );
+test("WebMCP skill tools return the skill", async () => {
+  const tools = await loadWebMcp();
   for (const slug of skillSlugs) {
-    const result = await fetchSkill.execute({ slug });
+    const result = await tools.find((t) => t.name === slug)!.execute({});
     assert.ok(!result.isError, slug);
-    assert.equal(result.content[0].text, read(`skills/${slug}.md`), slug);
+    assert.equal(result.content[0].text, read(`tools/skills/${slug}.md`), slug);
   }
 });
 
-test("WebMCP listSkills and getInstallInstructions return the site's Markdown", async () => {
-  const tools = await loadWebMcp();
-  const list = await tools.find((t) => t.name === "listSkills")!.execute({});
-  assert.equal(list.content[0].text, read("skills.md"));
-  const install = await tools
-    .find((t) => t.name === "getInstallInstructions")!
-    .execute({});
-  assert.equal(install.content[0].text, read("install.md"));
-});
-
 test("WebMCP reports a failed fetch as a tool error", async () => {
-  const fetchSkill = (await loadWebMcp()).find((t) => t.name === "fetchSkill")!;
-  const result = await fetchSkill.execute({ slug: "no-such-skill" });
+  const fetchReference = (await loadWebMcp()).find(
+    (t) => t.name === "fetchReference",
+  )!;
+  const result = await fetchReference.execute({
+    skill: "red-flags",
+    file: "no-such-file.md",
+  });
   assert.equal(result.isError, true);
 });
 

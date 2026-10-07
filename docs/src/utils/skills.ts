@@ -15,6 +15,22 @@ export interface Skill {
   content: string;
   htmlContent: string;
   lastUpdated: string | null;
+  /** File names in the skill's references/ folder. */
+  references: string[];
+  /** What the skill's argument is, from `argument-hint`, without brackets. */
+  argumentHint: string | null;
+}
+
+/** A subagent definition from agents/, which skills dispatch by name. */
+export interface Agent {
+  name: string;
+  description: string;
+  /** The agent's instructions: its Markdown body, without frontmatter. */
+  brief: string;
+  /** Tools the agent may use, from `tools:`, e.g. "Read, Grep, Glob". */
+  tools: string | null;
+  /** The model it's meant to run on, from `model:`. */
+  model: string | null;
 }
 
 const PILLAR_HUES: Record<string, number> = {
@@ -141,6 +157,8 @@ export function getAllSkills(): Skill[] {
       content,
       htmlContent: marked.parse(content) as string,
       lastUpdated: getLastCommitDate(skillPath),
+      references: listReferences(path.join(SKILLS_DIR, dir.name, "references")),
+      argumentHint: data["argument-hint"]?.replace(/^\[|\]$/g, "") ?? null,
     });
   }
 
@@ -152,6 +170,34 @@ export function getAllSkills(): Skill[] {
 
   _cache = skills;
   return skills;
+}
+
+function listReferences(dir: string): string[] {
+  return fs.existsSync(dir)
+    ? fs
+        .readdirSync(dir)
+        .filter((f) => f.endsWith(".md"))
+        .sort()
+    : [];
+}
+
+export function getAgents(): Agent[] {
+  const dir = path.join(REPO_ROOT, "agents");
+  return fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith(".md"))
+    .map((f) => {
+      const { data, content } = matter(
+        fs.readFileSync(path.join(dir, f), "utf-8"),
+      );
+      return {
+        name: data.name,
+        description: data.description,
+        brief: content.trim(),
+        tools: data.tools ?? null,
+        model: data.model ?? null,
+      };
+    });
 }
 
 export function getSkill(slug: string): Skill | undefined {

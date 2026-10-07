@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { getInstallGuide } from "../utils/install";
+import { MCP_INSTALL, MCP_URL } from "../utils/tools";
 
 // Install instructions written for an agent to carry out, not a person to
 // read: the prompt behind the "Set up with your agent" button points here.
@@ -29,7 +30,7 @@ export const GET: APIRoute = () => {
     "Run the commands yourself; don't ask the user to run them. When a step can only happen inside your own interface (a slash command, a restart, a settings screen), tell the user exactly what to do.",
     "",
     "1. Work out which agent you are and follow only that section below.",
-    "2. If your agent isn't listed, use the skills.sh section.",
+    "2. If your agent isn't listed, use the skills.sh section. If it can't install plugins or skills at all but can connect to MCP servers, add the MCP server instead (last section).",
     "3. If Clairvoyance is already installed, update it instead, using the Updating section at the end.",
     "",
     "---",
@@ -43,6 +44,20 @@ export const GET: APIRoute = () => {
     "## Updating",
     "",
     updating,
+    "",
+    "## MCP server (fallback)",
+    "",
+    `Only for agents that can't install the plugin or skills above. Clairvoyance's MCP server at ${MCP_URL} needs no sign-in and offers every skill as a tool with the same name and description it has in the plugin.`,
+    "",
+    "- Claude Code: `" + MCP_INSTALL.claudeCode + "`",
+    "- Codex: `" + MCP_INSTALL.codex + "`",
+    "- VS Code: `" + MCP_INSTALL.vscodeCli + "`",
+    "- Cursor: add `" +
+      MCP_INSTALL.cursorConfig +
+      '` under `"mcpServers"` in `~/.cursor/mcp.json`',
+    `- Anything else: register ${MCP_URL} as a remote (Streamable HTTP) MCP server in your MCP config.`,
+    "",
+    "Then tell the user to restart or reload the agent so it connects.",
     "",
     "---",
     "",

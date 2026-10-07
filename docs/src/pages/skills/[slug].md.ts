@@ -19,6 +19,16 @@ export const GET: APIRoute = ({ props }) => {
       canonical: `${SITE_URL}/skills/${skill.slug}`,
       lastUpdated: skill.lastUpdated,
     },
-    [skill.content.trim(), ""],
+    // references/ links are relative to SKILL.md; from /skills/<slug>.md they
+    // would resolve to /skills/references/, so point them at the real files.
+    [
+      skill.content
+        .trim()
+        .replaceAll(
+          "](references/",
+          `](${SITE_URL}/skills/${skill.slug}/references/`,
+        ),
+      "",
+    ],
   );
 };

@@ -39,7 +39,7 @@ function fakeOrigin(files: Record<string, OriginFile>) {
 // Stands in for the tools in the build's /tools.json, shared by WebMCP and /mcp.
 const TOOLS: ToolDefinition[] = [
   {
-    name: "listSkills",
+    name: "skillsIndex",
     title: "List skills",
     description: "List every skill.",
     inputSchema: {
@@ -51,7 +51,7 @@ const TOOLS: ToolDefinition[] = [
     path: "/skills.md",
   },
   {
-    name: "fetchSkill",
+    name: "skillBySlug",
     title: "Fetch a skill",
     description: "Fetch one skill.",
     inputSchema: {
@@ -85,7 +85,19 @@ const origin = () =>
     "/og.png": { body: "PNG", type: "image/png" },
     "/skills.md": md("# All Skills"),
     "/tools.json": {
-      body: JSON.stringify({ version: "9.9.9", tools: TOOLS }),
+      body: JSON.stringify({
+        version: "9.9.9",
+        instructions: "Use the skills.",
+        tools: TOOLS,
+        prompts: [
+          {
+            name: "deep-modules",
+            title: "Deep Modules",
+            description: "Measures module depth.",
+            path: "/skills/deep-modules.md",
+          },
+        ],
+      }),
       type: "application/json",
     },
   });
@@ -351,7 +363,12 @@ test("MCP initialize negotiates the protocol version and advertises tools", asyn
   assert.equal(body.jsonrpc, "2.0");
   assert.equal(body.id, 1);
   assert.equal(body.result.protocolVersion, "2025-06-18");
-  assert.deepEqual(body.result.capabilities, { tools: {} });
+  assert.deepEqual(body.result.capabilities, { tools: {}, prompts: {} });
+  assert.equal(
+    body.result.instructions,
+    "Use the skills.",
+    "instructions come from /tools.json",
+  );
   assert.equal(body.result.serverInfo.name, "clairvoyance");
   assert.equal(
     body.result.serverInfo.version,
@@ -382,17 +399,17 @@ test("MCP tools/list returns the tools from /tools.json", async () => {
   const { body } = await call("tools/list", {});
   assert.deepEqual(
     body.result.tools.map((t: { name: string }) => t.name),
-    ["listSkills", "fetchSkill"],
+    ["skillsIndex", "skillBySlug"],
   );
-  const fetchSkill = body.result.tools[1];
-  assert.deepEqual(fetchSkill.inputSchema, TOOLS[1].inputSchema);
-  assert.equal(fetchSkill.annotations.readOnlyHint, true);
-  assert.equal(fetchSkill.path, undefined, "internal path not exposed");
+  const skillBySlug = body.result.tools[1];
+  assert.deepEqual(skillBySlug.inputSchema, TOOLS[1].inputSchema);
+  assert.equal(skillBySlug.annotations.readOnlyHint, true);
+  assert.equal(skillBySlug.path, undefined, "internal path not exposed");
 });
 
 test("MCP tools/call fetches the tool's Markdown from the origin", async () => {
   const { body, calls } = await call("tools/call", {
-    name: "fetchSkill",
+    name: "skillBySlug",
     arguments: { slug: "deep-modules" },
   });
   assert.deepEqual(body.result.content, [
@@ -405,7 +422,7 @@ test("MCP tools/call fetches the tool's Markdown from the origin", async () => {
 test("MCP tools/call rejects arguments outside the schema without fetching", async () => {
   for (const args of [{ slug: "../../etc" }, {}]) {
     const { body, calls } = await call("tools/call", {
-      name: "fetchSkill",
+      name: "skillBySlug",
       arguments: args,
     });
     assert.equal(body.result.isError, true, JSON.stringify(args));
@@ -451,4 +468,29 @@ test("MCP GET is 405 (no server-initiated stream) and OPTIONS allows browser cli
     header(preflight, "Access-Control-Allow-Headers"),
     /mcp-protocol-version/i,
   );
+});
+
+test("MCP prompts/list returns the prompts from /tools.json", async () => {
+  const { body } = await call("prompts/list", {});
+  assert.deepEqual(body.result.prompts, [
+    {
+      name: "deep-modules",
+      title: "Deep Modules",
+      description: "Measures module depth.",
+    },
+  ]);
+});
+
+test("MCP prompts/get returns the prompt's Markdown as a user message", async () => {
+  const { body, calls } = await call("prompts/get", { name: "deep-modules" });
+  assert.equal(body.result.description, "Measures module depth.");
+  assert.deepEqual(body.result.messages, [
+    { role: "user", content: { type: "text", text: "# Deep Modules" } },
+  ]);
+  assert.ok(calls.includes("/skills/deep-modules.md"));
+});
+
+test("MCP prompts/get on an unknown prompt is an invalid-params error", async () => {
+  const { body } = await call("prompts/get", { name: "nope" });
+  assert.equal(body.error.code, -32602);
 });

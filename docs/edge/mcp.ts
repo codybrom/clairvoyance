@@ -5,9 +5,10 @@
 //
 // The tools come from the build's /tools.json, the same definitions the site's
 // WebMCP script registers for browser agents. Each tool fetches a Markdown file
-// this site already publishes, so the server has no state of its own. The
-// server reports the version in /tools.json, which is the plugin's version, so
-// it always matches what's deployed.
+// this site already publishes, so the server has no state of its own. Each
+// skill is also a prompt, which clients such as Claude Code offer as a slash
+// command. The version and instructions come from /tools.json too, so they
+// always match what's deployed.
 import type { FetchOrigin } from "./worker.ts";
 
 /** One tool in /tools.json. `path` may contain `{argument}` placeholders. */
@@ -20,9 +21,20 @@ export interface ToolDefinition {
   path: string;
 }
 
+/** One prompt in /tools.json: a slash command whose message is the Markdown at `path`. */
+export interface PromptDefinition {
+  name: string;
+  title: string;
+  description: string;
+  path: string;
+}
+
 export interface ToolManifest {
   version: string;
+  /** Sent to clients on initialize; many add it to the agent's context. */
+  instructions: string;
   tools: ToolDefinition[];
+  prompts: PromptDefinition[];
 }
 
 interface InputSchema {
@@ -46,11 +58,6 @@ type Outcome =
   { result: unknown } | { error: { code: number; message: string } };
 
 const SUPPORTED_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
-
-const INSTRUCTIONS =
-  "Read-only access to Clairvoyance's software design skills for AI coding agents. " +
-  "Call listSkills to see what's available and fetchSkill to load one before reviewing or writing code. " +
-  "For skills that activate automatically, install the full plugin; getInstallInstructions explains how.";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -114,7 +121,10 @@ async function dispatch(
 ): Promise<Outcome> {
   switch (method) {
     case "initialize": {
-      const { version } = await loadManifest(requestUrl, fetchOrigin);
+      const { version, instructions } = await loadManifest(
+        requestUrl,
+        fetchOrigin,
+      );
       const requested = params.protocolVersion;
       return {
         result: {
@@ -123,14 +133,56 @@ async function dispatch(
             SUPPORTED_VERSIONS.includes(requested)
               ? requested
               : SUPPORTED_VERSIONS[0],
-          capabilities: { tools: {} },
+          capabilities: { tools: {}, prompts: {} },
           serverInfo: { name: "clairvoyance", title: "Clairvoyance", version },
-          instructions: INSTRUCTIONS,
+          instructions,
         },
       };
     }
     case "ping":
       return { result: {} };
+    case "prompts/list": {
+      const { prompts } = await loadManifest(requestUrl, fetchOrigin);
+      return {
+        result: {
+          prompts: prompts.map(({ path: _path, ...prompt }) => prompt),
+        },
+      };
+    }
+    case "prompts/get": {
+      const { prompts } = await loadManifest(requestUrl, fetchOrigin);
+      const prompt = prompts.find((p) => p.name === params.name);
+      if (!prompt)
+        return {
+          error: {
+            code: -32602,
+            message: `Unknown prompt: ${String(params.name)}`,
+          },
+        };
+      const url = new URL(prompt.path, requestUrl);
+      const response = await fetchOrigin(new Request(url));
+      if (!response.ok)
+        return {
+          error: {
+            code: -32603,
+            message: `${response.status} fetching ${url.pathname}`,
+          },
+        };
+      return {
+        result: {
+          description: prompt.description,
+          messages: [
+            {
+              role: "user",
+              content: {
+                type: "text",
+                text: await response.text(),
+              },
+            },
+          ],
+        },
+      };
+    }
     case "tools/list": {
       const { tools } = await loadManifest(requestUrl, fetchOrigin);
       return {
