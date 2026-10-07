@@ -5,32 +5,56 @@
 // Markdown twin next to each page (`/` → `/index.md`, `/skills/x/` →
 // `/skills/x.md`). A request for a page that prefers `text/markdown` gets that
 // twin; everything else is proxied to the origin unchanged. Page responses
-// always carry `Vary: Accept` so caches keep the two representations apart.
+// always carry `Vary: Accept` so caches keep the two representations apart,
+// and successful ones a `Link` header naming the other representation.
+//
+// It also serves the read-only MCP server at /mcp (see mcp.ts).
+
+import { handleMcp } from "./mcp.ts";
+
+/** Fetches from the GitHub Pages origin; `fetch` in production. */
+export type FetchOrigin = (request: Request) => Promise<Response>;
+
+type Representation = "markdown" | "html";
 
 const SITE = "https://clairvoyance.fyi";
 const MARKDOWN_TYPE = "text/markdown; charset=utf-8";
 
 export default {
-  fetch: (request) => negotiate(request, fetch),
+  fetch: (request: Request) => handle(request, fetch),
 };
 
-/**
- * Serves `request`, choosing between the HTML page and its Markdown twin.
- * `fetchOrigin` fetches from the origin; it is `fetch` in production.
- */
-export async function negotiate(request, fetchOrigin) {
+/** Routes `request`: /mcp to the MCP server, everything else through content negotiation. */
+export function handle(
+  request: Request,
+  fetchOrigin: FetchOrigin,
+): Promise<Response> {
+  if (new URL(request.url).pathname === "/mcp")
+    return handleMcp(request, fetchOrigin);
+  return negotiate(request, fetchOrigin);
+}
+
+/** Serves `request`, choosing between the HTML page and its Markdown twin. */
+export async function negotiate(
+  request: Request,
+  fetchOrigin: FetchOrigin,
+): Promise<Response> {
   const url = new URL(request.url);
   if (!isPageRequest(request, url)) return fetchOrigin(request);
 
   const choice = chooseRepresentation(request.headers.get("Accept"));
   if (choice === "none") return notAcceptable();
-  if (choice === "html") return withVaryAccept(await fetchOrigin(request));
+  if (choice === "html") {
+    const page = await fetchOrigin(request);
+    return withLinks(withVaryAccept(page), url, "markdown");
+  }
 
-  const markdown = await fetchOrigin(new Request(markdownUrl(url), request));
+  const markdownUrl = new URL(markdownPath(url.pathname), url);
+  const markdown = await fetchOrigin(new Request(markdownUrl, request));
   if (markdown.ok) {
     const response = withVaryAccept(markdown);
     response.headers.set("Content-Type", MARKDOWN_TYPE);
-    return response;
+    return withLinks(response, url, "html");
   }
 
   // No Markdown twin: either the page doesn't exist, or it's HTML-only. RFC
@@ -39,14 +63,14 @@ export async function negotiate(request, fetchOrigin) {
   const page = await fetchOrigin(request);
   if (page.status === 404)
     return markdownNotFound(url.pathname, request.method);
-  return withVaryAccept(page);
+  return withLinks(withVaryAccept(page), url, null);
 }
 
 // Only extensionless GET/HEAD paths are pages; files such as /llms.txt or
 // /og.png have a single representation and pass straight through.
-function isPageRequest(request, url) {
+function isPageRequest(request: Request, url: URL): boolean {
   if (request.method !== "GET" && request.method !== "HEAD") return false;
-  const lastSegment = url.pathname.split("/").pop();
+  const lastSegment = url.pathname.split("/").pop() ?? "";
   return !lastSegment.includes(".");
 }
 
@@ -54,7 +78,9 @@ function isPageRequest(request, url) {
 // HTML unless the client named text/markdown explicitly, so a bare `*/*` keeps
 // getting HTML while an agent that lists `text/markdown, text/html` gets
 // Markdown.
-function chooseRepresentation(acceptHeader) {
+function chooseRepresentation(
+  acceptHeader: string | null,
+): Representation | "none" {
   const ranges = parseAccept(acceptHeader || "*/*");
   const markdown = quality(ranges, "text", "markdown");
   const html = quality(ranges, "text", "html");
@@ -65,7 +91,13 @@ function chooseRepresentation(acceptHeader) {
   return "html";
 }
 
-function parseAccept(header) {
+interface MediaRange {
+  type: string;
+  subtype: string;
+  q: number;
+}
+
+function parseAccept(header: string): MediaRange[] {
   return header
     .split(",")
     .map((part) => {
@@ -83,10 +115,14 @@ function parseAccept(header) {
 
 // The most specific matching range wins (RFC 9110 §12.5.1): an exact type
 // beats `type/*`, which beats `*/*`. No match means q = 0.
-function quality(ranges, type, subtype) {
+function quality(
+  ranges: MediaRange[],
+  type: string,
+  subtype: string,
+): { q: number; exact: boolean } {
   let best = { specificity: -1, q: 0 };
   for (const range of ranges) {
-    let specificity;
+    let specificity: number;
     if (range.type === type && range.subtype === subtype) specificity = 2;
     else if (range.type === type && range.subtype === "*") specificity = 1;
     else if (range.type === "*" && range.subtype === "*") specificity = 0;
@@ -97,12 +133,40 @@ function quality(ranges, type, subtype) {
 }
 
 // `/` → `/index.md`; `/skills/deep-modules/` → `/skills/deep-modules.md`.
-function markdownUrl(url) {
-  const path = url.pathname.replace(/\/+$/, "") || "/index";
-  return new URL(`${path}.md`, url).href;
+function markdownPath(pathname: string): string {
+  return `${pathname.replace(/\/+$/, "") || "/index"}.md`;
 }
 
-function withVaryAccept(response) {
+// Matches the <link rel="canonical"> in each page: no trailing slash.
+function canonicalUrl(pathname: string): string {
+  return SITE + (pathname.replace(/\/+$/, "") || "/");
+}
+
+// RFC 8288 Link header on a successful page response: its canonical URL, the
+// other representation (`alternate` names the type that wasn't served, or is
+// null when there is none), and the sitemap.
+function withLinks(
+  response: Response,
+  url: URL,
+  alternate: Representation | null,
+): Response {
+  if (response.status !== 200) return response;
+  const links = [`<${canonicalUrl(url.pathname)}>; rel="canonical"`];
+  if (alternate === "markdown") {
+    links.push(
+      `<${SITE}${markdownPath(url.pathname)}>; rel="alternate"; type="text/markdown"`,
+    );
+  } else if (alternate === "html") {
+    links.push(
+      `<${canonicalUrl(url.pathname)}>; rel="alternate"; type="text/html"`,
+    );
+  }
+  links.push(`<${SITE}/sitemap-index.xml>; rel="sitemap"`);
+  response.headers.append("Link", links.join(", "));
+  return response;
+}
+
+function withVaryAccept(response: Response): Response {
   const copy = new Response(response.body, response);
   const vary = copy.headers.get("Vary");
   const varies = (vary ?? "").split(",").map((v) => v.trim().toLowerCase());
@@ -112,7 +176,7 @@ function withVaryAccept(response) {
   return copy;
 }
 
-function notAcceptable() {
+function notAcceptable(): Response {
   return new Response(
     "406 Not Acceptable. Pages on this site are available as text/html and text/markdown.\n",
     {
@@ -122,7 +186,7 @@ function notAcceptable() {
   );
 }
 
-function markdownNotFound(pathname, method) {
+function markdownNotFound(pathname: string, method: string): Response {
   const body = `# 404: Page not found
 
 There is no page at \`${pathname}\` on clairvoyance.fyi.

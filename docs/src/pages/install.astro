@@ -1,0 +1,636 @@
+---
+import Layout from "../layouts/Layout.astro";
+import CrystalBall from "../assets/crystal-ball.svg";
+import AgentLogo from "../components/AgentLogo.astro";
+import AgentSetupButton from "../components/AgentSetupButton.astro";
+import { getInstallGuide, renderMarkdown } from "../utils/install";
+import { getAllSkills } from "../utils/skills";
+import { REPO_URL, SITE_URL } from "../utils/site";
+import { MCP_INSTALL, MCP_SUMMARY, MCP_URL, getToolManifest } from "../utils/tools";
+import VSCodeLogo from "../assets/clients/vscode.svg";
+
+const guide = getInstallGuide();
+const skills = getAllSkills();
+
+// The chips replace the README's "Give your agent Clairvoyance: [a], [b]..."
+// line, so keep only the intro paragraphs that aren't lists of anchors.
+const noteHtml = renderMarkdown(
+  guide.intro
+    .split(/\n\s*\n/)
+    .filter((paragraph) => !paragraph.includes("](#"))
+    .join("\n\n"),
+);
+const updatingHtml = renderMarkdown(guide.updating);
+
+const summaryOf = (description: string) => description.split(/\.\s*Use when/i)[0] + ".";
+---
+
+<Layout
+  title="Install Clairvoyance"
+  description="Install Clairvoyance in Claude Code, Codex, Cursor, OpenCode, Antigravity and other agents."
+  canonical={`${SITE_URL}/install`}
+>
+  <div class="install-page">
+    <nav class="install-nav">
+      <a href="/" class="brand-link">
+        <CrystalBall width="20" height="20" />
+        <span>Clairvoyance</span>
+      </a>
+      <div class="install-actions">
+        <a href={REPO_URL} class="action-link">View on GitHub</a>
+        <button type="button" class="action-link share-btn" data-url={`${SITE_URL}/install`}>
+          Copy link
+        </button>
+      </div>
+    </nav>
+
+    <header class="install-header">
+      <h1>Install Clairvoyance</h1>
+      <p class="lede">
+        Pick your agent. Clairvoyance installs as a plugin or skill pack and runs
+        entirely inside your agent's own session.
+      </p>
+      <div class="hands-off">
+        <AgentSetupButton />
+        <p>Or skip the steps: copy a prompt, paste it into your agent, and it installs Clairvoyance itself.</p>
+      </div>
+    </header>
+
+    <section aria-labelledby="add-heading">
+      <h2 id="add-heading" class="section-label">Add to your agent</h2>
+      <div class="chips" role="tablist" aria-label="Agent">
+        {
+          guide.platforms.map((p) => (
+            <a
+              href={`#${p.id}`}
+              id={`tab-${p.id}`}
+              class="chip"
+              role="tab"
+              aria-controls={p.id}
+            >
+              <AgentLogo id={p.id} />
+              {p.name}
+            </a>
+          ))
+        }
+      </div>
+
+      <div class="panels">
+        {
+          guide.platforms.map((p) => (
+            <section
+              id={p.id}
+              role="tabpanel"
+              class="panel"
+              aria-labelledby={`tab-${p.id}`}
+            >
+              <h3>{p.name}</h3>
+              <div class="prose" set:html={p.html} />
+            </section>
+          ))
+        }
+      </div>
+
+      <div class="note prose" set:html={noteHtml} />
+
+      <details class="updating">
+        <summary>Updating</summary>
+        <div class="prose" set:html={updatingHtml} />
+      </details>
+    </section>
+
+    <section aria-labelledby="mcp-heading" class="mcp">
+      <h2 id="mcp-heading" class="section-label">Or connect the MCP server</h2>
+      <p class="mcp-summary">{MCP_SUMMARY}</p>
+      <div class="mcp-buttons">
+        <a href={MCP_INSTALL.vscode} class="mcp-btn">
+          <VSCodeLogo class="agent-logo" aria-hidden="true" />
+          Add to VS Code
+        </a>
+        <a href={MCP_INSTALL.cursor} class="mcp-btn">
+          <AgentLogo id="cursor" />
+          Add to Cursor
+        </a>
+      </div>
+      <div class="prose mcp-commands">
+        <p>Claude Code:</p>
+        <pre><code>{MCP_INSTALL.claudeCode}</code></pre>
+        <p>Codex:</p>
+        <pre><code>{MCP_INSTALL.codex}</code></pre>
+        <p>
+          Any other client: add <code>{MCP_URL}</code> as a remote (HTTP) MCP server.
+          Its tools: {getToolManifest().tools.map((t, i) => (
+            <>{i > 0 && ", "}<code>{t.name}</code></>
+          ))}.
+        </p>
+      </div>
+    </section>
+
+    <section aria-labelledby="included-heading" class="included">
+      <h2 id="included-heading" class="section-label">
+        What's included <span class="count">{skills.length} skills</span>
+      </h2>
+      <ul class="skill-list">
+        {
+          skills.map((s) => (
+            <li style={`--pillar-hue: ${s.pillarHue};`}>
+              <details>
+                <summary>
+                  <code class="skill-name">{s.slug}</code>
+                  <span class="badge">{s.pillar}</span>
+                  <span class="skill-summary">{summaryOf(s.description)}</span>
+                </summary>
+                <p>{s.description}</p>
+                <a href={`/skills/${s.slug}`}>Read the skill &rarr;</a>
+              </details>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </div>
+</Layout>
+
+<script>
+  // Turns the chip row into tabs: one panel visible at a time, selected by the
+  // URL hash so /install#codex can be shared. Without JS every panel shows and
+  // the chips are plain in-page links.
+  const tabs = [...document.querySelectorAll<HTMLAnchorElement>(".chip")];
+  const panels = document.querySelector<HTMLElement>(".panels");
+
+  function select(id: string) {
+    const target = tabs.find((t) => t.getAttribute("aria-controls") === id) ?? tabs[0];
+    for (const tab of tabs) {
+      const active = tab === target;
+      tab.setAttribute("aria-selected", String(active));
+      document.getElementById(tab.getAttribute("aria-controls")!)!.hidden = !active;
+    }
+  }
+
+  if (panels && tabs.length) {
+    panels.classList.add("tabbed");
+    select(location.hash.slice(1));
+    for (const tab of tabs) {
+      tab.addEventListener("click", (event) => {
+        event.preventDefault();
+        const id = tab.getAttribute("aria-controls")!;
+        history.replaceState(null, "", `#${id}`);
+        select(id);
+      });
+    }
+    addEventListener("hashchange", () => select(location.hash.slice(1)));
+  }
+
+  function flash(button: HTMLButtonElement, label: string) {
+    const original = button.textContent;
+    button.textContent = label;
+    setTimeout(() => (button.textContent = original), 1800);
+  }
+
+  // A copy button beside every code block in the instructions. The button sits
+  // outside the <pre> so a long command scrolls without running under it.
+  document.querySelectorAll<HTMLPreElement>(".panel pre, .mcp-commands pre").forEach((pre) => {
+    const block = document.createElement("div");
+    block.className = "code-block";
+    pre.replaceWith(block);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "copy-btn";
+    button.textContent = "Copy";
+    button.addEventListener("click", () => {
+      navigator.clipboard.writeText(pre.querySelector("code")?.textContent?.trim() ?? "");
+      flash(button, "Copied");
+    });
+    block.append(pre, button);
+  });
+
+  document.querySelector<HTMLButtonElement>(".share-btn")?.addEventListener("click", (e) => {
+    const button = e.currentTarget as HTMLButtonElement;
+    navigator.clipboard.writeText(button.dataset.url ?? location.href);
+    flash(button, "Copied");
+  });
+</script>
+
+<style>
+  .install-page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem clamp(1rem, 5vw, 3rem) 5rem;
+  }
+
+  .install-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1.5rem 0 2.5rem;
+    border-bottom: 1px solid oklch(1 0 0 / 0.06);
+    margin-bottom: 3rem;
+  }
+
+  .brand-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: none;
+    color: var(--text);
+    transition: opacity 0.2s;
+
+    & :global(svg) {
+      width: 36px;
+      height: 36px;
+      filter: drop-shadow(0 0 12px oklch(0.75 0.12 75 / 0.3));
+    }
+
+    & span {
+      font-family: var(--font-display);
+      font-size: 1.7rem;
+    }
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  .install-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .action-link {
+    font-family: var(--font-code);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    color: var(--gold);
+    background: none;
+    border: 1px solid oklch(0.75 0.12 75 / 0.25);
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    cursor: pointer;
+    transition:
+      background 0.2s,
+      border-color 0.2s;
+
+    &:hover {
+      background: oklch(0.75 0.12 75 / 0.06);
+      border-color: oklch(0.75 0.12 75 / 0.4);
+    }
+  }
+
+  .install-header {
+    margin-bottom: 3rem;
+
+    & h1 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(2.4rem, 6vw, 3.6rem);
+      line-height: 1.05;
+      margin-bottom: 0.9rem;
+    }
+  }
+
+  .hands-off {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    margin-top: 1.75rem;
+
+    & p {
+      font-size: 0.85rem;
+      font-weight: 300;
+      color: var(--text-dim);
+      max-width: 340px;
+      line-height: 1.5;
+    }
+  }
+
+  .lede {
+    font-weight: 200;
+    font-size: 1.1rem;
+    color: var(--text-mid);
+    line-height: 1.65;
+    max-width: 600px;
+  }
+
+  .section-label {
+    font-family: var(--font-code);
+    font-weight: 400;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1rem;
+
+    & .count {
+      color: var(--text-dim);
+      margin-left: 0.5rem;
+    }
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 300;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid oklch(0.75 0.12 75 / 0.15);
+    border-radius: 999px;
+    padding: 0.45rem 1rem;
+    transition:
+      border-color 0.2s,
+      background 0.2s,
+      color 0.2s;
+
+    &:hover {
+      border-color: oklch(0.75 0.12 75 / 0.4);
+      color: var(--text);
+    }
+
+    &[aria-selected="true"] {
+      background: oklch(0.75 0.12 75 / 0.12);
+      border-color: oklch(0.75 0.12 75 / 0.55);
+      color: var(--gold);
+    }
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid oklch(0.75 0.12 75 / 0.12);
+    border-radius: 12px;
+    padding: 1.5rem clamp(1rem, 4vw, 1.75rem);
+    margin-bottom: 1rem;
+
+    & h3 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+  }
+
+  /* With tabs, the selected chip already names the agent. */
+  .panels.tabbed .panel h3 {
+    display: none;
+  }
+
+  .prose {
+    & > :global(:last-child) {
+      margin-bottom: 0;
+    }
+
+    & :global(p),
+    & :global(li) {
+      font-weight: 300;
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.7;
+      margin-bottom: 0.75rem;
+    }
+
+    & :global(ul) {
+      padding-left: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+
+    & :global(li) {
+      margin-bottom: 0.35rem;
+    }
+
+    & :global(code) {
+      font-family: var(--font-code);
+      font-size: 0.85em;
+      color: var(--lavender);
+    }
+
+    & :global(pre) {
+      background: var(--ink);
+      border: 1px solid oklch(0.75 0.12 75 / 0.12);
+      border-radius: 10px;
+      padding: 0.9rem 1.1rem;
+      margin-bottom: 1rem;
+      overflow-x: auto;
+    }
+
+    & :global(pre code) {
+      font-size: 0.85rem;
+      line-height: 1.7;
+      white-space: pre;
+    }
+  }
+
+  .prose :global(.code-block) {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    background: var(--ink);
+    border: 1px solid oklch(0.75 0.12 75 / 0.12);
+    border-radius: 10px;
+    padding: 0.6rem 0.6rem 0.6rem 1.1rem;
+    margin-bottom: 1rem;
+
+    & pre {
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      padding: 0.3rem 0;
+      background: none;
+      border: none;
+      border-radius: 0;
+    }
+  }
+
+  .prose :global(.copy-btn) {
+    flex-shrink: 0;
+    background: oklch(0.75 0.12 75 / 0.1);
+    border: none;
+    color: var(--gold);
+    font-family: var(--font-code);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.7rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+      background: oklch(0.75 0.12 75 / 0.2);
+    }
+  }
+
+  .note {
+    margin-top: 1.5rem;
+
+    & :global(p) {
+      font-size: 0.85rem;
+      color: var(--text-mid);
+    }
+  }
+
+  .updating {
+    margin-top: 0.5rem;
+    border-top: 1px solid oklch(1 0 0 / 0.06);
+    padding-top: 1rem;
+
+    & summary {
+      font-family: var(--font-code);
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+      color: var(--gold);
+      cursor: pointer;
+      margin-bottom: 0.75rem;
+    }
+  }
+
+  .mcp {
+    margin-top: 4rem;
+  }
+
+  .mcp-summary {
+    font-weight: 300;
+    font-size: 0.95rem;
+    color: var(--text-mid);
+    line-height: 1.7;
+    max-width: 640px;
+    margin-bottom: 1.25rem;
+  }
+
+  .mcp-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .mcp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid oklch(0.75 0.12 75 / 0.25);
+    border-radius: 10px;
+    padding: 0.6rem 1.1rem;
+    transition:
+      border-color 0.2s,
+      background 0.2s;
+
+    &:hover {
+      color: var(--text);
+      border-color: oklch(0.75 0.12 75 / 0.5);
+      background: oklch(0.75 0.12 75 / 0.06);
+    }
+  }
+
+  .included {
+    margin-top: 4rem;
+  }
+
+  .skill-list {
+    list-style: none;
+    padding: 0;
+    border-top: 1px solid oklch(1 0 0 / 0.06);
+
+    & li {
+      border-bottom: 1px solid oklch(1 0 0 / 0.06);
+    }
+
+    & summary {
+      display: grid;
+      grid-template-columns: auto auto 1fr;
+      align-items: baseline;
+      gap: 0.4rem 0.75rem;
+      padding: 0.9rem 0.25rem;
+      cursor: pointer;
+      list-style: none;
+
+      &::-webkit-details-marker {
+        display: none;
+      }
+
+      &::after {
+        content: "▾";
+        grid-column: 4;
+        color: var(--text-dim);
+        transition: rotate 0.2s;
+      }
+
+      @media (width <= 640px) {
+        grid-template-columns: auto 1fr auto;
+
+        & .skill-summary {
+          grid-column: 1 / -1;
+          grid-row: 2;
+        }
+
+        &::after {
+          grid-column: 3;
+          grid-row: 1;
+        }
+      }
+    }
+
+    & details[open] summary::after {
+      rotate: 180deg;
+    }
+
+    & details > p,
+    & details > a {
+      margin: 0 0.25rem 0.75rem;
+      font-size: 0.9rem;
+      font-weight: 300;
+      line-height: 1.65;
+      color: var(--text-mid);
+    }
+
+    & details > a {
+      display: inline-block;
+      margin-bottom: 1.1rem;
+      font-family: var(--font-code);
+      font-size: 0.75rem;
+      color: oklch(0.8 0.1 var(--pillar-hue));
+      border-bottom: none;
+    }
+  }
+
+  .skill-name {
+    font-family: var(--font-code);
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+
+  .badge {
+    font-family: var(--font-code);
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: oklch(0.82 0.1 var(--pillar-hue));
+    border: 1px solid oklch(0.7 0.1 var(--pillar-hue) / 0.35);
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+    white-space: nowrap;
+    justify-self: start;
+  }
+
+  .skill-summary {
+    font-size: 0.85rem;
+    font-weight: 300;
+    color: var(--text-mid);
+    line-height: 1.5;
+  }
+</style>

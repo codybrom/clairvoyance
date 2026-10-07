@@ -4,7 +4,7 @@ import {
   infoPageMarkdown,
   type InfoPage,
 } from "../utils/info-pages";
-import { markdownResponse } from "../utils/site";
+import { DEFAULT_DESCRIPTION, SITE_URL, markdownResponse } from "../utils/site";
 
 export const getStaticPaths: GetStaticPaths = () =>
   getInfoPages().map((page) => ({
@@ -12,5 +12,14 @@ export const getStaticPaths: GetStaticPaths = () =>
     props: { page },
   }));
 
-export const GET: APIRoute = ({ props }) =>
-  markdownResponse(infoPageMarkdown((props as { page: InfoPage }).page));
+export const GET: APIRoute = ({ props }) => {
+  const { page } = props as { page: InfoPage };
+  return markdownResponse(
+    {
+      title: page.title,
+      description: page.description ?? DEFAULT_DESCRIPTION,
+      canonical: `${SITE_URL}/${page.slug}`,
+    },
+    infoPageMarkdown(page),
+  );
+};

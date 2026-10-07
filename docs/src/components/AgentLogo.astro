@@ -1,0 +1,29 @@
+---
+// The logo for an install platform, by its /install id ("claude-code",
+// "antigravity", ...). Brand logos live in src/assets/agents/<id>.svg (Copilot
+// from Simple Icons, Antigravity from LaunchDarkly's MCP install page);
+// the two non-brand options get a generic icon.
+// Renders nothing for a platform without one. Sized in em, so it follows the
+// surrounding font size.
+import { FileText, Terminal } from "@lucide/astro";
+
+interface Props {
+  id: string;
+}
+
+const logos = import.meta.glob<{ default: any }>("../assets/agents/*.svg", { eager: true });
+const generic: Record<string, any> = { skillssh: Terminal, llmstxt: FileText };
+
+const { id } = Astro.props;
+const Logo = logos[`../assets/agents/${id}.svg`]?.default ?? generic[id];
+---
+
+{Logo && <Logo class="agent-logo" aria-hidden="true" />}
+
+<style is:global>
+  .agent-logo {
+    height: 1.1em;
+    width: auto;
+    flex-shrink: 0;
+  }
+</style>

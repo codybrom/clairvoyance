@@ -1,0 +1,98 @@
+---
+// Copies a prompt that has the user's agent fetch /agent-setup.md and run the
+// install itself: the hands-off alternative to following /install by hand.
+import AgentLogo from "./AgentLogo.astro";
+import { AGENT_SETUP_PROMPT } from "../utils/site";
+---
+
+<div class="agent-setup">
+  <button type="button" class="agent-setup-btn" data-prompt={AGENT_SETUP_PROMPT} title={AGENT_SETUP_PROMPT}>
+    <span class="label">Set up with your agent</span>
+    <span class="icons" aria-hidden="true">
+      {["claude-code", "codex", "cursor", "opencode"].map((id) => <AgentLogo id={id} />)}
+    </span>
+    <span class="sr-only">Copies a setup prompt for your AI coding tool</span>
+  </button>
+  <p class="agent-setup-status" aria-live="polite"></p>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>(".agent-setup-btn").forEach((button) => {
+    const label = button.querySelector(".label")!;
+    const status = button.parentElement!.querySelector(".agent-setup-status")!;
+    button.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(button.dataset.prompt ?? "");
+      label.textContent = "Copied! Paste it into your agent";
+      status.textContent = "Setup prompt copied to the clipboard.";
+      setTimeout(() => {
+        label.textContent = "Set up with your agent";
+        status.textContent = "";
+      }, 2400);
+    });
+  });
+</script>
+
+<style>
+  .agent-setup {
+    position: relative;
+    z-index: 1;
+  }
+
+  .agent-setup-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--gold);
+    border: none;
+    border-radius: 999px;
+    padding: 0.7rem 0.8rem 0.7rem 1.4rem;
+    cursor: pointer;
+    transition:
+      background 0.3s,
+      box-shadow 0.3s,
+      translate 0.3s;
+
+    &:hover {
+      background: oklch(0.8 0.12 75);
+      box-shadow: 0 0 40px oklch(0.75 0.12 75 / 0.25);
+      translate: 0 -1px;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--text);
+      outline-offset: 3px;
+    }
+  }
+
+  .icons {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--ink);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 0.3rem 0.55rem;
+    font-size: 0.95rem;
+  }
+
+  .agent-setup-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+</style>

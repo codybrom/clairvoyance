@@ -19,7 +19,7 @@ Browse the full catalog on the [skills page](/skills), or give an agent everythi
 
 ## Where it can be used
 
-Clairvoyance can be installed for use with Claude Code, Codex, Cursor, OpenCode, Gemini CLI, Antigravity, Factory Droid, GitHub Copilot CLI, Kimi Code, Pi or any AI or agent that supports the [Agent Skills](https://agentskills.io) open standard. You can also install skills through [skills.sh](https://skills.sh/codybrom/clairvoyance). See the [installation guide](https://github.com/codybrom/clairvoyance#installation) for instructions on how to install for your platform.
+Clairvoyance can be installed for use with Claude Code, Codex, Cursor, OpenCode, Antigravity, Factory Droid, GitHub Copilot CLI, Kimi Code, Pi or any AI or agent that supports the [Agent Skills](https://agentskills.io) open standard. You can also install skills through [skills.sh](https://skills.sh/codybrom/clairvoyance). See the [installation guide](https://github.com/codybrom/clairvoyance#installation) for instructions on how to install for your platform.
 
 ## Who makes it
 

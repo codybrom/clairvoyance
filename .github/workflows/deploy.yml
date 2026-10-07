@@ -29,6 +29,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Full history: skill pages and the sitemap read each file's last
+          # commit date, which a shallow clone reports as HEAD for every file.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -40,9 +44,18 @@ jobs:
         working-directory: docs
       - run: npm test
         working-directory: docs
-      - uses: actions/upload-pages-artifact@v4
+      # Same steps as actions/upload-pages-artifact@v4, minus its
+      # --exclude=".[^/]*", which would drop dist/.well-known/.
+      - name: Archive site
+        run: |
+          tar --dereference --hard-dereference --directory docs/dist \
+            -cvf "$RUNNER_TEMP/artifact.tar" --exclude=.git --exclude=.github .
+      - uses: actions/upload-artifact@v4
         with:
-          path: docs/dist
+          name: github-pages
+          path: ${{ runner.temp }}/artifact.tar
+          retention-days: 1
+          if-no-files-found: error
 
   deploy:
     needs: build

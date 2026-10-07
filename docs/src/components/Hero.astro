@@ -1,13 +1,13 @@
 ---
 import CrystalBall from "../assets/crystal-ball.svg";
+import AgentLogo from "./AgentLogo.astro";
+import AgentSetupButton from "./AgentSetupButton.astro";
+import { getInstallGuide } from "../utils/install";
 
-interface Props {
-  skillsShCommand: string;
-  claudeStep1: string;
-  claudeStep2: string;
-}
-
-const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
+// The agents most people install for; everything else is behind "More".
+const FEATURED = ["claude-code", "codex", "cursor", "opencode", "antigravity", "skillssh"];
+const platforms = getInstallGuide().platforms;
+const chips = FEATURED.map((id) => platforms.find((p) => p.id === id)!);
 ---
 
 <div class="hero">
@@ -20,55 +20,22 @@ const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
   <p class="hero-sub2">
     Open your agent's third eye and see what it's been missing.
   </p>
-  <div class="install-steps">
-    <p class="install-label">Claude Code</p>
-    <div class="install-box" data-command={claudeStep1}>
-      <span class="step-num">1</span>
-      <code>{claudeStep1}</code>
-      <button class="copy-btn">Copy</button>
+  <AgentSetupButton />
+  <nav class="install-chips" aria-label="Install Clairvoyance">
+    <p class="install-label">Or install manually for</p>
+    <div class="chip-row">
+      {
+        chips.map((p) => (
+          <a href={`/install#${p.id}`} class="chip">
+            <AgentLogo id={p.id} />
+            {p.name}
+          </a>
+        ))
+      }
+      <a href="/install" class="chip chip-more">More&hellip;</a>
     </div>
-    <div class="install-box" data-command={claudeStep2}>
-      <span class="step-num">2</span>
-      <code>{claudeStep2}</code>
-      <button class="copy-btn">Copy</button>
-    </div>
-
-    <p class="install-label spaced">Other Agents (via Skills.sh)</p>
-    <div class="install-box" data-command={skillsShCommand}>
-      <code><span>$</span> {skillsShCommand}</code>
-      <button class="copy-btn">Copy</button>
-    </div>
-
-    <p class="install-label spaced">Universal (LLMs.txt)</p>
-
-    <div
-      class="install-box"
-      data-command="https://clairvoyance.fyi/llms-full.txt"
-    >
-      <code>clairvoyance.fyi/llms-full.txt</code>
-      <button class="copy-btn">Copy</button>
-    </div>
-
-    <p class="install-other">
-      Also on Codex, Cursor, Gemini CLI, and more. <a
-        href="https://github.com/codybrom/clairvoyance#installation"
-        >See all install instructions</a
-      >
-    </p>
-  </div>
+  </nav>
 </div>
-
-<script>
-  document.querySelectorAll<HTMLDivElement>(".install-box").forEach((box) => {
-    const btn = box.querySelector<HTMLButtonElement>(".copy-btn");
-    const command = box.dataset.command;
-    btn?.addEventListener("click", () => {
-      if (command) navigator.clipboard.writeText(command);
-      btn.textContent = "Copied";
-      setTimeout(() => (btn.textContent = "Copy"), 1800);
-    });
-  });
-</script>
 
 <style>
   .hero {
@@ -163,14 +130,14 @@ const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
     margin-bottom: 3.5rem;
   }
 
-  .install-steps {
+  .install-chips {
+    margin-top: 2.25rem;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    align-items: center;
+    gap: 0.9rem;
     position: relative;
     z-index: 1;
-    align-items: center;
-    width: 100%;
     max-width: 600px;
   }
 
@@ -181,108 +148,41 @@ const { skillsShCommand, claudeStep1, claudeStep2 } = Astro.props;
     text-transform: uppercase;
     color: var(--gold);
     margin: 0;
-
-    &.spaced {
-      margin-top: 1.5rem;
-    }
   }
 
-  .install-or {
-    font-family: var(--font-code);
-    font-size: 0.7rem;
-    color: var(--text-dim);
-    margin: 0.5rem 0 0;
-    letter-spacing: 0.1em;
-  }
-
-  .install-other {
-    font-size: 0.75rem;
-    color: var(--text-dim);
-    margin: 0.75rem 0 0;
-
-    & a {
-      color: var(--gold);
-      border-bottom: 1px solid oklch(0.75 0.12 75 / 0.2);
-
-      &:hover {
-        color: var(--gold);
-      }
-    }
-  }
-
-  .install-box {
+  .chip-row {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .chip {
+    display: inline-flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 300;
+    color: var(--text);
     background: var(--surface);
-    border: 1px solid oklch(0.75 0.12 75 / 0.15);
-    border-radius: 10px;
-    padding: 0.8rem 1.1rem 0.8rem 1.2rem;
-    cursor: pointer;
-    max-width: 100%;
-    overflow: hidden;
+    border: 1px solid oklch(0.75 0.12 75 / 0.18);
+    border-radius: 999px;
+    padding: 0.55rem 1.15rem;
     transition:
       border-color 0.3s,
-      box-shadow 0.3s;
+      box-shadow 0.3s,
+      color 0.3s;
 
     &:hover {
-      border-color: oklch(0.75 0.12 75 / 0.4);
-      box-shadow: 0 0 50px oklch(0.75 0.12 75 / 0.08);
-    }
-
-    & code {
-      font-family: var(--font-code);
-      font-size: 0.95rem;
-      font-weight: 400;
-      color: var(--lavender);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      min-width: 0;
-
-      @media (width <= 480px) {
-        font-size: 0.75rem;
-      }
-
-      & span {
-        color: var(--text-dim);
-      }
-    }
-  }
-
-  .step-num {
-    font-family: var(--font-code);
-    font-size: 0.7rem;
-    font-weight: 500;
-    color: var(--gold-dim);
-    background: oklch(0.75 0.12 75 / 0.1);
-    width: 1.4rem;
-    height: 1.4rem;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .copy-btn {
-    background: oklch(0.75 0.12 75 / 0.1);
-    border: none;
-    color: var(--gold);
-    font-family: var(--font-code);
-    font-size: 0.75rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 0.4rem 0.8rem;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition:
-      background 0.2s,
-      color 0.2s;
-
-    &:hover {
-      background: oklch(0.75 0.12 75 / 0.2);
       color: var(--gold);
+      border-color: oklch(0.75 0.12 75 / 0.45);
+      box-shadow: 0 0 40px oklch(0.75 0.12 75 / 0.1);
     }
+  }
+
+  .chip-more {
+    color: var(--gold);
+    background: none;
   }
 </style>

@@ -1,6 +1,7 @@
 ---
 import { Font } from "astro:assets";
 import "../styles/global.css";
+import { DEFAULT_DESCRIPTION } from "../utils/site";
 
 interface Props {
   title: string;
@@ -14,11 +15,9 @@ interface Props {
   jsonLd?: object;
 }
 
-const defaultDescription =
-  "ESP for AI Coding. Agent skills on the philosophy of software design, grounded in decades of engineering experience.";
 const {
   title,
-  description = defaultDescription,
+  description = DEFAULT_DESCRIPTION,
   canonical,
   alternateMarkdown,
   type = "website",
@@ -51,7 +50,7 @@ const {
           rel="alternate"
           type="text/markdown"
           href={alternateMarkdown}
-          title="Raw skill (Markdown)"
+          title="Markdown version"
         />
       )
     }
@@ -94,6 +93,17 @@ const {
     <main id="main-content">
       <slot />
     </main>
+
+    <script>
+      import { registerWebMcpTools } from "../utils/webmcp";
+
+      registerWebMcpTools({
+        document,
+        navigator,
+        fetch: fetch.bind(window),
+        origin: location.origin,
+      });
+    </script>
 
     <script>
       const obs = new IntersectionObserver(

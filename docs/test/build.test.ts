@@ -1,0 +1,857 @@
+// Checks the built site in dist/ (run `npm run build` first): the machine-
+// readable signals agents look for, and the Markdown twins that the edge
+// Worker (edge/worker.js) serves for content negotiation.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { handle, negotiate } from "../edge/worker.ts";
+import { registerWebMcpTools, type ModelContext } from "../src/utils/webmcp.ts";
+
+const ROOT = path.resolve(import.meta.dirname, "..");
+const DIST = path.join(ROOT, "dist");
+const SKILLS_DIR = path.resolve(ROOT, "..", "skills");
+const SITE = "https://clairvoyance.fyi";
+const MCP_URL = `${SITE}/mcp`;
+
+const skillSlugs = fs
+  .readdirSync(SKILLS_DIR, { withFileTypes: true })
+  .filter(
+    (d) =>
+      d.isDirectory() &&
+      fs.existsSync(path.join(SKILLS_DIR, d.name, "SKILL.md")),
+  )
+  .map((d) => d.name);
+
+function read(relativePath: string): string {
+  return fs.readFileSync(path.join(DIST, relativePath), "utf-8");
+}
+
+function visibleText(html: string): string {
+  return html
+    .replace(/<(script|style)[\s\S]*?<\/\1>/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&[a-z#0-9]+;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function mainText(html: string): string {
+  const main = html.match(/<main[\s\S]*<\/main>/);
+  return visibleText(main ? main[0] : html);
+}
+
+function jsonLd(html: string): Record<string, any>[] {
+  return [
+    ...html.matchAll(
+      /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g,
+    ),
+  ].map((m) => JSON.parse(m[1]));
+}
+
+// The Markdown twins open with a flat YAML block whose values are JSON
+// strings (valid YAML double-quoted scalars).
+function frontmatter(md: string): {
+  data: Record<string, string>;
+  body: string;
+} {
+  const match = md.match(/^---\n([\s\S]*?)\n---\n\n/);
+  if (!match) throw new Error(`no frontmatter block: ${md.slice(0, 60)}`);
+  const data: Record<string, string> = {};
+  for (const line of match[1].split("\n")) {
+    const [, key, value] = line.match(/^([\w-]+): (.*)$/)!;
+    data[key] = JSON.parse(value);
+  }
+  return { data, body: md.slice(match[0].length) };
+}
+
+function sha256(bytes: Buffer): string {
+  return crypto.createHash("sha256").update(bytes).digest("hex");
+}
+
+function lastCommitDate(file: string): string {
+  return execFileSync("git", ["log", "-1", "--format=%aI", "--", file], {
+    encoding: "utf-8",
+  }).trim();
+}
+
+function distPath(url: string): string {
+  const { pathname } = new URL(url, SITE);
+  if (pathname.endsWith("/")) return `${pathname}index.html`;
+  return (pathname.split("/").pop() ?? "").includes(".")
+    ? pathname
+    : `${pathname}/index.html`;
+}
+
+interface DiscoveryIndex {
+  $schema: string;
+  skills: {
+    name: string;
+    type: string;
+    description: string;
+    url: string;
+    digest: string;
+  }[];
+}
+
+function discoveryIndex(): DiscoveryIndex {
+  return JSON.parse(read(".well-known/agent-skills/index.json"));
+}
+
+function canonicalOf(html: string): string | undefined {
+  return html.match(/<link rel="canonical" href="([^"]+)"/)?.[1];
+}
+
+// Serves dist/ the way GitHub Pages does: /x/ → x/index.html, files by path.
+async function pagesOrigin(request: Request): Promise<Response> {
+  const { pathname } = new URL(request.url);
+  let file = path.join(DIST, decodeURIComponent(pathname));
+  if (pathname.endsWith("/")) file = path.join(file, "index.html");
+  if (
+    !file.startsWith(DIST) ||
+    !fs.existsSync(file) ||
+    fs.statSync(file).isDirectory()
+  ) {
+    return new Response("Not found", {
+      status: 404,
+      headers: { "Content-Type": "text/html" },
+    });
+  }
+  const type = file.endsWith(".md")
+    ? "text/markdown; charset=utf-8"
+    : "text/html; charset=utf-8";
+  return new Response(fs.readFileSync(file), {
+    headers: { "Content-Type": type },
+  });
+}
+
+test("dist/ exists (run `npm run build` first)", () => {
+  assert.ok(fs.existsSync(path.join(DIST, "index.html")));
+});
+
+// ── Homepage metadata ───────────────────────────────────────────────
+
+test("homepage declares lang, canonical, og:image and og:type", () => {
+  const html = read("index.html");
+  assert.match(html, /<html lang="en"/);
+  assert.equal(canonicalOf(html), `${SITE}/`);
+  assert.match(
+    html,
+    /<meta property="og:image" content="https:\/\/clairvoyance\.fyi\/og\.png"/,
+  );
+  assert.match(html, /<meta property="og:type" content="website"/);
+});
+
+test("homepage has SoftwareApplication JSON-LD describing the project", () => {
+  const blocks = jsonLd(read("index.html"));
+  const app = blocks.find((b) => b["@type"] === "SoftwareApplication");
+  assert.ok(app, "SoftwareApplication JSON-LD present");
+  assert.equal(app["@context"], "https://schema.org");
+  assert.equal(app.name, "Clairvoyance");
+  assert.equal(app.url, `${SITE}/`);
+  assert.ok(app.description.length > 20);
+  assert.equal(app.applicationCategory, "DeveloperApplication");
+  assert.equal(app.offers["@type"], "Offer");
+  assert.equal(app.offers.price, "0");
+  assert.equal(app.author["@type"], "Person");
+  assert.ok(app.sameAs.includes("https://github.com/codybrom/clairvoyance"));
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(ROOT, "..", "package.json"), "utf-8"),
+  );
+  assert.equal(app.softwareVersion, pkg.version);
+});
+
+// ── Trust pages ────────────────────────────────────────────────────
+
+for (const page of ["about", "contact", "privacy"]) {
+  test(`/${page} has at least 500 characters of content and a canonical URL`, () => {
+    const html = read(`${page}/index.html`);
+    assert.ok(
+      mainText(html).length >= 500,
+      `${page}: ${mainText(html).length} chars`,
+    );
+    assert.equal(canonicalOf(html), `${SITE}/${page}`);
+  });
+}
+
+test("/contact gives a way to reach the maintainer", () => {
+  const html = read("contact/index.html");
+  assert.match(
+    html,
+    /href="https:\/\/github\.com\/codybrom\/clairvoyance\/issues/,
+  );
+  assert.match(html, /href="mailto:esp@clairvoyance\.fyi"/);
+});
+
+test("site footers link to About, Contact and Privacy", () => {
+  for (const file of [
+    "index.html",
+    "skills/index.html",
+    "skills/deep-modules/index.html",
+  ]) {
+    const html = read(file);
+    for (const href of ["/about", "/contact", "/privacy"]) {
+      assert.ok(html.includes(`href="${href}"`), `${file} links ${href}`);
+    }
+  }
+});
+
+// ── Markdown twins ─────────────────────────────────────────────────
+
+test("index.md summarizes the homepage: install commands and every skill", () => {
+  const md = frontmatter(read("index.md")).body;
+  assert.match(md, /^# Clairvoyance\n/);
+  assert.ok(md.includes("/plugin marketplace add codybrom/clairvoyance"));
+  assert.ok(md.includes("npx skills add codybrom/clairvoyance --skill '*'"));
+  for (const slug of skillSlugs) {
+    assert.ok(md.includes(`${SITE}/skills/${slug}`), `links ${slug}`);
+  }
+});
+
+test("every skill page has a Markdown twin with the skill's body", () => {
+  for (const slug of skillSlugs) {
+    const md = read(`skills/${slug}.md`);
+    const source = fs.readFileSync(
+      path.join(SKILLS_DIR, slug, "SKILL.md"),
+      "utf-8",
+    );
+    const firstHeading = source.match(/^#\s+.+$/m)![0];
+    const twin = frontmatter(md);
+    assert.ok(twin.body.startsWith(firstHeading), slug);
+    assert.ok(
+      !twin.body.includes("\nname: "),
+      `${slug}: SKILL.md frontmatter stripped`,
+    );
+  }
+});
+
+test("the skills index has a Markdown twin listing every skill", () => {
+  const md = frontmatter(read("skills.md")).body;
+  assert.match(md, /^# /);
+  for (const slug of skillSlugs)
+    assert.ok(md.includes(`${SITE}/skills/${slug}`), slug);
+});
+
+for (const page of ["about", "contact", "privacy"]) {
+  test(`/${page} has a Markdown twin carrying the same headings as the HTML`, () => {
+    const md = read(`${page}.md`);
+    const html = read(`${page}/index.html`);
+    const mdHeadings = [...md.matchAll(/^#{1,2} (.+)$/gm)].map((m) =>
+      m[1].trim(),
+    );
+    const htmlHeadings = [
+      ...html.matchAll(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/g),
+    ].map((m) => visibleText(m[1]));
+    assert.ok(mdHeadings.length >= 3, page);
+    assert.deepEqual(mdHeadings, htmlHeadings);
+  });
+}
+
+test("every Markdown twin opens with title, description and canonical frontmatter", () => {
+  const twins = [
+    ["index.md", `${SITE}/`],
+    ["skills.md", `${SITE}/skills`],
+    ["about.md", `${SITE}/about`],
+    ["contact.md", `${SITE}/contact`],
+    ["privacy.md", `${SITE}/privacy`],
+    ...skillSlugs.map((s) => [`skills/${s}.md`, `${SITE}/skills/${s}`]),
+  ];
+  for (const [file, canonical] of twins) {
+    const fm = frontmatter(read(file));
+    assert.ok(fm, `${file} has frontmatter`);
+    assert.ok(fm.data.title, `${file} title`);
+    assert.ok(fm.data.description, `${file} description`);
+    assert.equal(fm.data.canonical, canonical, file);
+  }
+});
+
+test("skill twins carry the skill's last commit date", () => {
+  for (const slug of skillSlugs) {
+    const fm = frontmatter(read(`skills/${slug}.md`));
+    const date = lastCommitDate(path.join(SKILLS_DIR, slug, "SKILL.md"));
+    assert.equal(fm.data.last_updated, date, slug);
+  }
+});
+
+test("every HTML page in the build has a Markdown twin", () => {
+  const pages = fs
+    .readdirSync(DIST, { recursive: true, encoding: "utf8" })
+    .filter((f) => f.endsWith("index.html"))
+    .map((f) => "/" + f.replace(/index\.html$/, ""));
+  assert.ok(pages.length > 5);
+  for (const page of pages) {
+    const twin = (page.replace(/\/$/, "") || "/index") + ".md";
+    assert.ok(fs.existsSync(path.join(DIST, twin)), `${page} → ${twin}`);
+  }
+});
+
+// ── Links agents follow ────────────────────────────────────────────
+
+test("llms.txt links each skill to its Markdown twin on this site", () => {
+  const llms = read("llms.txt");
+  for (const slug of skillSlugs) {
+    assert.ok(llms.includes(`](${SITE}/skills/${slug}.md)`), slug);
+  }
+  assert.ok(!llms.includes("raw.githubusercontent.com"));
+});
+
+test("every clairvoyance.fyi link in llms.txt resolves in the build", () => {
+  const llms = read("llms.txt");
+  const links = [
+    ...llms.matchAll(/\]\((https:\/\/clairvoyance\.fyi[^)]*)\)/g),
+  ].map((m) => m[1]);
+  assert.ok(links.length > skillSlugs.length);
+  // /mcp is served by the edge Worker, not the static build.
+  for (const link of new Set(links).difference(new Set([MCP_URL]))) {
+    assert.ok(fs.existsSync(path.join(DIST, distPath(link))), link);
+  }
+});
+
+test("skill pages advertise their on-site Markdown twin", () => {
+  for (const slug of skillSlugs) {
+    const html = read(`skills/${slug}/index.html`);
+    const href = html.match(
+      /<link rel="alternate" type="text\/markdown" href="([^"]+)"/,
+    )?.[1];
+    assert.equal(href, `${SITE}/skills/${slug}.md`, slug);
+  }
+});
+
+test("install.md covers each platform from the README", () => {
+  const fm = frontmatter(read("install.md"));
+  assert.equal(fm.data.canonical, `${SITE}/install`);
+  for (const platform of [
+    "Claude Code",
+    "Codex",
+    "Cursor",
+    "OpenCode",
+    "Antigravity",
+  ]) {
+    assert.match(fm.body, new RegExp(`^### .*${platform}`, "m"), platform);
+  }
+  const relative = [
+    ...fm.body.matchAll(/\]\((?![a-z][a-z0-9+.-]*:|#)([^)]*)\)/g),
+  ].map((m) => m[1]);
+  assert.deepEqual(relative, [], "no repo-relative links");
+});
+
+// ── /install ───────────────────────────────────────────────────────
+
+const installPlatforms = () =>
+  [...frontmatter(read("install.md")).body.matchAll(/^### (.+)$/gm)].map(
+    (m) => {
+      const name = m[1].replace(/^\[([^\]]+)\]\([^)]*\)$/, "$1");
+      return {
+        name,
+        id: name
+          .toLowerCase()
+          .replace(/[^a-z0-9 -]/g, "")
+          .replace(/ /g, "-"),
+      };
+    },
+  );
+
+test("/install has a canonical URL and a panel for every platform in install.md", () => {
+  const html = read("install/index.html");
+  assert.equal(canonicalOf(html), `${SITE}/install`);
+  const platforms = installPlatforms();
+  assert.ok(platforms.length >= 10);
+  for (const { id, name } of platforms) {
+    assert.match(html, new RegExp(`id="${id}"[^>]*role="tabpanel"`), id);
+    assert.match(
+      html,
+      new RegExp(
+        `href="#${id}"[^>]*>\\s*(?:<svg[\\s\\S]*?</svg>)?\\s*${name}\\s*<`,
+      ),
+      `${id} chip`,
+    );
+  }
+  assert.ok(
+    platforms.some((p) => p.id === "llmstxt"),
+    "llms.txt option",
+  );
+  const ids = platforms.map((p) => p.id);
+  assert.deepEqual(ids, [...new Set(ids)], "one panel per platform");
+});
+
+test("/install shows every install command from the README", () => {
+  const html = read("install/index.html");
+  const readme = fs.readFileSync(path.join(ROOT, "..", "README.md"), "utf-8");
+  const install = readme.slice(
+    readme.indexOf("\n## Installation"),
+    readme.indexOf("\n## ", readme.indexOf("\n## Installation") + 1),
+  );
+  const commands = [...install.matchAll(/```bash\n([\s\S]*?)```/g)].flatMap(
+    (m) => m[1].trim().split("\n"),
+  );
+  assert.ok(commands.length >= 10);
+  const text = html
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+  for (const command of commands) assert.ok(text.includes(command), command);
+});
+
+test("/install lists every skill with its pillar and a link to its page", () => {
+  const html = read("install/index.html");
+  for (const slug of skillSlugs)
+    assert.ok(html.includes(`href="/skills/${slug}"`), slug);
+});
+
+test("the homepage hero links agent chips into /install", () => {
+  const home = read("index.html");
+  const install = read("install/index.html");
+  const chips = [...home.matchAll(/href="\/install#([a-z0-9-]+)"/g)].map(
+    (m) => m[1],
+  );
+  assert.deepEqual(chips, [
+    "claude-code",
+    "codex",
+    "cursor",
+    "opencode",
+    "antigravity",
+    "skillssh",
+  ]);
+  for (const id of chips) assert.match(install, new RegExp(`id="${id}"`), id);
+  assert.ok(home.includes('href="/install"'), "More… chip");
+  assert.ok(!home.includes("install-box"), "old install box removed");
+});
+
+test("agent chips show a logo for every agent that has one", () => {
+  const logos = fs
+    .readdirSync(path.join(ROOT, "src/assets/agents"))
+    .map((f) => f.replace(/\.svg$/, ""));
+  assert.ok(logos.length >= 6);
+  const install = read("install/index.html");
+  const home = read("index.html");
+  const chip = (html: string, href: string) =>
+    html.match(new RegExp(`<a href="${href}"[^>]*>([\\s\\S]*?)</a>`))?.[1] ??
+    "";
+  for (const id of [...logos, "skillssh", "llmstxt"]) {
+    assert.match(chip(install, `#${id}`), /<svg/, `/install chip ${id}`);
+  }
+  for (const id of [
+    "claude-code",
+    "codex",
+    "cursor",
+    "opencode",
+    "antigravity",
+    "skillssh",
+  ]) {
+    assert.match(chip(home, `/install#${id}`), /<svg/, `hero chip ${id}`);
+  }
+});
+
+test("the retired Gemini CLI is no longer offered as an install option", () => {
+  for (const file of [
+    "install.md",
+    "install/index.html",
+    "agent-setup.md",
+    "index.html",
+    "index.md",
+    "llms.txt",
+    "about/index.html",
+  ]) {
+    assert.ok(!read(file).includes("Gemini CLI"), file);
+  }
+});
+
+test("llms.txt points agents at the on-site install guide", () => {
+  assert.ok(read("llms.txt").includes(`(${SITE}/install.md)`));
+});
+
+// ── Agent setup prompt ─────────────────────────────────────────────
+
+const SETUP_URL = `${SITE}/agent-setup.md`;
+
+test("agent-setup.md tells the agent to run the install itself, per platform", () => {
+  const md = read("agent-setup.md");
+  assert.match(md, /^# Install Clairvoyance\n/);
+  assert.match(md, /run(ning)? the commands yourself/i);
+  assert.match(md, /^## Updating$/m);
+  assert.ok(
+    md.includes("/plugin update clairvoyance"),
+    "update commands included",
+  );
+  for (const { name } of installPlatforms()) {
+    assert.match(
+      md,
+      new RegExp(`^### .*${name.replace(/[.]/g, "\\.")}`, "m"),
+      name,
+    );
+  }
+});
+
+test("agent-setup.md gives Claude Code shell commands, not slash commands", () => {
+  const md = read("agent-setup.md");
+  const claude = md.slice(
+    md.indexOf("### Claude Code"),
+    md.indexOf("\n### ", md.indexOf("### Claude Code") + 1),
+  );
+  assert.ok(
+    claude.includes("claude plugin marketplace add codybrom/clairvoyance"),
+  );
+  assert.ok(
+    claude.includes("claude plugin install clairvoyance@clairvoyance-plugins"),
+  );
+  assert.ok(!/^\/plugin /m.test(claude), "no slash commands to run");
+  assert.ok(
+    claude.includes("/reload-plugins"),
+    "tells the user how to activate",
+  );
+});
+
+test("the hero and /install offer the copy-prompt setup button", () => {
+  for (const file of ["index.html", "install/index.html"]) {
+    const html = read(file);
+    const prompt = html.match(/data-prompt="([^"]+)"/)?.[1];
+    assert.ok(prompt, `${file} has the button`);
+    assert.ok(
+      prompt.includes(SETUP_URL),
+      `${file} prompt points at agent-setup.md`,
+    );
+  }
+  assert.ok(fs.existsSync(path.join(DIST, "agent-setup.md")));
+});
+
+test("llms.txt links the agent setup instructions", () => {
+  assert.ok(read("llms.txt").includes(`(${SETUP_URL})`));
+});
+
+// ── MCP server ─────────────────────────────────────────────────────
+
+async function mcp(method: string, params: unknown) {
+  const req = new Request(MCP_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+    },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+  });
+  return (await handle(req, pagesOrigin)).json();
+}
+
+test("the MCP server lists the same tools as /tools.json", async () => {
+  const { tools } = JSON.parse(read("tools.json"));
+  const { result } = await mcp("tools/list", {});
+  assert.deepEqual(
+    result.tools.map((t: { name: string }) => t.name),
+    tools.map((t: { name: string }) => t.name),
+  );
+});
+
+test("the MCP server reports the Claude Code plugin's version", async () => {
+  const plugin = JSON.parse(
+    fs.readFileSync(
+      path.join(ROOT, "..", ".claude-plugin", "plugin.json"),
+      "utf-8",
+    ),
+  );
+  const { result } = await mcp("initialize", {
+    protocolVersion: "2025-11-25",
+    capabilities: {},
+  });
+  assert.equal(result.serverInfo.version, plugin.version);
+});
+
+test("the MCP server's fetchSkill returns every skill's Markdown twin", async () => {
+  for (const slug of skillSlugs) {
+    const { result } = await mcp("tools/call", {
+      name: "fetchSkill",
+      arguments: { slug },
+    });
+    assert.equal(result.content[0].text, read(`skills/${slug}.md`), slug);
+  }
+});
+
+test("/install offers one-click MCP installs for VS Code and Cursor, and CLI commands", () => {
+  const html = read("install/index.html").replace(/&amp;/g, "&");
+  const vscode = html.match(/href="vscode:mcp\/install\?([^"]+)"/)?.[1];
+  assert.ok(vscode, "VS Code link");
+  assert.deepEqual(JSON.parse(decodeURIComponent(vscode)), {
+    name: "clairvoyance",
+    type: "http",
+    url: MCP_URL,
+  });
+  const cursor = html.match(
+    /href="cursor:\/\/anysphere\.cursor-deeplink\/mcp\/install\?([^"]+)"/,
+  )?.[1];
+  assert.ok(cursor, "Cursor link");
+  const query = new URLSearchParams(cursor);
+  assert.equal(query.get("name"), "clairvoyance");
+  assert.deepEqual(
+    JSON.parse(Buffer.from(query.get("config") ?? "", "base64").toString()),
+    { url: MCP_URL },
+  );
+  for (const command of [
+    `claude mcp add --transport http clairvoyance ${MCP_URL}`,
+    `codex mcp add clairvoyance --url ${MCP_URL}`,
+  ]) {
+    assert.ok(html.includes(command), command);
+  }
+});
+
+test("install.md and llms.txt point agents at the MCP server", () => {
+  const md = frontmatter(read("install.md")).body;
+  assert.match(md, /^## MCP server$/m);
+  assert.ok(md.includes(MCP_URL));
+  assert.ok(read("llms.txt").includes(`(${MCP_URL})`));
+});
+
+// ── Sitemap ────────────────────────────────────────────────────────
+
+test("every sitemap entry has a lastmod, and skill pages use the skill's commit date", () => {
+  const xml = read("sitemap-0.xml");
+  const entries = [
+    ...xml.matchAll(
+      /<url><loc>([^<]+)<\/loc>(?:<lastmod>([^<]+)<\/lastmod>)?/g,
+    ),
+  ];
+  assert.ok(entries.length > skillSlugs.length);
+  for (const [, loc, lastmod] of entries) assert.ok(lastmod, `${loc} lastmod`);
+  const install = entries.find(([, loc]) => loc === `${SITE}/install/`);
+  assert.equal(
+    new Date(install![2]).getTime(),
+    new Date(lastCommitDate(path.join(ROOT, "..", "README.md"))).getTime(),
+  );
+  for (const slug of skillSlugs) {
+    const entry = entries.find(([, loc]) => loc === `${SITE}/skills/${slug}/`);
+    const expected = new Date(
+      lastCommitDate(path.join(SKILLS_DIR, slug, "SKILL.md")),
+    );
+    assert.equal(new Date(entry![2]).getTime(), expected.getTime(), slug);
+  }
+});
+
+// ── Agent Skills discovery (agentskills.io discovery v0.2.0) ───────
+
+test("/.well-known/agent-skills/index.json lists every skill per the v0.2.0 schema", () => {
+  const index = discoveryIndex();
+  assert.equal(
+    index.$schema,
+    "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  );
+  assert.deepEqual(
+    index.skills.map((s) => s.name).sort(),
+    [...skillSlugs].sort(),
+  );
+  for (const skill of index.skills) {
+    assert.match(
+      skill.name,
+      /^(?!-)(?!.*--)[a-z0-9-]{1,64}(?<!-)$/,
+      skill.name,
+    );
+    assert.ok(
+      skill.description.length > 0 && skill.description.length <= 1024,
+      skill.name,
+    );
+    const hasResources =
+      fs.readdirSync(path.join(SKILLS_DIR, skill.name)).length > 1;
+    assert.equal(skill.type, hasResources ? "archive" : "skill-md", skill.name);
+    assert.match(skill.digest, /^sha256:[0-9a-f]{64}$/);
+  }
+});
+
+test("each index entry's digest matches the artifact served at its url", () => {
+  const index = discoveryIndex();
+  for (const skill of index.skills) {
+    const file = path.join(
+      DIST,
+      new URL(skill.url, `${SITE}/.well-known/agent-skills/index.json`)
+        .pathname,
+    );
+    assert.equal(
+      `sha256:${sha256(fs.readFileSync(file))}`,
+      skill.digest,
+      skill.name,
+    );
+  }
+});
+
+test("skill-md artifacts are the SKILL.md source byte for byte", () => {
+  const index = discoveryIndex();
+  for (const skill of index.skills.filter((s) => s.type === "skill-md")) {
+    const served = fs.readFileSync(path.join(DIST, skill.url));
+    const source = fs.readFileSync(
+      path.join(SKILLS_DIR, skill.name, "SKILL.md"),
+    );
+    assert.ok(served.equals(source), skill.name);
+  }
+});
+
+test("archive artifacts hold the skill directory at their root", () => {
+  const index = discoveryIndex();
+  const archives = index.skills.filter((s) => s.type === "archive");
+  assert.ok(archives.length > 0);
+  for (const skill of archives) {
+    assert.match(skill.url, /\.tar\.gz$/);
+    const members = execFileSync("tar", ["-tzf", path.join(DIST, skill.url)], {
+      encoding: "utf-8",
+    })
+      .trim()
+      .split("\n")
+      .sort();
+    const expected = fs
+      .readdirSync(path.join(SKILLS_DIR, skill.name), {
+        recursive: true,
+        encoding: "utf8",
+      })
+      .filter((f) => fs.statSync(path.join(SKILLS_DIR, skill.name, f)).isFile())
+      .sort();
+    assert.deepEqual(members, expected, skill.name);
+    const extracted = execFileSync("tar", [
+      "-xzOf",
+      path.join(DIST, skill.url),
+      "SKILL.md",
+    ]);
+    assert.ok(
+      extracted.equals(
+        fs.readFileSync(path.join(SKILLS_DIR, skill.name, "SKILL.md")),
+      ),
+    );
+  }
+});
+
+// ── WebMCP ─────────────────────────────────────────────────────────
+
+// Runs the WebMCP registration against a fake modelContext and a fetch backed
+// by dist/, returning the tools it registered.
+async function loadWebMcp({
+  api = "document",
+}: { api?: "document" | "navigator" } = {}) {
+  const registered: Parameters<NonNullable<ModelContext["registerTool"]>>[0][] =
+    [];
+  const modelContext: ModelContext = {
+    registerTool: (tool) => registered.push(tool),
+  };
+  await registerWebMcpTools({
+    document: api === "document" ? { modelContext } : {},
+    navigator: api === "navigator" ? { modelContext } : {},
+    fetch: (async (url: URL) => {
+      const file = path.join(DIST, distPath(url.href));
+      if (!fs.existsSync(file))
+        return new Response("Not found", { status: 404 });
+      return new Response(fs.readFileSync(file));
+    }) as typeof fetch,
+    origin: SITE,
+  });
+  return registered;
+}
+
+test("pages load the WebMCP script", () => {
+  for (const file of ["index.html", "skills/index.html", "about/index.html"]) {
+    const html = read(file);
+    const bundles = [
+      ...html.matchAll(/<script type="module" src="(\/_astro\/[^"]+\.js)"/g),
+    ].map((m) => read(m[1]));
+    const inline = [
+      ...html.matchAll(/<script type="module">([\s\S]*?)<\/script>/g),
+    ].map((m) => m[1]);
+    assert.ok(
+      [...bundles, ...inline].some((code) => code.includes("modelContext")),
+      `${file} includes the WebMCP registration`,
+    );
+  }
+});
+
+test("WebMCP registers read-only tools from the manifest via document.modelContext", async () => {
+  const tools = await loadWebMcp();
+  assert.deepEqual(tools.map((t) => t.name).sort(), [
+    "fetchSkill",
+    "getInstallInstructions",
+    "listSkills",
+  ]);
+  for (const tool of tools) {
+    assert.ok(tool.description.length > 20, tool.name);
+    assert.equal(tool.inputSchema.type, "object", tool.name);
+    assert.equal(tool.annotations.readOnlyHint, true, tool.name);
+  }
+});
+
+test("WebMCP falls back to navigator.modelContext", async () => {
+  const tools = await loadWebMcp({ api: "navigator" });
+  assert.equal(tools.length, 3);
+});
+
+test("WebMCP fetchSkill accepts exactly the published skills and returns each one", async () => {
+  const fetchSkill = (await loadWebMcp()).find((t) => t.name === "fetchSkill")!;
+  assert.deepEqual(
+    [...(fetchSkill.inputSchema.properties.slug.enum ?? [])].sort(),
+    [...skillSlugs].sort(),
+  );
+  for (const slug of skillSlugs) {
+    const result = await fetchSkill.execute({ slug });
+    assert.ok(!result.isError, slug);
+    assert.equal(result.content[0].text, read(`skills/${slug}.md`), slug);
+  }
+});
+
+test("WebMCP listSkills and getInstallInstructions return the site's Markdown", async () => {
+  const tools = await loadWebMcp();
+  const list = await tools.find((t) => t.name === "listSkills")!.execute({});
+  assert.equal(list.content[0].text, read("skills.md"));
+  const install = await tools
+    .find((t) => t.name === "getInstallInstructions")!
+    .execute({});
+  assert.equal(install.content[0].text, read("install.md"));
+});
+
+test("WebMCP reports a failed fetch as a tool error", async () => {
+  const fetchSkill = (await loadWebMcp()).find((t) => t.name === "fetchSkill")!;
+  const result = await fetchSkill.execute({ slug: "no-such-skill" });
+  assert.equal(result.isError, true);
+});
+
+// ── Edge Worker against the real build ─────────────────────────────
+
+test("the Worker serves dist/index.md for the homepage when Markdown is requested", async () => {
+  const req = new Request(`${SITE}/`, { headers: { Accept: "text/markdown" } });
+  const res = await negotiate(req, pagesOrigin);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("Content-Type"), "text/markdown; charset=utf-8");
+  assert.match(res.headers.get("Vary") ?? "", /Accept/);
+  assert.equal(await res.text(), read("index.md"));
+});
+
+test("the Worker serves dist/index.html for the homepage when HTML is requested", async () => {
+  const req = new Request(`${SITE}/`, { headers: { Accept: "text/html" } });
+  const res = await negotiate(req, pagesOrigin);
+  assert.equal(await res.text(), read("index.html"));
+});
+
+test("the Worker serves Markdown twins for every page in the build", async () => {
+  const pages = [
+    "/about/",
+    "/contact/",
+    "/privacy/",
+    "/skills/",
+    ...skillSlugs.map((s) => `/skills/${s}/`),
+  ];
+  for (const page of pages) {
+    const req = new Request(SITE + page, {
+      headers: { Accept: "text/markdown" },
+    });
+    const res = await negotiate(req, pagesOrigin);
+    assert.equal(res.status, 200, page);
+    assert.equal(
+      res.headers.get("Content-Type"),
+      "text/markdown; charset=utf-8",
+      page,
+    );
+  }
+});
+
+test("the Worker answers unknown paths with a Markdown 404", async () => {
+  const req = new Request(`${SITE}/__ora-404-probe`, {
+    headers: { Accept: "text/markdown" },
+  });
+  const res = await negotiate(req, pagesOrigin);
+  assert.equal(res.status, 404);
+  assert.equal(res.headers.get("Content-Type"), "text/markdown; charset=utf-8");
+  assert.ok((await res.text()).includes(`${SITE}/llms.txt`));
+});

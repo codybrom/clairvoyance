@@ -11,14 +11,22 @@ export const AUTHOR = {
   url: "https://github.com/codybrom",
 };
 
+export const DEFAULT_DESCRIPTION =
+  "ESP for AI Coding. Agent skills on the philosophy of software design, grounded in decades of engineering experience.";
+
 export const TAGLINE =
   "ESP for AI Coding — Agent skills on the philosophy of software design, grounded in decades of engineering experience.";
 
 export const INTRO = [
   "Good software isn't written. It's designed. Clairvoyance is a collection of software design skills for AI coding agents. Each skill is a lens grounded in decades of engineering experience to help your agent see through complexity and write code with intent.",
   "",
-  "Clairvoyance works with Claude Code, Codex, Cursor, OpenCode, Gemini CLI, and any agent platform that supports the Agent Skills open standard.",
+  "Clairvoyance works with Claude Code, Codex, Cursor, OpenCode, Antigravity, and any agent platform that supports the Agent Skills open standard.",
 ];
+
+// What the "Set up with your agent" button copies. The agent fetches the
+// instructions and runs the install itself (see src/pages/agent-setup.md.ts).
+export const AGENT_SETUP_URL = `${SITE_URL}/agent-setup.md`;
+export const AGENT_SETUP_PROMPT = `Fetch and follow the instructions at ${AGENT_SETUP_URL} to install Clairvoyance for me.`;
 
 export const INSTALL = {
   claudeStep1: "/plugin marketplace add codybrom/clairvoyance",
@@ -75,8 +83,7 @@ export const SOFTWARE_APPLICATION = {
   "@type": "SoftwareApplication",
   name: "Clairvoyance",
   url: `${SITE_URL}/`,
-  description:
-    "ESP for AI Coding. Agent skills on the philosophy of software design, grounded in decades of engineering experience.",
+  description: DEFAULT_DESCRIPTION,
   applicationCategory: "DeveloperApplication",
   operatingSystem: "Any",
   softwareVersion: pkg.version,
@@ -88,8 +95,32 @@ export const SOFTWARE_APPLICATION = {
   sameAs: [REPO_URL, "https://skills.sh/codybrom/clairvoyance"],
 };
 
-export function markdownResponse(lines: string[]): Response {
-  return new Response(lines.join("\n"), {
+export interface MarkdownMeta {
+  title: string;
+  description: string;
+  canonical: string;
+  lastUpdated?: string | null;
+}
+
+/**
+ * A Markdown twin: a frontmatter block (so agents get the page's metadata
+ * without scraping) followed by `lines`. Values are written as JSON strings,
+ * which YAML reads as double-quoted scalars.
+ */
+export function markdownResponse(
+  meta: MarkdownMeta,
+  lines: string[],
+): Response {
+  const fields: [string, string | null | undefined][] = [
+    ["title", meta.title],
+    ["description", meta.description],
+    ["canonical", meta.canonical],
+    ["last_updated", meta.lastUpdated],
+  ];
+  const frontmatter = fields
+    .filter(([, value]) => value)
+    .map(([key, value]) => `${key}: ${JSON.stringify(value)}`);
+  return new Response(["---", ...frontmatter, "---", "", ...lines].join("\n"), {
     headers: { "Content-Type": "text/markdown; charset=utf-8" },
   });
 }

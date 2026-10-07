@@ -1,6 +1,13 @@
 import type { APIRoute } from "astro";
 import { getAllSkills } from "../utils/skills";
-import { INTRO, SKILL_CHOOSER, TAGLINE } from "../utils/site";
+import { MCP_URL } from "../utils/tools";
+import {
+  AGENT_SETUP_URL,
+  INTRO,
+  SITE_URL,
+  SKILL_CHOOSER,
+  TAGLINE,
+} from "../utils/site";
 
 export const GET: APIRoute = () => {
   const skills = getAllSkills();
@@ -16,7 +23,7 @@ export const GET: APIRoute = () => {
     "",
     ...skills.map(
       (s) =>
-        `- [${s.title}](https://raw.githubusercontent.com/codybrom/clairvoyance/main/skills/${s.slug}/SKILL.md): ${s.description}`,
+        `- [${s.title}](${SITE_URL}/skills/${s.slug}.md): ${s.description}`,
     ),
     "",
     ...SKILL_CHOOSER,
@@ -24,7 +31,9 @@ export const GET: APIRoute = () => {
     "## Links",
     "",
     "- [GitHub](https://github.com/codybrom/clairvoyance)",
-    "- [Installation](https://github.com/codybrom/clairvoyance#installation)",
+    `- [Installation](${SITE_URL}/install.md)`,
+    `- [Agent setup](${AGENT_SETUP_URL}): instructions your agent can follow to install Clairvoyance for you`,
+    `- [MCP server](${MCP_URL}): read-only tools to list and fetch skills, for clients that connect over MCP`,
     "- [Full content](https://clairvoyance.fyi/llms-full.txt)",
     "",
     "## Source & License",

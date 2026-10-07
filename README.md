@@ -18,7 +18,7 @@ You can also invoke them directly. Use `/clairvoyance:red-flags` to trigger a de
 
 ## Installation
 
-Give your agent Clairvoyance: [Claude Code](#claude-code), [skills.sh](#skillssh), [Codex](#codex), [Cursor](#cursor), [OpenCode](#opencode), [Gemini CLI](#gemini-cli), [Antigravity](#antigravity), [Factory Droid](#factory-droid), [GitHub Copilot CLI](#github-copilot-cli), [Kimi Code](#kimi-code), [Pi](#pi).
+Give your agent Clairvoyance: [Claude Code](#claude-code), [skills.sh](#skillssh), [Codex](#codex), [Cursor](#cursor), [OpenCode](#opencode), [Antigravity](#antigravity), [Factory Droid](#factory-droid), [GitHub Copilot CLI](#github-copilot-cli), [Kimi Code](#kimi-code), [Pi](#pi).
 
 **Note:** Installation differs by platform. If you use more than one, install Clairvoyance separately for each.
 
@@ -67,16 +67,6 @@ Add Clairvoyance to the `plugin` array in your `opencode.json` (global or projec
 ```
 
 Restart OpenCode — no symlinks or manual skill paths needed. See [.opencode/INSTALL.md](.opencode/INSTALL.md) for version pinning, troubleshooting, and migrating off the old symlink-based install.
-
-### Gemini CLI
-
-Requires Gemini CLI ≥ 0.26.0 and an account Gemini CLI currently serves (Code Assist Standard/Enterprise, Google Cloud, or a paid API key — see [.gemini/INSTALL.md](.gemini/INSTALL.md) for details).
-
-```bash
-gemini extensions install https://github.com/codybrom/clairvoyance.git
-```
-
-Restart Gemini CLI to load the extension.
 
 ### Antigravity
 
@@ -198,7 +188,6 @@ To contribute:
 - **Codex:** `codex plugin marketplace upgrade clairvoyance && codex plugin add clairvoyance@clairvoyance`
 - **Cursor:** `cd ~/.cursor/plugins/local/clairvoyance && git pull`, then restart
 - **OpenCode:** doesn't auto-refresh on restart unless you pinned a tag — see [.opencode/INSTALL.md](.opencode/INSTALL.md#updating)
-- **Gemini CLI:** `gemini extensions update clairvoyance`
 - **Antigravity:** re-run `agy plugin install https://github.com/codybrom/clairvoyance`
 - **Factory Droid:** `droid plugin marketplace update clairvoyance-plugins && droid plugin update clairvoyance@clairvoyance-plugins`
 - **GitHub Copilot CLI:** `copilot plugin update clairvoyance`

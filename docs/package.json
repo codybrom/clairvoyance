@@ -7,7 +7,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "test": "node --test \"edge/*.test.js\" \"test/*.test.js\""
+    "test": "node --test \"edge/*.test.ts\" \"test/*.test.ts\""
   },
   "dependencies": {
     "@astrojs/check": "^0.9.10",
