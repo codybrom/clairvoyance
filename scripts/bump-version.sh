@@ -19,6 +19,7 @@ TARGETS=(
   ".kimi-plugin/plugin.json|.version"
   "gemini-extension.json|.version"
   "docs/package.json|.version"
+  "server.json|.version"
 )
 
 if [ "${1:-}" = "--check" ]; then

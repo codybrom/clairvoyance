@@ -6,7 +6,7 @@
 
 - **MCP server** at `https://clairvoyance.fyi/mcp` for agents that can't
   install plugins or skills. Each skill is a tool and a prompt with the same
-  name and description it has in the plugin, `fetchReference` serves skills'
+  name and description it has in the plugin, `fetch-reference` serves skills'
   `references/` files, and skills that dispatch an agent include its brief for
   the caller to run as its own subagent. Requests carry only a skill or file
   name, so the server never receives code, file paths or prompts. Opening the
@@ -18,11 +18,15 @@
   agent to install Clairvoyance itself from `/agent-setup.md`.
 - **Agent discovery on clairvoyance.fyi**: Markdown versions of every page via
   `Accept: text/markdown` (including a Markdown 404), an Agent Skills
-  discovery index at `/.well-known/agent-skills/index.json`, WebMCP tools,
-  `SoftwareApplication` JSON-LD, RFC 8288 `Link` headers, sitemap `lastmod`
-  dates, and About and Contact pages. A small Cloudflare Worker in front of
-  GitHub Pages (`docs/edge/`) handles negotiation and the MCP server.
+  discovery index at `/.well-known/agent-skills/index.json`, an MCP server
+  card at `/mcp/server-card`, an ARD catalog at `/.well-known/ard.json`,
+  WebMCP tools, a when-to-use section and scoped `llms.txt` files, JSON-LD
+  (`SoftwareApplication`, plus `TechArticle` and breadcrumbs on skill pages),
+  RFC 8288 `Link` headers, sitemap `lastmod` dates, and About and Contact
+  pages. A small Cloudflare Worker in front of GitHub Pages (`docs/edge/`)
+  handles negotiation and the MCP server.
 - `AGENTS.md`: layout, checks and conventions for agents working in this repo.
+- `server.json`, the hosted MCP server's entry for the official MCP Registry.
 - Eval suites for `design-it-twice`, `red-flags` and `design-review` in
   `evals/`, run with `claude plugin eval`.
 

@@ -25,23 +25,59 @@ export default {
 };
 
 /** Routes `request`: /mcp to the MCP server, everything else through content negotiation. */
-export function handle(
+export async function handle(
   request: Request,
   fetchOrigin: FetchOrigin,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (url.pathname === "/mcp/server-card")
+    return serverCard(request, url, fetchOrigin);
   if (url.pathname === "/mcp" || url.pathname === "/mcp/") {
     // One URL for both audiences: a browser (or an agent asking for Markdown)
     // gets the page about the server, served from /mcp/ without a redirect so
     // the address stays copyable; MCP clients, which POST or GET an event
     // stream, get the server.
     const isRead = request.method === "GET" || request.method === "HEAD";
-    if (isRead && chooseRepresentation(request.headers.get("Accept")) !== "none") {
-      return negotiate(new Request(new URL("/mcp/", url), request), fetchOrigin);
+    if (
+      isRead &&
+      chooseRepresentation(request.headers.get("Accept")) !== "none"
+    ) {
+      return negotiate(
+        new Request(new URL("/mcp/", url), request),
+        fetchOrigin,
+      );
     }
     return handleMcp(request, fetchOrigin);
   }
-  return negotiate(request, fetchOrigin);
+  const response = await negotiate(request, fetchOrigin);
+  const type = MEDIA_TYPES[url.pathname];
+  if (!type || !response.ok) return response;
+  const typed = new Response(response.body, response);
+  typed.headers.set("Content-Type", type);
+  return typed;
+}
+
+// Discovery documents GitHub Pages can only serve as application/json.
+const MEDIA_TYPES: Record<string, string> = {
+  "/.well-known/mcp/server-card.json": "application/mcp-server-card+json",
+  "/.well-known/ai-catalog.json": "application/ai-catalog+json",
+};
+
+// The server card's reserved location is <server URL>/server-card; the build
+// publishes it as /.well-known/mcp/server-card.json.
+async function serverCard(
+  request: Request,
+  url: URL,
+  fetchOrigin: FetchOrigin,
+): Promise<Response> {
+  const card = await fetchOrigin(
+    new Request(new URL("/.well-known/mcp/server-card.json", url), request),
+  );
+  if (!card.ok) return card;
+  const response = new Response(card.body, card);
+  response.headers.set("Content-Type", "application/mcp-server-card+json");
+  response.headers.set("Access-Control-Allow-Origin", "*");
+  return response;
 }
 
 /** Serves `request`, choosing between the HTML page and its Markdown twin. */
@@ -172,6 +208,7 @@ function withLinks(
     );
   }
   links.push(`<${SITE}/sitemap-index.xml>; rel="sitemap"`);
+  links.push(`<${SITE}/.well-known/ard.json>; rel="ard"`);
   response.headers.append("Link", links.join(", "));
   return response;
 }

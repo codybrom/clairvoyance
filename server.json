@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "fyi.clairvoyance/mcp",
+  "title": "Clairvoyance",
+  "description": "Software design skills for AI coding agents, drawn from A Philosophy of Software Design.",
+  "version": "1.3.0",
+  "websiteUrl": "https://clairvoyance.fyi/mcp",
+  "repository": {
+    "url": "https://github.com/codybrom/clairvoyance",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://clairvoyance.fyi/mcp"
+    }
+  ]
+}

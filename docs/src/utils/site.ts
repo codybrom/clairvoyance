@@ -28,6 +28,25 @@ export const INTRO = [
 export const AGENT_SETUP_URL = `${SITE_URL}/agent-setup.md`;
 export const AGENT_SETUP_PROMPT = `Fetch and follow the instructions at ${AGENT_SETUP_URL} to install Clairvoyance for me.`;
 
+// For llms.txt: the jobs Clairvoyance is right for, how an agent loads a
+// skill, and what it isn't for. Skill names map each job to where to start.
+export const WHEN_TO_USE = [
+  "## When to use Clairvoyance",
+  "",
+  "Reach for a Clairvoyance skill when the job is judging or improving the design of code, not just whether it works:",
+  "",
+  "- Reviewing a file, module or pull request for design quality before it ships (design-review, red-flags, code-evolution)",
+  "- Working out why code feels hard to change or understand (complexity-recognition, diagnose)",
+  "- Checking whether an interface is deep enough, too specialized, or leaking its internals (deep-modules, general-vs-special, information-hiding)",
+  "- Choosing between designs, or writing a design doc or RFC (design-it-twice)",
+  "- Deciding where module boundaries, configuration and error handling belong (module-boundaries, pull-complexity-down, error-design)",
+  "- Making names and comments carry the design (naming-obviousness, comments-docs)",
+  "",
+  "How to load one: with the plugin installed, skills load on their own when their description matches, or run one directly as /clairvoyance:<skill>. Over the MCP server, call the tool named after the skill. Without either, read the skill's Markdown from the links below.",
+  "",
+  "Not for: fixing a specific bug or failing test, style and lint rules, performance tuning, or choosing libraries and frameworks.",
+];
+
 export const INSTALL = {
   claudeStep1: "/plugin marketplace add codybrom/clairvoyance",
   claudeStep2: "/plugin install clairvoyance@clairvoyance-plugins",

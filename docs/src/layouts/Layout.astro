@@ -12,7 +12,8 @@ interface Props {
   author?: string;
   publishedTime?: string;
   modifiedTime?: string;
-  jsonLd?: object;
+  /** schema.org data; each object becomes its own JSON-LD script. */
+  jsonLd?: object | object[];
 }
 
 const {
@@ -43,6 +44,7 @@ const {
       href="/llms.txt"
       title="LLM-friendly summary"
     />
+    <link rel="ard" href="/.well-known/ard.json" />
 
     {
       alternateMarkdown && (
@@ -73,12 +75,12 @@ const {
       )
     }
     {
-      jsonLd && (
+      [jsonLd ?? []].flat().map((data) => (
         <script
           type="application/ld+json"
-          set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")}
+          set:html={JSON.stringify(data).replace(/</g, "\\u003c")}
         />
-      )
+      ))
     }
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
@@ -98,8 +100,9 @@ const {
       import { registerWebMcpTools } from "../utils/webmcp";
 
       registerWebMcpTools({
-        document,
-        navigator,
+        // The proposal moved the API from navigator to document; prefer
+        // document and keep navigator as the fallback.
+        modelContext: document.modelContext ?? navigator.modelContext,
         fetch: fetch.bind(window),
         origin: location.origin,
       });

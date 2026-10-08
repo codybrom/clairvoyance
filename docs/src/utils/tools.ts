@@ -18,9 +18,22 @@ import {
   type Agent,
   type Skill,
 } from "./skills";
-import { SITE_URL } from "./site";
+import { REPO_URL, SITE_URL } from "./site";
 
 export const MCP_URL = `${SITE_URL}/mcp`;
+
+/**
+ * The MCP server's identity, shared by its live serverInfo (via /tools.json),
+ * its server card, the ARD / AI Catalog entry and the registry's server.json,
+ * so none of them can contradict the others.
+ */
+export const MCP_SERVER = {
+  name: "fyi.clairvoyance/mcp",
+  title: "Clairvoyance",
+  // The server card schema caps this at 100 characters.
+  description: "Software design skills for AI coding agents, drawn from A Philosophy of Software Design.",
+  websiteUrl: MCP_URL,
+};
 const MCP_NAME = "clairvoyance";
 
 /** One-click and CLI ways to add the MCP server, in each client's own format. */
@@ -52,7 +65,7 @@ export function mcpInstallMarkdown(): string[] {
   return [
     "## MCP server",
     "",
-    `${MCP_SUMMARY} The server is at ${MCP_URL} (Streamable HTTP). Supporting files load through its \`fetchReference\` tool.`,
+    `${MCP_SUMMARY} The server is at ${MCP_URL} (Streamable HTTP). Supporting files load through its \`fetch-reference\` tool.`,
     "",
     `- VS Code: [Add to VS Code](${MCP_INSTALL.vscode})`,
     `- Cursor: [Add to Cursor](${MCP_INSTALL.cursor})`,
@@ -74,11 +87,13 @@ export function getToolManifest(): ToolManifest {
   const skills = getAllSkills();
   const withReferences = skills.filter((s) => s.references.length > 0);
   return {
+    name: MCP_SERVER.name,
+    title: MCP_SERVER.title,
     version: pkg.version,
     instructions: [
       "Clairvoyance: software design skills for AI coding agents, drawn from A Philosophy of Software Design.",
       "Each tool named after a skill returns that skill's instructions. Call it when its description matches what you're doing, then follow it.",
-      "Skills that link files in a references/ folder say how to load them with fetchReference.",
+      "Skills that link files in a references/ folder say how to load them with fetch-reference.",
       "",
       "Skills:",
       ...skills.map((s) => `- ${s.slug}: ${summaryOf(s.description)}`),
@@ -93,7 +108,7 @@ export function getToolManifest(): ToolManifest {
         path: skillToolPath(s),
       })),
       {
-        name: "fetchReference",
+        name: "fetch-reference",
         title: "Fetch a skill's supporting file",
         description: `Fetch a supporting file from a Clairvoyance skill's references/ folder, when the skill's instructions point to one. Available: ${withReferences
           .map((s) => `${s.slug} (${s.references.join(", ")})`)
@@ -174,11 +189,11 @@ export function skillToolMarkdown(skill: Skill): string {
       [
         "## Supporting files",
         "",
-        "This skill links files in its `references/` folder. Load them with the `fetchReference` tool:",
+        "This skill links files in its `references/` folder. Load them with the `fetch-reference` tool:",
         "",
         ...skill.references.map(
           (file) =>
-            `- \`references/${file}\`: \`fetchReference({ skill: "${skill.slug}", file: "${file}" })\``,
+            `- \`references/${file}\`: call \`fetch-reference\` with \`{ skill: "${skill.slug}", file: "${file}" }\``,
         ),
       ].join("\n"),
     );
@@ -205,4 +220,90 @@ export function skillToolMarkdown(skill: Skill): string {
   }
 
   return parts.join("\n\n") + "\n";
+}
+
+/** The server card (draft MCP extension, v1 schema), at /mcp/server-card. */
+export function serverCard() {
+  return {
+    $schema: "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
+    ...MCP_SERVER,
+    version: pkg.version,
+    icons: [
+      { src: `${SITE_URL}/favicon.svg`, mimeType: "image/svg+xml", sizes: ["any"] },
+      { src: `${SITE_URL}/apple-touch-icon.png`, mimeType: "image/png", sizes: ["180x180"] },
+    ],
+    remotes: [{ type: "streamable-http", url: MCP_URL, supportedProtocolVersions: SUPPORTED_VERSIONS }],
+    repository: { url: REPO_URL, source: "github" },
+  };
+}
+
+/**
+ * The ARD manifest (/.well-known/ard.json), also served at its predecessor
+ * path /.well-known/ai-catalog.json: one entry pointing at the server card,
+ * with the queries a registry indexes it by.
+ */
+export function discoveryCatalog() {
+  return {
+    specVersion: "1.0",
+    entries: [
+      {
+        identifier: "urn:air:clairvoyance.fyi:mcp:clairvoyance",
+        displayName: MCP_SERVER.title,
+        type: "application/mcp-server-card+json",
+        url: `${MCP_URL}/server-card`,
+        description: MCP_SERVER.description,
+        version: pkg.version,
+        capabilities: getAllSkills().map((s) => s.slug),
+        tags: ["software-design", "code-review", "agent-skills"],
+        representativeQueries: [
+          "review this module for software design problems",
+          "find design red flags in this pull request",
+          "is this interface too shallow for what it does",
+          "compare two designs for this feature before I build it",
+          "why does this code feel so hard to change",
+        ],
+      },
+    ],
+  };
+}
+
+/** The /mcp page as Markdown: its twin (/mcp.md) and /mcp/llms.txt share it. */
+export function mcpPageMarkdown(): string[] {
+  const { tools } = getToolManifest();
+  return [
+      "# Clairvoyance MCP server",
+      "",
+      MCP_SUMMARY,
+      "",
+      `Server URL: ${MCP_URL}`,
+      "",
+      "## Add it to your client",
+      "",
+      `- VS Code: [Add to VS Code](${MCP_INSTALL.vscode}), or \`${MCP_INSTALL.vscodeCli}\``,
+      `- Cursor: [Add to Cursor](${MCP_INSTALL.cursor}), or add \`${MCP_INSTALL.cursorConfig}\` under \`"mcpServers"\` in \`~/.cursor/mcp.json\``,
+      `- Claude Code: \`${MCP_INSTALL.claudeCode}\``,
+      `- Codex: \`${MCP_INSTALL.codex}\``,
+      `- Any other client: add ${MCP_URL} as a remote (HTTP) MCP server.`,
+      "",
+      "## Tools",
+      "",
+      ...tools.map((t) => `- \`${t.name}\`: ${t.description}`),
+      "",
+      "## Prompts",
+      "",
+      MCP_PAGE.prompts,
+      "",
+      "## What it receives",
+      "",
+      MCP_PAGE.receives,
+      "",
+      "## MCP or the plugin?",
+      "",
+      MCP_PAGE.versusPlugin,
+      "",
+      "## Details",
+      "",
+      MCP_PAGE.details,
+      "",
+  ];
 }

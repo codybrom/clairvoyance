@@ -4,7 +4,7 @@ import type { APIRoute, GetStaticPaths } from "astro";
 import { REPO_ROOT, getAllSkills } from "../../../../utils/skills";
 
 // A skill's references/ files, verbatim, for links in the Markdown twins and
-// the MCP server's fetchReference tool.
+// the MCP server's fetch-reference tool.
 export const getStaticPaths: GetStaticPaths = () =>
   getAllSkills().flatMap((skill) =>
     skill.references.map((file) => ({ params: { slug: skill.slug, file } })),

@@ -85,9 +85,13 @@ const origin = () =>
     "/og.png": { body: "PNG", type: "image/png" },
     "/skills.md": md("# All Skills"),
     "/mcp/": html("<h1>The Clairvoyance MCP server</h1>"),
+    "/.well-known/mcp/server-card.json": { body: '{"name":"fyi.clairvoyance/mcp"}', type: "application/json" },
+    "/.well-known/ai-catalog.json": { body: '{"specVersion":"1.0","entries":[]}', type: "application/json" },
     "/mcp.md": md("# The Clairvoyance MCP server"),
     "/tools.json": {
       body: JSON.stringify({
+        name: "clairvoyance",
+        title: "Clairvoyance",
         version: "9.9.9",
         instructions: "Use the skills.",
         tools: TOOLS,
@@ -296,6 +300,7 @@ test("HTML pages advertise their canonical URL, Markdown twin and the sitemap", 
     `<${SITE}/>; rel="canonical"`,
     `<${SITE}/index.md>; rel="alternate"; type="text/markdown"`,
     `<${SITE}/sitemap-index.xml>; rel="sitemap"`,
+    `<${SITE}/.well-known/ard.json>; rel="ard"`,
   ]);
 });
 
@@ -309,6 +314,7 @@ test("Markdown responses point back to the canonical HTML page", async () => {
     `<${SITE}/skills/deep-modules>; rel="canonical"`,
     `<${SITE}/skills/deep-modules>; rel="alternate"; type="text/html"`,
     `<${SITE}/sitemap-index.xml>; rel="sitemap"`,
+    `<${SITE}/.well-known/ard.json>; rel="ard"`,
   ]);
 });
 
@@ -531,4 +537,27 @@ test("/mcp/ with a trailing slash is the same MCP endpoint", async () => {
   });
   const res = await handle(req, fetchOrigin);
   assert.deepEqual((await res.json()).result, {});
+});
+
+// ── Discovery documents ────────────────────────────────────────────
+
+test("the server card is served at <server URL>/server-card with its media type", async () => {
+  const { fetchOrigin, calls } = origin();
+  const res = await handle(get("/mcp/server-card", "application/mcp-server-card+json"), fetchOrigin);
+  assert.equal(res.status, 200);
+  assert.equal(header(res, "Content-Type"), "application/mcp-server-card+json");
+  assert.equal(header(res, "Access-Control-Allow-Origin"), "*");
+  assert.equal(await res.text(), '{"name":"fyi.clairvoyance/mcp"}');
+  assert.deepEqual(calls, ["/.well-known/mcp/server-card.json"]);
+});
+
+test("discovery documents get their registered media types", async () => {
+  for (const [path, type] of [
+    ["/.well-known/mcp/server-card.json", "application/mcp-server-card+json"],
+    ["/.well-known/ai-catalog.json", "application/ai-catalog+json"],
+  ]) {
+    const { fetchOrigin } = origin();
+    const res = await handle(get(path, "*/*"), fetchOrigin);
+    assert.equal(header(res, "Content-Type"), type, path);
+  }
 });

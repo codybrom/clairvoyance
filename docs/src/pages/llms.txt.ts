@@ -7,6 +7,7 @@ import {
   SITE_URL,
   SKILL_CHOOSER,
   TAGLINE,
+  WHEN_TO_USE,
 } from "../utils/site";
 
 export const GET: APIRoute = () => {
@@ -18,6 +19,8 @@ export const GET: APIRoute = () => {
     `> ${TAGLINE}`,
     "",
     ...INTRO,
+    "",
+    ...WHEN_TO_USE,
     "",
     "## Skills",
     "",
@@ -33,7 +36,9 @@ export const GET: APIRoute = () => {
     "- [GitHub](https://github.com/codybrom/clairvoyance)",
     `- [Installation](${SITE_URL}/install.md)`,
     `- [Agent setup](${AGENT_SETUP_URL}): instructions your agent can follow to install Clairvoyance for you`,
-    `- [MCP server](${MCP_URL}): read-only tools to list and fetch skills, for clients that connect over MCP`,
+    `- [MCP server](${MCP_URL}): every skill as an MCP tool, for clients that can't install the plugin`,
+    `- [Skills index](${SITE_URL}/skills/llms.txt): just the skill catalog`,
+    `- [MCP server details](${SITE_URL}/mcp/llms.txt): connecting, tools, and what the server receives`,
     "- [Full content](https://clairvoyance.fyi/llms-full.txt)",
     "",
     "## Source & License",

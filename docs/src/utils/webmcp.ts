@@ -35,8 +35,8 @@ declare global {
 }
 
 export interface WebMcpEnvironment {
-  document?: { modelContext?: ModelContext };
-  navigator?: { modelContext?: ModelContext };
+  /** The page's WebMCP API, if the browser has one. */
+  modelContext: ModelContext | undefined;
   fetch: typeof fetch;
   origin: string;
 }
@@ -44,9 +44,7 @@ export interface WebMcpEnvironment {
 export async function registerWebMcpTools(
   env: WebMcpEnvironment,
 ): Promise<void> {
-  // The proposal moved the API from navigator to document; accept either.
-  const modelContext =
-    env.document?.modelContext ?? env.navigator?.modelContext;
+  const { modelContext } = env;
   if (!modelContext?.registerTool && !modelContext?.provideContext) return;
 
   let manifest: ToolManifest;

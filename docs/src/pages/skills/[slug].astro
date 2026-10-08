@@ -2,6 +2,7 @@
 import Layout from "../../layouts/Layout.astro";
 import CrystalBall from "../../assets/crystal-ball.svg";
 import { getAllSkills } from "../../utils/skills";
+import { skillJsonLd } from "../../utils/structured-data";
 import {
   Circle,
   Plus,
@@ -138,6 +139,7 @@ const nextSkill = allSkills[(currentIndex + 1) % allSkills.length];
   type="article"
   author="Cody Bromley"
   modifiedTime={skill.lastUpdated ?? undefined}
+  jsonLd={skillJsonLd(skill)}
 >
   <article class="skill-page">
     <nav class="skill-nav">

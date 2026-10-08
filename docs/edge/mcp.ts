@@ -30,6 +30,9 @@ export interface PromptDefinition {
 }
 
 export interface ToolManifest {
+  /** The server's reverse-DNS name and display title, as in its server card. */
+  name: string;
+  title: string;
   version: string;
   /** Sent to clients on initialize; many add it to the agent's context. */
   instructions: string;
@@ -121,7 +124,7 @@ async function dispatch(
 ): Promise<Outcome> {
   switch (method) {
     case "initialize": {
-      const { version, instructions } = await loadManifest(
+      const { name, title, version, instructions } = await loadManifest(
         requestUrl,
         fetchOrigin,
       );
@@ -134,7 +137,7 @@ async function dispatch(
               ? requested
               : SUPPORTED_VERSIONS[0],
           capabilities: { tools: {}, prompts: {} },
-          serverInfo: { name: "clairvoyance", title: "Clairvoyance", version },
+          serverInfo: { name, title, version },
           instructions,
         },
       };
