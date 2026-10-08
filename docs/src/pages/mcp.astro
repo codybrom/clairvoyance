@@ -5,7 +5,7 @@ import Layout from "../layouts/Layout.astro";
 import CrystalBall from "../assets/crystal-ball.svg";
 import McpInstall from "../components/McpInstall.astro";
 import { getAllSkills, summaryOf } from "../utils/skills";
-import { MCP_PAGE, MCP_SUMMARY, MCP_URL, getToolManifest } from "../utils/tools";
+import { MCP_PAGE, MCP_REGISTRY_URL, MCP_SERVER, MCP_SUMMARY, MCP_URL, getToolManifest } from "../utils/tools";
 
 const { tools } = getToolManifest();
 const skillsBySlug = new Map(getAllSkills().map((s) => [s.slug, s]));
@@ -83,6 +83,9 @@ const skillsBySlug = new Map(getAllSkills().map((s) => [s.slug, s]));
     <section aria-labelledby="details-heading">
       <h2 id="details-heading" class="section-label">Details</h2>
       <p class="body">{MCP_PAGE.details}</p>
+      <p class="body">
+        Listed in the official MCP Registry as <a href={MCP_REGISTRY_URL}>{MCP_SERVER.name}</a>.
+      </p>
     </section>
   </div>
 </Layout>

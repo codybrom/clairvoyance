@@ -125,7 +125,7 @@ If your agent can't install plugins or skills but can connect to MCP servers, us
 - **Codex:** `codex mcp add clairvoyance --url https://clairvoyance.fyi/mcp`
 - **Anything else:** add `https://clairvoyance.fyi/mcp` as a remote (HTTP) MCP server.
 
-One-click buttons for VS Code and Cursor are on [clairvoyance.fyi/install](https://clairvoyance.fyi/install). Where your agent supports plugins or skills, install those instead: the plugin also enforces each skill's tool limits and runs the `design-it-twice` subagent itself.
+It's listed in the official MCP Registry as [`fyi.clairvoyance/mcp`](https://registry.modelcontextprotocol.io/v0.1/servers/fyi.clairvoyance%2Fmcp/versions/latest). One-click buttons for VS Code and Cursor are on [clairvoyance.fyi/install](https://clairvoyance.fyi/install). Where your agent supports plugins or skills, install those instead: the plugin also enforces each skill's tool limits and runs the `design-it-twice` subagent itself.
 
 ## What's Inside
 

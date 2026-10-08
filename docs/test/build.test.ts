@@ -897,48 +897,96 @@ test("the Worker serves the /mcp page to browsers and its twin to agents", async
 // ── MCP discovery: server card, ARD / AI Catalog, registry ─────────
 
 const pluginVersion = () =>
-  JSON.parse(fs.readFileSync(path.join(ROOT, "..", ".claude-plugin", "plugin.json"), "utf-8")).version;
+  JSON.parse(
+    fs.readFileSync(
+      path.join(ROOT, "..", ".claude-plugin", "plugin.json"),
+      "utf-8",
+    ),
+  ).version;
 
 test("the server card follows the v1 schema and matches the live server", async () => {
   const card = JSON.parse(read(".well-known/mcp/server-card.json"));
-  assert.equal(card.$schema, "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json");
+  assert.equal(
+    card.$schema,
+    "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
+  );
   assert.match(card.name, /^[a-zA-Z0-9.-]+\/[a-zA-Z0-9._-]+$/);
   assert.ok(card.title && card.title.length <= 100);
-  assert.ok(card.description.length > 0 && card.description.length <= 100, `${card.description.length} chars`);
+  assert.ok(
+    card.description.length > 0 && card.description.length <= 100,
+    `${card.description.length} chars`,
+  );
   assert.equal(card.version, pluginVersion());
   assert.equal(card.tools, undefined, "agents trust the live tools/list");
-  assert.deepEqual(card.remotes.map((r: { type: string; url: string }) => [r.type, r.url]), [["streamable-http", MCP_URL]]);
+  assert.deepEqual(
+    card.remotes.map((r: { type: string; url: string }) => [r.type, r.url]),
+    [["streamable-http", MCP_URL]],
+  );
   assert.ok(card.icons.length > 0);
-  for (const icon of card.icons) assert.ok(fs.existsSync(path.join(DIST, new URL(icon.src).pathname)), icon.src);
-  const { result } = await mcp("initialize", { protocolVersion: "2025-11-25", capabilities: {} });
+  for (const icon of card.icons)
+    assert.ok(
+      fs.existsSync(path.join(DIST, new URL(icon.src).pathname)),
+      icon.src,
+    );
+  const { result } = await mcp("initialize", {
+    protocolVersion: "2025-11-25",
+    capabilities: {},
+  });
   assert.equal(result.serverInfo.name, card.name, "card and serverInfo agree");
   assert.equal(result.serverInfo.version, card.version);
-  assert.deepEqual(card.remotes[0].supportedProtocolVersions[0], result.protocolVersion);
+  assert.deepEqual(
+    card.remotes[0].supportedProtocolVersions[0],
+    result.protocolVersion,
+  );
 });
 
 test("ARD and AI Catalog documents list the MCP server's card", () => {
   const ard = JSON.parse(read(".well-known/ard.json"));
-  assert.deepEqual(JSON.parse(read(".well-known/ai-catalog.json")), ard, "one document at both paths");
+  assert.deepEqual(
+    JSON.parse(read(".well-known/ai-catalog.json")),
+    ard,
+    "one document at both paths",
+  );
   assert.equal(ard.specVersion, "1.0");
   const [entry] = ard.entries;
-  assert.match(entry.identifier, /^urn:air:clairvoyance\.fyi:[a-z0-9-]+:[a-z0-9-]+$/);
+  assert.match(
+    entry.identifier,
+    /^urn:air:clairvoyance\.fyi:[a-z0-9-]+:[a-z0-9-]+$/,
+  );
   assert.ok(entry.displayName);
   assert.equal(entry.type, "application/mcp-server-card+json");
   assert.equal(entry.url, `${MCP_URL}/server-card`);
-  assert.ok(entry.representativeQueries.length >= 2 && entry.representativeQueries.length <= 5);
+  assert.ok(
+    entry.representativeQueries.length >= 2 &&
+      entry.representativeQueries.length <= 5,
+  );
   assert.deepEqual([...entry.capabilities].sort(), [...skillSlugs].sort());
-  assert.match(read("index.html"), /<link rel="ard" href="\/\.well-known\/ard\.json"/);
+  assert.match(
+    read("index.html"),
+    /<link rel="ard" href="\/\.well-known\/ard\.json"/,
+  );
 });
 
 test("server.json is ready for the MCP Registry and matches the server card", () => {
-  const server = JSON.parse(fs.readFileSync(path.join(ROOT, "..", "server.json"), "utf-8"));
+  const server = JSON.parse(
+    fs.readFileSync(path.join(ROOT, "..", "server.json"), "utf-8"),
+  );
   const card = JSON.parse(read(".well-known/mcp/server-card.json"));
-  assert.match(server.$schema, /^https:\/\/static\.modelcontextprotocol\.io\/schemas\/\d{4}-\d{2}-\d{2}\/server\.schema\.json$/);
+  assert.match(
+    server.$schema,
+    /^https:\/\/static\.modelcontextprotocol\.io\/schemas\/\d{4}-\d{2}-\d{2}\/server\.schema\.json$/,
+  );
   for (const key of ["name", "title", "description", "version", "websiteUrl"]) {
     assert.equal(server[key], card[key], key);
   }
   assert.deepEqual(server.remotes, [{ type: "streamable-http", url: MCP_URL }]);
-  assert.match(fs.readFileSync(path.join(ROOT, "..", "scripts", "bump-version.sh"), "utf-8"), /"server\.json\|\.version"/);
+  assert.match(
+    fs.readFileSync(
+      path.join(ROOT, "..", "scripts", "bump-version.sh"),
+      "utf-8",
+    ),
+    /"server\.json\|\.version"/,
+  );
 });
 
 // ── Agent guidance and structured data ─────────────────────────────
@@ -949,13 +997,18 @@ test("llms.txt says when to use Clairvoyance, and when not to", () => {
   assert.ok(llms.includes("## When to use Clairvoyance"));
   assert.ok((section.match(/^- /gm) ?? []).length >= 5, "names concrete jobs");
   assert.match(section, /Not for/i);
-  assert.ok(llms.includes(`(${SITE}/skills/llms.txt)`) && llms.includes(`(${SITE}/mcp/llms.txt)`), "links the scoped files");
+  assert.ok(
+    llms.includes(`(${SITE}/skills/llms.txt)`) &&
+      llms.includes(`(${SITE}/mcp/llms.txt)`),
+    "links the scoped files",
+  );
 });
 
 test("scoped llms.txt files cover the skills and the MCP server", () => {
   const skills = read("skills/llms.txt");
   assert.match(skills, /^# /);
-  for (const slug of skillSlugs) assert.ok(skills.includes(`(${SITE}/skills/${slug}.md)`), slug);
+  for (const slug of skillSlugs)
+    assert.ok(skills.includes(`(${SITE}/skills/${slug}.md)`), slug);
   const mcpLlms = read("mcp/llms.txt");
   assert.match(mcpLlms, /^# /);
   assert.ok(mcpLlms.includes(MCP_URL));
@@ -969,13 +1022,32 @@ test("skill pages carry TechArticle and BreadcrumbList JSON-LD", () => {
     assert.ok(article, `${slug} article`);
     assert.equal(article.url, `${SITE}/skills/${slug}`);
     assert.equal(article.description, skillMeta[slug].description);
-    assert.equal(article.dateModified, lastCommitDate(path.join(SKILLS_DIR, slug, "SKILL.md")));
+    assert.equal(
+      article.dateModified,
+      lastCommitDate(path.join(SKILLS_DIR, slug, "SKILL.md")),
+    );
     const crumbs = blocks.find((b) => b["@type"] === "BreadcrumbList")!;
     assert.deepEqual(
-      crumbs.itemListElement.map((i: { position: number; item: string }) => [i.position, i.item]),
-      [[1, `${SITE}/`], [2, `${SITE}/skills`], [3, `${SITE}/skills/${slug}`]],
+      crumbs.itemListElement.map((i: { position: number; item: string }) => [
+        i.position,
+        i.item,
+      ]),
+      [
+        [1, `${SITE}/`],
+        [2, `${SITE}/skills`],
+        [3, `${SITE}/skills/${slug}`],
+      ],
     );
   }
+});
+
+test("/mcp links the server's official MCP Registry entry", () => {
+  const entry =
+    "https://registry.modelcontextprotocol.io/v0.1/servers/fyi.clairvoyance%2Fmcp/versions/latest";
+  assert.ok(read("mcp/index.html").includes(`href="${entry}"`), "page");
+  assert.ok(read("mcp.md").includes(`(${entry})`), "Markdown twin");
+  const readme = fs.readFileSync(path.join(ROOT, "..", "README.md"), "utf-8");
+  assert.ok(readme.includes(entry), "README");
 });
 
 // ── Sitemap ────────────────────────────────────────────────────────
@@ -1097,7 +1169,8 @@ test("archive artifacts hold the skill directory at their root", () => {
 // Runs the WebMCP registration against a fake modelContext and a fetch backed
 // by dist/, returning the tools it registered.
 async function loadWebMcp() {
-  const registered: Parameters<NonNullable<ModelContext["registerTool"]>>[0][] = [];
+  const registered: Parameters<NonNullable<ModelContext["registerTool"]>>[0][] =
+    [];
   const modelContext: ModelContext = {
     registerTool: (tool) => registered.push(tool),
   };
@@ -1105,7 +1178,8 @@ async function loadWebMcp() {
     modelContext,
     fetch: (async (url: URL) => {
       const file = path.join(DIST, distPath(url.href));
-      if (!fs.existsSync(file)) return new Response("Not found", { status: 404 });
+      if (!fs.existsSync(file))
+        return new Response("Not found", { status: 404 });
       return new Response(fs.readFileSync(file));
     }) as typeof fetch,
     origin: SITE,

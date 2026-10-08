@@ -27,11 +27,16 @@ export const MCP_URL = `${SITE_URL}/mcp`;
  * its server card, the ARD / AI Catalog entry and the registry's server.json,
  * so none of them can contradict the others.
  */
+/** The server's entry in the official MCP Registry (published from server.json). */
+export const MCP_REGISTRY_URL =
+  "https://registry.modelcontextprotocol.io/v0.1/servers/fyi.clairvoyance%2Fmcp/versions/latest";
+
 export const MCP_SERVER = {
   name: "fyi.clairvoyance/mcp",
   title: "Clairvoyance",
   // The server card schema caps this at 100 characters.
-  description: "Software design skills for AI coding agents, drawn from A Philosophy of Software Design.",
+  description:
+    "Software design skills for AI coding agents, inspired by A Philosophy of Software Design.",
   websiteUrl: MCP_URL,
 };
 const MCP_NAME = "clairvoyance";
@@ -91,7 +96,7 @@ export function getToolManifest(): ToolManifest {
     title: MCP_SERVER.title,
     version: pkg.version,
     instructions: [
-      "Clairvoyance: software design skills for AI coding agents, drawn from A Philosophy of Software Design.",
+      "Clairvoyance: software design skills for AI coding agents, inspired by A Philosophy of Software Design.",
       "Each tool named after a skill returns that skill's instructions. Call it when its description matches what you're doing, then follow it.",
       "Skills that link files in a references/ folder say how to load them with fetch-reference.",
       "",
@@ -225,14 +230,29 @@ export function skillToolMarkdown(skill: Skill): string {
 /** The server card (draft MCP extension, v1 schema), at /mcp/server-card. */
 export function serverCard() {
   return {
-    $schema: "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
+    $schema:
+      "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
     ...MCP_SERVER,
     version: pkg.version,
     icons: [
-      { src: `${SITE_URL}/favicon.svg`, mimeType: "image/svg+xml", sizes: ["any"] },
-      { src: `${SITE_URL}/apple-touch-icon.png`, mimeType: "image/png", sizes: ["180x180"] },
+      {
+        src: `${SITE_URL}/favicon.svg`,
+        mimeType: "image/svg+xml",
+        sizes: ["any"],
+      },
+      {
+        src: `${SITE_URL}/apple-touch-icon.png`,
+        mimeType: "image/png",
+        sizes: ["180x180"],
+      },
     ],
-    remotes: [{ type: "streamable-http", url: MCP_URL, supportedProtocolVersions: SUPPORTED_VERSIONS }],
+    remotes: [
+      {
+        type: "streamable-http",
+        url: MCP_URL,
+        supportedProtocolVersions: SUPPORTED_VERSIONS,
+      },
+    ],
     repository: { url: REPO_URL, source: "github" },
   };
 }
@@ -271,39 +291,41 @@ export function discoveryCatalog() {
 export function mcpPageMarkdown(): string[] {
   const { tools } = getToolManifest();
   return [
-      "# Clairvoyance MCP server",
-      "",
-      MCP_SUMMARY,
-      "",
-      `Server URL: ${MCP_URL}`,
-      "",
-      "## Add it to your client",
-      "",
-      `- VS Code: [Add to VS Code](${MCP_INSTALL.vscode}), or \`${MCP_INSTALL.vscodeCli}\``,
-      `- Cursor: [Add to Cursor](${MCP_INSTALL.cursor}), or add \`${MCP_INSTALL.cursorConfig}\` under \`"mcpServers"\` in \`~/.cursor/mcp.json\``,
-      `- Claude Code: \`${MCP_INSTALL.claudeCode}\``,
-      `- Codex: \`${MCP_INSTALL.codex}\``,
-      `- Any other client: add ${MCP_URL} as a remote (HTTP) MCP server.`,
-      "",
-      "## Tools",
-      "",
-      ...tools.map((t) => `- \`${t.name}\`: ${t.description}`),
-      "",
-      "## Prompts",
-      "",
-      MCP_PAGE.prompts,
-      "",
-      "## What it receives",
-      "",
-      MCP_PAGE.receives,
-      "",
-      "## MCP or the plugin?",
-      "",
-      MCP_PAGE.versusPlugin,
-      "",
-      "## Details",
-      "",
-      MCP_PAGE.details,
-      "",
+    "# Clairvoyance MCP server",
+    "",
+    MCP_SUMMARY,
+    "",
+    `Server URL: ${MCP_URL}`,
+    "",
+    "## Add it to your client",
+    "",
+    `- VS Code: [Add to VS Code](${MCP_INSTALL.vscode}), or \`${MCP_INSTALL.vscodeCli}\``,
+    `- Cursor: [Add to Cursor](${MCP_INSTALL.cursor}), or add \`${MCP_INSTALL.cursorConfig}\` under \`"mcpServers"\` in \`~/.cursor/mcp.json\``,
+    `- Claude Code: \`${MCP_INSTALL.claudeCode}\``,
+    `- Codex: \`${MCP_INSTALL.codex}\``,
+    `- Any other client: add ${MCP_URL} as a remote (HTTP) MCP server.`,
+    "",
+    "## Tools",
+    "",
+    ...tools.map((t) => `- \`${t.name}\`: ${t.description}`),
+    "",
+    "## Prompts",
+    "",
+    MCP_PAGE.prompts,
+    "",
+    "## What it receives",
+    "",
+    MCP_PAGE.receives,
+    "",
+    "## MCP or the plugin?",
+    "",
+    MCP_PAGE.versusPlugin,
+    "",
+    "## Details",
+    "",
+    MCP_PAGE.details,
+    "",
+    `Listed in the official MCP Registry as [${MCP_SERVER.name}](${MCP_REGISTRY_URL}).`,
+    "",
   ];
 }

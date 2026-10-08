@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.3.1 — 2026-10-07
 
 ### Added
 
@@ -26,7 +26,8 @@
   pages. A small Cloudflare Worker in front of GitHub Pages (`docs/edge/`)
   handles negotiation and the MCP server.
 - `AGENTS.md`: layout, checks and conventions for agents working in this repo.
-- `server.json`, the hosted MCP server's entry for the official MCP Registry.
+- Listed in the official MCP Registry as `fyi.clairvoyance/mcp`, published
+  from the new `server.json`.
 - Eval suites for `design-it-twice`, `red-flags` and `design-review` in
   `evals/`, run with `claude plugin eval`.
 
