@@ -9,6 +9,8 @@
 // and successful ones a `Link` header naming the other representation.
 //
 // It also serves the read-only MCP server at /mcp (see mcp.ts).
+//
+// Cloudflare Workers Builds deploys this directory on every push to main.
 
 import { handleMcp } from "./mcp.ts";
 
