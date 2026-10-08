@@ -20,10 +20,10 @@ function lastCommitDate(...paths) {
 }
 
 function sourceOf(pathname) {
-  const skill = pathname.match(/^\/skills\/([^/]+)\/$/);
+  const skill = pathname.match(/^\/skills\/([^/]+)$/);
   if (skill) return [`skills/${skill[1]}/SKILL.md`];
-  if (pathname === "/install/") return ["README.md"];
-  const info = pathname.match(/^\/(about|contact|privacy)\/$/);
+  if (pathname === "/install") return ["README.md"];
+  const info = pathname.match(/^\/(about|contact|privacy)$/);
   if (info) return [`docs/src/content/info/${info[1]}.md`];
   // The homepage and /skills list every skill, so they change when any does.
   return ["skills", "docs/src"];
@@ -31,6 +31,9 @@ function sourceOf(pathname) {
 
 export default defineConfig({
   site: "https://clairvoyance.fyi",
+  // Pages live at /about, not /about/: the edge Worker serves that form and
+  // redirects the other, and the sitemap must list the same URLs.
+  trailingSlash: "never",
   integrations: [
     sitemap({
       serialize(item) {

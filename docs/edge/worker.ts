@@ -34,18 +34,14 @@ export async function handle(
     return serverCard(request, url, fetchOrigin);
   if (url.pathname === "/mcp" || url.pathname === "/mcp/") {
     // One URL for both audiences: a browser (or an agent asking for Markdown)
-    // gets the page about the server, served from /mcp/ without a redirect so
-    // the address stays copyable; MCP clients, which POST or GET an event
-    // stream, get the server.
+    // gets the page about the server, like any other page; MCP clients, which
+    // POST or GET an event stream, get the server.
     const isRead = request.method === "GET" || request.method === "HEAD";
     if (
       isRead &&
       chooseRepresentation(request.headers.get("Accept")) !== "none"
     ) {
-      return negotiate(
-        new Request(new URL("/mcp/", url), request),
-        fetchOrigin,
-      );
+      return negotiate(request, fetchOrigin);
     }
     return handleMcp(request, fetchOrigin);
   }
@@ -88,10 +84,26 @@ export async function negotiate(
   const url = new URL(request.url);
   if (!isPageRequest(request, url)) return fetchOrigin(request);
 
+  // One URL per page, without the trailing slash: that's the form every
+  // canonical tag, sitemap entry and link uses, so search engines see one page
+  // instead of a redirect plus an alternate.
+  if (url.pathname !== "/" && url.pathname.endsWith("/")) {
+    return Response.redirect(
+      `${SITE}${url.pathname.replace(/\/+$/, "")}${url.search}`,
+      301,
+    );
+  }
+  // GitHub Pages serves pages as directories (/about/), so fetch that form
+  // rather than let the origin redirect.
+  const pageRequest =
+    url.pathname === "/"
+      ? request
+      : new Request(new URL(`${url.pathname}/${url.search}`, url), request);
+
   const choice = chooseRepresentation(request.headers.get("Accept"));
   if (choice === "none") return notAcceptable();
   if (choice === "html") {
-    const page = await fetchOrigin(request);
+    const page = await fetchOrigin(pageRequest);
     return withLinks(withVaryAccept(page), url, "markdown");
   }
 
@@ -106,7 +118,7 @@ export async function negotiate(
   // No Markdown twin: either the page doesn't exist, or it's HTML-only. RFC
   // 9110 lets a server send a representation the client didn't prefer, and
   // HTML is more useful to an agent than a 406.
-  const page = await fetchOrigin(request);
+  const page = await fetchOrigin(pageRequest);
   if (page.status === 404)
     return markdownNotFound(url.pathname, request.method);
   return withLinks(withVaryAccept(page), url, null);

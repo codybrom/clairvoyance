@@ -85,8 +85,14 @@ const origin = () =>
     "/og.png": { body: "PNG", type: "image/png" },
     "/skills.md": md("# All Skills"),
     "/mcp/": html("<h1>The Clairvoyance MCP server</h1>"),
-    "/.well-known/mcp/server-card.json": { body: '{"name":"fyi.clairvoyance/mcp"}', type: "application/json" },
-    "/.well-known/ai-catalog.json": { body: '{"specVersion":"1.0","entries":[]}', type: "application/json" },
+    "/.well-known/mcp/server-card.json": {
+      body: '{"name":"fyi.clairvoyance/mcp"}',
+      type: "application/json",
+    },
+    "/.well-known/ai-catalog.json": {
+      body: '{"specVersion":"1.0","entries":[]}',
+      type: "application/json",
+    },
     "/mcp.md": md("# The Clairvoyance MCP server"),
     "/tools.json": {
       body: JSON.stringify({
@@ -203,8 +209,8 @@ test("prefers Markdown when the client lists it alongside HTML at equal weight",
   assert.match(header(res, "Content-Type"), /^text\/markdown/);
 });
 
-test("maps nested page paths, with or without a trailing slash, to their .md file", async () => {
-  for (const path of ["/skills/deep-modules", "/skills/deep-modules/"]) {
+test("maps nested page paths to their .md file", async () => {
+  for (const path of ["/skills/deep-modules"]) {
     const { fetchOrigin, calls } = origin();
     const res = await negotiate(get(path, "text/markdown"), fetchOrigin);
     assert.equal(await res.text(), "# Deep Modules", path);
@@ -241,7 +247,7 @@ test("leaves HTML 404s from the origin untouched apart from Vary", async () => {
 
 test("falls back to HTML for a page that has no Markdown variant", async () => {
   const { fetchOrigin } = origin();
-  const res = await negotiate(get("/about/", "text/markdown"), fetchOrigin);
+  const res = await negotiate(get("/about", "text/markdown"), fetchOrigin);
   assert.equal(res.status, 200);
   assert.equal(await res.text(), "<h1>About</h1>");
   assert.ok(varyIncludesAccept(res));
@@ -307,7 +313,7 @@ test("HTML pages advertise their canonical URL, Markdown twin and the sitemap", 
 test("Markdown responses point back to the canonical HTML page", async () => {
   const { fetchOrigin } = origin();
   const res = await negotiate(
-    get("/skills/deep-modules/", "text/markdown"),
+    get("/skills/deep-modules", "text/markdown"),
     fetchOrigin,
   );
   assert.deepEqual(links(res), [
@@ -320,7 +326,7 @@ test("Markdown responses point back to the canonical HTML page", async () => {
 
 test("pages served as HTML because they lack a twin don't advertise one", async () => {
   const { fetchOrigin } = origin();
-  const res = await negotiate(get("/about/", "text/markdown"), fetchOrigin);
+  const res = await negotiate(get("/about", "text/markdown"), fetchOrigin);
   assert.ok(!links(res).some((l) => l.includes("text/markdown")));
   assert.ok(links(res).includes(`<${SITE}/about>; rel="canonical"`));
 });
@@ -532,7 +538,10 @@ test("/mcp/ with a trailing slash is the same MCP endpoint", async () => {
   const { fetchOrigin } = origin();
   const req = new Request(`${SITE}/mcp/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+    },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "ping" }),
   });
   const res = await handle(req, fetchOrigin);
@@ -543,7 +552,10 @@ test("/mcp/ with a trailing slash is the same MCP endpoint", async () => {
 
 test("the server card is served at <server URL>/server-card with its media type", async () => {
   const { fetchOrigin, calls } = origin();
-  const res = await handle(get("/mcp/server-card", "application/mcp-server-card+json"), fetchOrigin);
+  const res = await handle(
+    get("/mcp/server-card", "application/mcp-server-card+json"),
+    fetchOrigin,
+  );
   assert.equal(res.status, 200);
   assert.equal(header(res, "Content-Type"), "application/mcp-server-card+json");
   assert.equal(header(res, "Access-Control-Allow-Origin"), "*");
@@ -560,4 +572,40 @@ test("discovery documents get their registered media types", async () => {
     const res = await handle(get(path, "*/*"), fetchOrigin);
     assert.equal(header(res, "Content-Type"), type, path);
   }
+});
+
+// ── One URL per page: no trailing slash ────────────────────────────
+
+test("slash-less page URLs are served directly from the origin's directory page", async () => {
+  const { fetchOrigin, calls } = origin();
+  const res = await negotiate(get("/about", "text/html"), fetchOrigin);
+  assert.equal(res.status, 200);
+  assert.equal(await res.text(), "<h1>About</h1>");
+  assert.deepEqual(calls, ["/about/"]);
+});
+
+test("trailing-slash page URLs redirect permanently to the slash-less URL", async () => {
+  for (const [path, location] of [
+    ["/about/", `${SITE}/about`],
+    ["/skills/deep-modules/?ref=x", `${SITE}/skills/deep-modules?ref=x`],
+  ]) {
+    const { fetchOrigin, calls } = origin();
+    const res = await negotiate(get(path, "text/html"), fetchOrigin);
+    assert.equal(res.status, 301, path);
+    assert.equal(header(res, "Location"), location, path);
+    assert.deepEqual(calls, [], "no origin fetch");
+  }
+  const { fetchOrigin } = origin();
+  assert.equal(
+    (await negotiate(get("/", "text/html"), fetchOrigin)).status,
+    200,
+    "root stays",
+  );
+});
+
+test("a browser at /mcp/ is redirected to /mcp; MCP clients can still POST to /mcp/", async () => {
+  const { fetchOrigin } = origin();
+  const res = await handle(get("/mcp/", "text/html"), fetchOrigin);
+  assert.equal(res.status, 301);
+  assert.equal(header(res, "Location"), `${SITE}/mcp`);
 });

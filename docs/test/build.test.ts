@@ -1052,6 +1052,29 @@ test("/mcp links the server's official MCP Registry entry", () => {
 
 // ── Sitemap ────────────────────────────────────────────────────────
 
+test("sitemap URLs are the slash-less canonical form", () => {
+  const locs = [...read("sitemap-0.xml").matchAll(/<loc>([^<]+)<\/loc>/g)].map(
+    (m) => m[1],
+  );
+  assert.ok(locs.includes(`${SITE}/`));
+  for (const loc of locs.filter((l) => l !== `${SITE}/`))
+    assert.ok(!loc.endsWith("/"), loc);
+  // Every page's canonical tag names its own sitemap URL.
+  for (const loc of locs) {
+    const html = read(distPath(loc));
+    assert.equal(canonicalOf(html), loc === `${SITE}/` ? loc : loc, loc);
+  }
+});
+
+test("robots.txt points crawlers at the sitemap", () => {
+  const robots = read("robots.txt");
+  assert.match(robots, /^User-agent: \*$/m);
+  assert.match(
+    robots,
+    /^Sitemap: https:\/\/clairvoyance\.fyi\/sitemap-index\.xml$/m,
+  );
+});
+
 test("every sitemap entry has a lastmod, and skill pages use the skill's commit date", () => {
   const xml = read("sitemap-0.xml");
   const entries = [
@@ -1061,13 +1084,13 @@ test("every sitemap entry has a lastmod, and skill pages use the skill's commit 
   ];
   assert.ok(entries.length > skillSlugs.length);
   for (const [, loc, lastmod] of entries) assert.ok(lastmod, `${loc} lastmod`);
-  const install = entries.find(([, loc]) => loc === `${SITE}/install/`);
+  const install = entries.find(([, loc]) => loc === `${SITE}/install`);
   assert.equal(
     new Date(install![2]).getTime(),
     new Date(lastCommitDate(path.join(ROOT, "..", "README.md"))).getTime(),
   );
   for (const slug of skillSlugs) {
-    const entry = entries.find(([, loc]) => loc === `${SITE}/skills/${slug}/`);
+    const entry = entries.find(([, loc]) => loc === `${SITE}/skills/${slug}`);
     const expected = new Date(
       lastCommitDate(path.join(SKILLS_DIR, slug, "SKILL.md")),
     );
@@ -1268,11 +1291,13 @@ test("the Worker serves dist/index.html for the homepage when HTML is requested"
 
 test("the Worker serves Markdown twins for every page in the build", async () => {
   const pages = [
-    "/about/",
-    "/contact/",
-    "/privacy/",
-    "/skills/",
-    ...skillSlugs.map((s) => `/skills/${s}/`),
+    "/about",
+    "/contact",
+    "/privacy",
+    "/install",
+    "/mcp",
+    "/skills",
+    ...skillSlugs.map((s) => `/skills/${s}`),
   ];
   for (const page of pages) {
     const req = new Request(SITE + page, {
