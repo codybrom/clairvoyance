@@ -1,5 +1,6 @@
 // Markdown content negotiation in front of the GitHub Pages origin.
-// See worker.ts. Deploy with `npx wrangler deploy` from this directory.
+// See worker.ts. Cloudflare Workers Builds deploys it on every push to main
+// (root directory docs/edge).
 {
   "name": "clairvoyance-edge",
   "main": "worker.ts",

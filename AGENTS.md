@@ -10,7 +10,7 @@ Guidance for AI coding agents working in this repository. For what Clairvoyance 
 - Platform manifests: `.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`, `.kimi-plugin/`, `.agents/`, `.codex/`, `.gemini/`, `.opencode/`, `gemini-extension.json`, `plugin.json`, `package.json`.
 - `docs/`: the clairvoyance.fyi site (Astro). It reads `skills/` at build time, so skill edits show up there automatically.
 - `server.json`: the hosted MCP server's entry for the official MCP Registry. Its version is kept in sync by `scripts/bump-version.sh`.
-- `docs/edge/`: the Cloudflare Worker in front of the site. It serves Markdown versions of pages via `Accept: text/markdown` and the read-only MCP server at `/mcp`. Deployed separately with `npx wrangler deploy`.
+- `docs/edge/`: the Cloudflare Worker in front of the site. It serves Markdown versions of pages via `Accept: text/markdown` and the read-only MCP server at `/mcp`. Cloudflare Workers Builds deploys it on every push to `main`. To deploy by hand, run `npx wrangler deploy` from that directory with `CLOUDFLARE_ACCOUNT_ID` set.
 
 ## Writing skills
 
